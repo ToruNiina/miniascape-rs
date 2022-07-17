@@ -11,6 +11,6 @@ fn main() {
     eframe::run_native(
         "miniascape",
         native_options,
-        Box::new(|cc| Box::new(miniascape::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(miniascape::App::new(cc))),
     );
 }
