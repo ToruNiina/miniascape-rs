@@ -37,6 +37,7 @@ impl App {
 }
 
 impl eframe::App for App {
+
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -90,6 +91,47 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
 
+            // First make a painter only for inside the region.
+            let painter = egui::Painter::new(
+                ui.ctx().clone(),
+                ui.layer_id(),
+                ui.available_rect_before_wrap(),
+            );
+
+            // draw grid
+            let region = painter.clip_rect();
+            painter.add(
+                epaint::RectShape::filled(
+                        egui::Rect{min: region.min, max: region.max},
+                        egui::Rounding::none(),
+                        egui::Color32::from_rgb(0, 255, 0)
+                    )
+                );
+            let regsize = region.max - region.min;
+            let delta = 64.0; // width of the cell
+            let nx = (regsize.x / delta).ceil() as usize;
+            let ny = (regsize.y / delta).ceil() as usize;
+            for j in 0..ny {
+                let y0 =  j    as f32 * delta + region.min.y;
+                let y1 = (j+1) as f32 * delta + region.min.y;
+                for i in 0..nx {
+                    let x0 =  i    as f32 * delta + region.min.x;
+                    let x1 = (i+1) as f32 * delta + region.min.x;
+                    painter.add(
+                        epaint::RectShape::filled(
+                                egui::Rect{
+                                    min: egui::Pos2{x: x0+1.0, y: y0+1.0},
+                                    max: egui::Pos2{x: x1-1.0, y: y1-1.0}
+                                },
+                                egui::Rounding::none(),
+                                egui::Color32::from_rgb(0, 0, 0)
+                            )
+                        );
+                }
+            }
+
+
+
             ui.heading("eframe template");
             ui.hyperlink("https://github.com/emilk/eframe_template");
             ui.add(egui::github_link_file!(
@@ -98,14 +140,5 @@ impl eframe::App for App {
             ));
             egui::warn_if_debug_build(ui);
         });
-
-        if false {
-            egui::Window::new("Window").show(ctx, |ui| {
-                ui.label("Windows can be moved by dragging them.");
-                ui.label("They are automatically sized based on contents.");
-                ui.label("You can turn on resizing and scrolling if you like.");
-                ui.label("You would normally chose either panels OR windows.");
-            });
-        }
     }
 }
