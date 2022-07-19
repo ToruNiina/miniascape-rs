@@ -4,10 +4,7 @@
 pub struct App {
     // Example stuff:
     label: String,
-
-    // this how you opt-out of serialization of a member
-    #[serde(skip)]
-    value: f32,
+    grid_width: f32,
 }
 
 impl Default for App {
@@ -15,7 +12,7 @@ impl Default for App {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            value: 2.7,
+            grid_width: 32.0,
         }
     }
 }
@@ -46,7 +43,12 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        let Self { label, value } = self;
+        let Self { label, grid_width } = self;
+
+        /*do not remove this block, to avoid dead lock*/ {
+            let scroll = ctx.input().scroll_delta.y / 8.0; // XXX magic number...
+            *grid_width = (*grid_width + scroll).clamp(1.0, 128.0).ceil();
+        }
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -72,10 +74,7 @@ impl eframe::App for App {
                 ui.text_edit_singleline(label);
             });
 
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
-            }
+            ui.add(egui::Slider::new(grid_width, 1.0..=128.0).text("grid_width"));
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
@@ -108,20 +107,22 @@ impl eframe::App for App {
                     )
                 );
             let regsize = region.max - region.min;
-            let delta = 64.0; // width of the cell
+            let delta = grid_width.ceil();
+            let ofs = if delta <= 16.0 { 0.0 } else {1.0};
             let nx = (regsize.x / delta).ceil() as usize;
             let ny = (regsize.y / delta).ceil() as usize;
             for j in 0..ny {
-                let y0 =  j    as f32 * delta + region.min.y;
-                let y1 = (j+1) as f32 * delta + region.min.y;
+                let y0 =  j    as f32 * delta + region.min.y + ofs;
+                let y1 = (j+1) as f32 * delta + region.min.y - ofs;
                 for i in 0..nx {
-                    let x0 =  i    as f32 * delta + region.min.x;
-                    let x1 = (i+1) as f32 * delta + region.min.x;
+                    let x0 =  i    as f32 * delta + region.min.x + ofs;
+                    let x1 = (i+1) as f32 * delta + region.min.x - ofs;
+
                     painter.add(
                         epaint::RectShape::filled(
                                 egui::Rect{
-                                    min: egui::Pos2{x: x0+1.0, y: y0+1.0},
-                                    max: egui::Pos2{x: x1-1.0, y: y1-1.0}
+                                    min: egui::Pos2{x: x0, y: y0},
+                                    max: egui::Pos2{x: x1, y: y1}
                                 },
                                 egui::Rounding::none(),
                                 egui::Color32::from_rgb(0, 0, 0)
