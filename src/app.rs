@@ -34,7 +34,6 @@ impl App {
 }
 
 impl eframe::App for App {
-
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -45,7 +44,8 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let Self { label, grid_width } = self;
 
-        /*do not remove this block, to avoid dead lock*/ {
+        // do not remove this block, to avoid dead lock
+        {
             let scroll = ctx.input().scroll_delta.y / 8.0; // XXX magic number...
             *grid_width = (*grid_width + scroll).clamp(1.0, 128.0).ceil();
         }
@@ -99,18 +99,21 @@ impl eframe::App for App {
 
             // draw grid
             let region = painter.clip_rect();
-            painter.add(
-                epaint::RectShape::filled(
-                        egui::Rect{min: region.min, max: region.max},
-                        egui::Rounding::none(),
-                        egui::Color32::from_rgb(0, 255, 0)
-                    )
-                );
+            painter.add(epaint::RectShape::filled(
+                egui::Rect {
+                    min: region.min,
+                    max: region.max,
+                },
+                egui::Rounding::none(),
+                egui::Color32::from_rgb(0, 255, 0),
+            ));
             let regsize = region.max - region.min;
             let delta = grid_width.ceil();
-            let ofs = if delta <= 16.0 { 0.0 } else {1.0};
+            let ofs = if delta <= 16.0 { 0.0 } else { 1.0 };
             let nx = (regsize.x / delta).ceil() as usize;
             let ny = (regsize.y / delta).ceil() as usize;
+
+            #[rustfmt::skip]
             for j in 0..ny {
                 let y0 =  j    as f32 * delta + region.min.y + ofs;
                 let y1 = (j+1) as f32 * delta + region.min.y - ofs;
@@ -118,20 +121,16 @@ impl eframe::App for App {
                     let x0 =  i    as f32 * delta + region.min.x + ofs;
                     let x1 = (i+1) as f32 * delta + region.min.x - ofs;
 
-                    painter.add(
-                        epaint::RectShape::filled(
-                                egui::Rect{
-                                    min: egui::Pos2{x: x0, y: y0},
-                                    max: egui::Pos2{x: x1, y: y1}
-                                },
-                                egui::Rounding::none(),
-                                egui::Color32::from_rgb(0, 0, 0)
-                            )
-                        );
+                    painter.add(epaint::RectShape::filled(
+                        egui::Rect {
+                            min: egui::Pos2 { x: x0, y: y0 },
+                            max: egui::Pos2 { x: x1, y: y1 },
+                        },
+                        egui::Rounding::none(),
+                        egui::Color32::from_rgb(0, 0, 0),
+                    ));
                 }
             }
-
-
 
             ui.heading("eframe template");
             ui.hyperlink("https://github.com/emilk/eframe_template");
