@@ -1,6 +1,6 @@
 use std::vec::Vec;
 
-const CHUNK_LEN: usize  = 16;
+const CHUNK_LEN: usize = 16;
 const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -32,7 +32,9 @@ pub struct Chunk {
 
 impl std::default::Default for Chunk {
     fn default() -> Self {
-        Self{cells: [State::default(); CHUNK_SIZE]}
+        Self {
+            cells: [State::default(); CHUNK_SIZE],
+        }
     }
 }
 
@@ -57,11 +59,11 @@ pub struct Board {
 
 impl Board {
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
-        Self{
+        Self {
             num_chunks_x: x_chunks,
             num_chunks_y: y_chunks,
             chunks: vec![Chunk::default(); x_chunks * y_chunks],
-            buffer: vec![Chunk::default(); x_chunks * y_chunks]
+            buffer: vec![Chunk::default(); x_chunks * y_chunks],
         }
     }
 
@@ -80,17 +82,27 @@ impl Board {
     }
 
     fn chunk_at(&self, x: usize, y: usize) -> &Chunk {
-        assert!(x < self.num_chunks_x && y < self.num_chunks_y,
+        assert!(
+            x < self.num_chunks_x && y < self.num_chunks_y,
             "x = {}, width = {}, y = {}, height = {}",
-            x, self.num_chunks_x, y, self.num_chunks_y);
+            x,
+            self.num_chunks_x,
+            y,
+            self.num_chunks_y
+        );
 
-        & self.chunks[y * self.num_chunks_x + x]
+        &self.chunks[y * self.num_chunks_x + x]
     }
 
     fn cell_at(&self, x: usize, y: usize) -> Option<State> {
-        assert!(x < self.width() && y < self.height(),
+        assert!(
+            x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
-            x, self.width(), y, self.height());
+            x,
+            self.width(),
+            y,
+            self.height()
+        );
 
         let chx = x / CHUNK_LEN;
         let clx = x % CHUNK_LEN;
@@ -99,9 +111,14 @@ impl Board {
         self.chunks[chy * self.num_chunks_x + chx].cell_at(clx, cly)
     }
     fn cell_at_mut(&mut self, x: usize, y: usize) -> Option<&mut State> {
-        assert!(x < self.num_chunks_x * CHUNK_LEN && y < self.num_chunks_y * CHUNK_LEN,
+        assert!(
+            x < self.num_chunks_x * CHUNK_LEN && y < self.num_chunks_y * CHUNK_LEN,
             "x = {}, num_chunks_x = {}, y = {}, num_chunks_y = {}",
-            x, self.num_chunks_x * CHUNK_LEN, y, self.num_chunks_y * CHUNK_LEN);
+            x,
+            self.num_chunks_x * CHUNK_LEN,
+            y,
+            self.num_chunks_y * CHUNK_LEN
+        );
 
         let chx = x / CHUNK_LEN;
         let clx = x % CHUNK_LEN;
@@ -111,27 +128,35 @@ impl Board {
     }
 
     fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut State {
-        assert!(x < self.width() && y < self.height(),
+        assert!(
+            x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
-            x, self.width(), y, self.height());
+            x,
+            self.width(),
+            y,
+            self.height()
+        );
 
         let chx = x / CHUNK_LEN;
         let clx = x % CHUNK_LEN;
         let chy = y / CHUNK_LEN;
         let cly = y % CHUNK_LEN;
         self.buffer[chy * self.num_chunks_x + chx]
-            .cell_at_mut(clx, cly).expect("bufcell_at_mut always succeed")
+            .cell_at_mut(clx, cly)
+            .expect("bufcell_at_mut always succeed")
     }
 
     fn expand_x(&mut self, n: isize) {
         if n == 0 {
-            return ;
+            return;
         }
 
         let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
         new_chunks.resize(
-            (self.num_chunks_x + na) * self.num_chunks_y, Default::default());
+            (self.num_chunks_x + na) * self.num_chunks_y,
+            Default::default(),
+        );
 
         let x_ofs = if 0 <= n { 0 } else { na };
         for j in 0..self.num_chunks_y {
@@ -142,18 +167,22 @@ impl Board {
         }
         self.chunks = new_chunks;
         self.buffer.resize(
-            (self.num_chunks_x + na) * self.num_chunks_y, Default::default());
+            (self.num_chunks_x + na) * self.num_chunks_y,
+            Default::default(),
+        );
         self.num_chunks_x += na;
     }
     fn expand_y(&mut self, n: isize) {
         if n == 0 {
-            return ;
+            return;
         }
 
         let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
         new_chunks.resize(
-            self.num_chunks_x * (self.num_chunks_y + na), Default::default());
+            self.num_chunks_x * (self.num_chunks_y + na),
+            Default::default(),
+        );
 
         let y_ofs = if 0 <= n { 0 } else { na };
         for j in 0..self.num_chunks_y {
@@ -164,7 +193,9 @@ impl Board {
         }
         self.chunks = new_chunks;
         self.buffer.resize(
-            self.num_chunks_x * (self.num_chunks_y + na), Default::default());
+            self.num_chunks_x * (self.num_chunks_y + na),
+            Default::default(),
+        );
         self.num_chunks_y += na;
     }
 
@@ -173,8 +204,8 @@ impl Board {
         for j in 1..self.height().saturating_sub(1) {
             for i in 1..self.width().saturating_sub(1) {
                 let mut nalive = 0;
-                for ny in j-1..=j+1 {
-                    for nx in i-1..=i+1 {
+                for ny in j - 1..=j + 1 {
+                    for nx in i - 1..=i + 1 {
                         if self.cell_at(nx, ny) == Some(State::Alive) {
                             nalive += 1;
                         }
@@ -184,9 +215,9 @@ impl Board {
 
                 let buf = self.bufcell_at_mut(i, j);
                 *buf = if nalive == 3 || (self_is_alive && nalive == 4) {
-                     State::Alive
+                    State::Alive
                 } else {
-                     State::Dead
+                    State::Dead
                 };
             }
         }
@@ -230,7 +261,7 @@ pub struct App {
     running: bool,
     grid_width: f32,
     #[serde(skip)]
-    board: Board
+    board: Board,
 }
 
 impl Default for App {
@@ -258,9 +289,15 @@ impl App {
         Default::default()
     }
 
-    pub fn min_gridsize() -> f32 {   8.0 }
-    pub fn max_gridsize() -> f32 { 128.0 }
-    pub fn scroll_factor() -> f32 { 16.0 }
+    pub fn min_gridsize() -> f32 {
+        8.0
+    }
+    pub fn max_gridsize() -> f32 {
+        128.0
+    }
+    pub fn scroll_factor() -> f32 {
+        16.0
+    }
 }
 
 impl eframe::App for App {
