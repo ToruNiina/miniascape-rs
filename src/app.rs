@@ -39,7 +39,7 @@ impl std::default::Default for Chunk {
 impl Chunk {
     fn cell_at(&self, x: usize, y: usize) -> Option<State> {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
-        self.cells.get(y * CHUNK_LEN + x).map(|x| *x)
+        self.cells.get(y * CHUNK_LEN + x).copied()
     }
     fn cell_at_mut(&mut self, x: usize, y: usize) -> Option<&mut State> {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
@@ -47,22 +47,12 @@ impl Chunk {
     }
 }
 
+#[derive(Default)]
 pub struct Board {
     num_chunks_x: usize,
     num_chunks_y: usize,
     chunks: Vec<Chunk>,
     buffer: Vec<Chunk>,
-}
-
-impl std::default::Default for Board {
-    fn default() -> Self {
-        Self{
-            num_chunks_x: 0,
-            num_chunks_y: 0,
-            chunks: Vec::new(),
-            buffer: Vec::new(),
-        }
-    }
 }
 
 impl Board {
@@ -138,7 +128,7 @@ impl Board {
             return ;
         }
 
-        let na = n.abs() as usize;
+        let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
         new_chunks.resize(
             (self.num_chunks_x + na) * self.num_chunks_y, Default::default());
@@ -160,7 +150,7 @@ impl Board {
             return ;
         }
 
-        let na = n.abs() as usize;
+        let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
         new_chunks.resize(
             self.num_chunks_x * (self.num_chunks_y + na), Default::default());
@@ -193,10 +183,10 @@ impl Board {
                 let self_is_alive = self.cell_at(i, j) == Some(State::Alive);
 
                 let buf = self.bufcell_at_mut(i, j);
-                *buf = if self_is_alive {
-                    if nalive == 3 || nalive == 4 { State::Alive } else { State::Dead }
+                *buf = if nalive == 3 || (self_is_alive && nalive == 4) {
+                     State::Alive
                 } else {
-                    if nalive == 3 { State::Alive } else { State::Dead }
+                     State::Dead
                 };
             }
         }
