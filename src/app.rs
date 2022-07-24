@@ -298,6 +298,7 @@ impl eframe::App for App {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
+    #[allow(clippy::never_loop)]
     #[rustfmt::skip] // keep whitespace to align
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         if self.running {
