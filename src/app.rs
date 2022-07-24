@@ -39,13 +39,13 @@ impl std::default::Default for Chunk {
 }
 
 impl Chunk {
-    fn cell_at(&self, x: usize, y: usize) -> Option<State> {
+    fn cell_at(&self, x: usize, y: usize) -> State {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
-        self.cells.get(y * CHUNK_LEN + x).copied()
+        self.cells[y * CHUNK_LEN + x]
     }
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> Option<&mut State> {
+    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut State {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
-        self.cells.get_mut(y * CHUNK_LEN + x)
+        &mut self.cells[y * CHUNK_LEN + x]
     }
 }
 
@@ -94,7 +94,7 @@ impl Board {
         &self.chunks[y * self.num_chunks_x + x]
     }
 
-    fn cell_at(&self, x: usize, y: usize) -> Option<State> {
+    fn cell_at(&self, x: usize, y: usize) -> State {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -110,7 +110,7 @@ impl Board {
         let cly = y % CHUNK_LEN;
         self.chunks[chy * self.num_chunks_x + chx].cell_at(clx, cly)
     }
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> Option<&mut State> {
+    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut State {
         assert!(
             x < self.num_chunks_x * CHUNK_LEN && y < self.num_chunks_y * CHUNK_LEN,
             "x = {}, num_chunks_x = {}, y = {}, num_chunks_y = {}",
@@ -141,9 +141,7 @@ impl Board {
         let clx = x % CHUNK_LEN;
         let chy = y / CHUNK_LEN;
         let cly = y % CHUNK_LEN;
-        self.buffer[chy * self.num_chunks_x + chx]
-            .cell_at_mut(clx, cly)
-            .expect("bufcell_at_mut always succeed")
+        self.buffer[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
 
     fn expand_x(&mut self, n: isize) {
@@ -206,12 +204,12 @@ impl Board {
                 let mut nalive = 0;
                 for ny in j - 1..=j + 1 {
                     for nx in i - 1..=i + 1 {
-                        if self.cell_at(nx, ny) == Some(State::Alive) {
+                        if self.cell_at(nx, ny) == State::Alive {
                             nalive += 1;
                         }
                     }
                 }
-                let self_is_alive = self.cell_at(i, j) == Some(State::Alive);
+                let self_is_alive = self.cell_at(i, j) == State::Alive;
 
                 let buf = self.bufcell_at_mut(i, j);
                 *buf = if nalive == 3 || (self_is_alive && nalive == 4) {
@@ -410,10 +408,7 @@ impl eframe::App for App {
 
                         let ix = (dxy.x * rdelta).floor() as usize;
                         let iy = (dxy.y * rdelta).floor() as usize;
-                        if let Some(cell) = self.board.cell_at_mut(ix, iy) {
-                            cell.flip();
-//                             *cell = State::Alive;
-                        }
+                        self.board.cell_at_mut(ix, iy).flip();
                     }
                 }
             }
@@ -427,7 +422,7 @@ impl eframe::App for App {
                     let x0 =  i    as f32 * delta + region.min.x + ofs;
                     let x1 = (i+1) as f32 * delta + region.min.x - ofs;
 
-                    if self.board.cell_at(i, j).unwrap_or(State::Dead) == State::Dead {
+                    if self.board.cell_at(i, j) == State::Dead {
                         painter.add(epaint::RectShape::filled(
                             egui::Rect {
                                 min: egui::Pos2 { x: x0, y: y0 },
