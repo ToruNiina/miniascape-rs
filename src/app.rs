@@ -47,6 +47,11 @@ impl Chunk {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &mut self.cells[y * CHUNK_LEN + x]
     }
+    fn clear(&mut self) {
+        for c in self.cells.iter_mut() {
+            *c = State::Dead;
+        }
+    }
 }
 
 #[derive(Default)]
@@ -225,6 +230,15 @@ impl Board {
         }
         std::mem::swap(&mut self.chunks, &mut self.buffer);
     }
+
+    fn clear(&mut self) {
+        for ch in self.chunks.iter_mut() {
+            ch.clear();
+        }
+        for ch in self.buffer.iter_mut() {
+            ch.clear();
+        }
+    }
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -324,6 +338,10 @@ impl eframe::App for App {
             ui.label(format!("current chunks: {}x{}", self.board.n_chunks_x(), self.board.n_chunks_y()));
 
             ui.toggle_value(&mut self.running, "Run");
+
+            if ui.button("Reset").clicked() {
+                self.board.clear();
+            }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
