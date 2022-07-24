@@ -338,7 +338,10 @@ impl eframe::App for App {
             ui.label(format!("current chunks: {}x{}", self.board.n_chunks_x(), self.board.n_chunks_y()));
 
             ui.toggle_value(&mut self.running, "Run");
-
+            if ui.button("Step").clicked() {
+                self.board.update();
+                ui.ctx().request_repaint();
+            }
             if ui.button("Reset").clicked() {
                 self.board.clear();
             }
