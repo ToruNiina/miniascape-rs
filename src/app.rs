@@ -199,11 +199,15 @@ impl Board {
 
     fn update(&mut self) {
         // inside
-        for j in 1..self.height().saturating_sub(1) {
-            for i in 1..self.width().saturating_sub(1) {
+        for j in 0..self.height() {
+            let yprev = if j == 0 { self.height() - 1 } else { j - 1 };
+            let ynext = if j == self.height() - 1 { 0 } else { j + 1 };
+            for i in 0..self.width() {
+                let xprev = if i == 0 { self.width() - 1 } else { i - 1 };
+                let xnext = if i == self.width() - 1 { 0 } else { i + 1 };
                 let mut nalive = 0;
-                for ny in j - 1..=j + 1 {
-                    for nx in i - 1..=i + 1 {
+                for ny in [yprev, j, ynext] {
+                    for nx in [xprev, i, xnext] {
                         if self.cell_at(nx, ny) == State::Alive {
                             nalive += 1;
                         }
@@ -217,35 +221,6 @@ impl Board {
                 } else {
                     State::Dead
                 };
-            }
-        }
-        // edges
-        {
-            let j = 0;
-            for i in 0..self.width() {
-                let buf = self.bufcell_at_mut(i, j);
-                *buf = State::Dead;
-            }
-        }
-        if self.height() > 1 {
-            let j = self.height() - 1;
-            for i in 0..self.width() {
-                let buf = self.bufcell_at_mut(i, j);
-                *buf = State::Dead;
-            }
-        }
-        {
-            let i = 0;
-            for j in 0..self.height() {
-                let buf = self.bufcell_at_mut(i, j);
-                *buf = State::Dead;
-            }
-        }
-        if self.width() > 1 {
-            let i = self.width() - 1;
-            for j in 0..self.height() {
-                let buf = self.bufcell_at_mut(i, j);
-                *buf = State::Dead;
             }
         }
         std::mem::swap(&mut self.chunks, &mut self.buffer);
