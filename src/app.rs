@@ -260,6 +260,8 @@ pub struct App {
     grid_width: f32,
     #[serde(skip)]
     board: Board,
+    #[serde(skip)]
+    clicked: Option<(usize, usize)>,
 }
 
 impl Default for App {
@@ -268,6 +270,7 @@ impl Default for App {
             running: false,
             board: Board::new(8, 8),
             grid_width: 32.0,
+            clicked: None,
         }
     }
 }
@@ -397,20 +400,37 @@ impl eframe::App for App {
             self.board.expand_y(chunks_dy as isize);
 
             // change state by clicking
-            {
-                for ev in ctx.input().events.iter() {
-                    if let egui::Event::PointerButton{pos, button, pressed, modifiers} = ev {
-                        let _ = modifiers;
-                        if *pressed { continue; }
-                        if *button != egui::PointerButton::Primary { continue; }
-                        let dxy = *pos - region.min;
-                        if dxy.x < 0.0 || dxy.y < 0.0 { continue; }
+            loop { // use loop to break from this block later
+                let pointer = &ctx.input().pointer;
+                if ! pointer.primary_down() {
+                    self.clicked = None;
+                    break;
+                }
 
-                        let ix = (dxy.x * rdelta).floor() as usize;
-                        let iy = (dxy.y * rdelta).floor() as usize;
-                        self.board.cell_at_mut(ix, iy).flip();
+                let pos = pointer.interact_pos()
+                    .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
+
+                let dxy = pos - region.min;
+                if dxy.x < 0.0 || dxy.y < 0.0 {
+                    self.clicked = None;
+                    break;
+                }
+
+                let ix = (dxy.x * rdelta).floor() as usize;
+                let iy = (dxy.y * rdelta).floor() as usize;
+                if self.board.width() <= ix || self.board.height() <= iy {
+                    self.clicked = None;
+                    break;
+                }
+
+                if let Some((x, y)) = self.clicked {
+                    if x == ix && y == iy {
+                        break;
                     }
                 }
+                self.board.cell_at_mut(ix, iy).flip();
+                self.clicked = Some((ix, iy));
+                break;
             }
 
             // draw grid
