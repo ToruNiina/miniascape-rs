@@ -332,7 +332,6 @@ impl eframe::App for App {
             }
         }
 
-
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
         // Tip: a good default choice is to just keep the `CentralPanel`.
@@ -351,6 +350,8 @@ impl eframe::App for App {
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
+            ui.label("left click: flip cell state");
+            ui.label("right click: drag board");
 
             let min_grid = Self::min_gridsize();
             let max_grid = Self::max_gridsize();
@@ -402,10 +403,11 @@ impl eframe::App for App {
                 egui::Color32::from_rgb(0, 255, 0),
             ));
 
-            // determine the number of chunks
-            let regsize = region.max - region.min;
+            // determine the number of chunks after zoom in/out
             let delta = self.grid_width.ceil();
             let rdelta = 1.0 / delta;
+
+            let regsize = region.max - region.min;
             let nx = (regsize.x * rdelta).ceil() as usize;
             let ny = (regsize.y * rdelta).ceil() as usize;
 
@@ -416,6 +418,38 @@ impl eframe::App for App {
 
             self.board.expand_x(chunks_dx as isize);
             self.board.expand_y(chunks_dy as isize);
+
+            // expand board size
+            {
+                let chunk_pxls = CHUNK_LEN as f32 * delta;
+
+                if self.origin.x < 0.0 {
+                    let d = (self.origin.x / chunk_pxls).floor();
+                    self.board.expand_x(d as isize);
+                    self.origin.x -= chunk_pxls * d;
+                    assert!(0.0 <= self.origin.x);
+                }
+
+                if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
+                    let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
+                    assert!(0.0 <= dx);
+                    let d = (dx / chunk_pxls).ceil();
+                    self.board.expand_x(d as isize);
+                }
+
+                if self.origin.y < 0.0 {
+                    let d = (self.origin.y / chunk_pxls).floor();
+                    self.board.expand_y(d as isize);
+                    self.origin.y -= chunk_pxls * d;
+                    assert!(0.0 <= self.origin.y);
+                }
+                if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
+                    let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
+                    assert!(0.0 <= dy);
+                    let d = (dy / chunk_pxls).ceil();
+                    self.board.expand_y(d as isize);
+                }
+            }
 
             // calc cell indices
 
