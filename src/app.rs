@@ -23,6 +23,18 @@ impl State {
             *self = State::Dead;
         }
     }
+
+    fn color(&self) -> egui::Color32 {
+        if *self == State::Dead {
+            egui::Color32::from_rgb(0, 0, 0)
+        } else {
+            egui::Color32::from_rgb(0, 255, 0)
+        }
+    }
+
+    fn background() -> egui::Color32 {
+        egui::Color32::from_rgb(0, 128, 0)
+    }
 }
 
 #[derive(Clone)]
@@ -249,9 +261,14 @@ impl Board {
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
+    #[serde(skip)]
     running: bool,
+    #[serde(skip)]
     grid_width: f32,
+    #[serde(skip)]
     origin: egui::Pos2,
+    #[serde(skip)]
+    background: egui::Color32,
     #[serde(skip)]
     grabbed: bool,
     #[serde(skip)]
@@ -266,6 +283,7 @@ impl Default for App {
             running: false,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
+            background: State::background(),
             grabbed: false,
             board: Board::new(8, 8),
             clicked: None,
@@ -395,7 +413,7 @@ impl eframe::App for App {
                     max: region.max,
                 },
                 egui::Rounding::none(),
-                egui::Color32::from_rgb(0, 255, 0),
+                self.background,
             ));
 
             // determine the number of chunks after zoom in/out
@@ -500,16 +518,14 @@ impl eframe::App for App {
                     if ! self.board.has_cell(i, j) {
                         continue;
                     }
-                    if self.board.cell_at(i, j) == State::Dead {
-                        painter.add(epaint::RectShape::filled(
-                            egui::Rect {
-                                min: egui::Pos2 { x: x0, y: y0 },
-                                max: egui::Pos2 { x: x1, y: y1 },
-                            },
-                            egui::Rounding::none(),
-                            egui::Color32::from_rgb(0, 0, 0),
-                        ));
-                    }
+                    painter.add(epaint::RectShape::filled(
+                        egui::Rect {
+                            min: egui::Pos2 { x: x0, y: y0 },
+                            max: egui::Pos2 { x: x1, y: y1 },
+                        },
+                        egui::Rounding::none(),
+                        self.board.cell_at(i, j).color(),
+                    ));
                 }
             }
 
