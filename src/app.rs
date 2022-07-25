@@ -295,7 +295,7 @@ impl App {
         128.0
     }
     pub fn scroll_factor() -> f32 {
-        16.0
+        128.0
     }
 }
 
@@ -317,7 +317,7 @@ impl eframe::App for App {
         // do not remove this block, to avoid dead lock around ctx
         {
             let scroll = ctx.input().scroll_delta.y / Self::scroll_factor();
-            self.grid_width = (self.grid_width + scroll)
+            self.grid_width = (self.grid_width * 1.1_f32.powf(scroll))
                 .clamp(Self::min_gridsize(), Self::max_gridsize()).ceil();
         }
         {
@@ -331,11 +331,6 @@ impl eframe::App for App {
                 self.grabbed = false;
             }
         }
-
-        // Examples of how to create different panels and windows.
-        // Pick whichever suits you.
-        // Tip: a good default choice is to just keep the `CentralPanel`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
