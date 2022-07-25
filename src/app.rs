@@ -313,7 +313,7 @@ impl App {
         128.0
     }
     pub fn scroll_factor() -> f32 {
-        128.0
+        1.0 / 128.0
     }
 }
 
@@ -332,12 +332,6 @@ impl eframe::App for App {
             self.board.update();
         }
 
-        // do not remove this block, to avoid dead lock around ctx
-        {
-            let scroll = ctx.input().scroll_delta.y / Self::scroll_factor();
-            self.grid_width = (self.grid_width * 1.1_f32.powf(scroll))
-                .clamp(Self::min_gridsize(), Self::max_gridsize()).ceil();
-        }
         {
             let pointer = &ctx.input().pointer;
             if self.grabbed {
@@ -372,6 +366,7 @@ impl eframe::App for App {
 
             ui.label(format!("current cells: {}x{}", self.board.width(), self.board.height()));
             ui.label(format!("current chunks: {}x{}", self.board.n_chunks_x(), self.board.n_chunks_y()));
+            ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
 
             ui.toggle_value(&mut self.running, "Run");
             if ui.button("Step").clicked() {
@@ -419,18 +414,22 @@ impl eframe::App for App {
             // determine the number of chunks after zoom in/out
             let delta = self.grid_width.ceil();
             let rdelta = 1.0 / delta;
-
             let regsize = region.max - region.min;
-            let nx = (regsize.x * rdelta).ceil() as usize;
-            let ny = (regsize.y * rdelta).ceil() as usize;
 
-            let n_chunks_x = nx / CHUNK_LEN + (if nx % CHUNK_LEN == 0 { 0 } else { 1 });
-            let n_chunks_y = ny / CHUNK_LEN + (if ny % CHUNK_LEN == 0 { 0 } else { 1 });
-            let chunks_dx = n_chunks_x.saturating_sub(self.board.num_chunks_x);
-            let chunks_dy = n_chunks_y.saturating_sub(self.board.num_chunks_y);
+            // zoom in/out scroll
+            {
+                let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
+                if scroll != 0.0 {
+                    let new_grid_width = (self.grid_width * 1.1_f32.powf(scroll))
+                        .clamp(Self::min_gridsize(), Self::max_gridsize()).ceil();
 
-            self.board.expand_x(chunks_dx as isize);
-            self.board.expand_y(chunks_dy as isize);
+                    let magnification = new_grid_width / self.grid_width;
+                    let center = self.origin.to_vec2() + (regsize * 0.5);
+
+                    self.origin = (center * magnification - regsize * 0.5).to_pos2();
+                    self.grid_width = new_grid_width;
+                }
+            }
 
             // expand board size
             {
