@@ -99,6 +99,10 @@ impl Board {
         &self.chunks[y * self.num_chunks_x + x]
     }
 
+    fn has_cell(&self, x: usize, y: usize) -> bool {
+        x < self.width() && y < self.height()
+    }
+
     fn cell_at(&self, x: usize, y: usize) -> State {
         assert!(
             x < self.width() && y < self.height(),
@@ -247,6 +251,9 @@ impl Board {
 pub struct App {
     running: bool,
     grid_width: f32,
+    origin: egui::Pos2,
+    #[serde(skip)]
+    grabbed: bool,
     #[serde(skip)]
     board: Board,
     #[serde(skip)]
@@ -257,8 +264,10 @@ impl Default for App {
     fn default() -> Self {
         Self {
             running: false,
-            board: Board::new(8, 8),
             grid_width: 32.0,
+            origin: egui::Pos2::new(0.0, 0.0),
+            grabbed: false,
+            board: Board::new(8, 8),
             clicked: None,
         }
     }
@@ -311,6 +320,18 @@ impl eframe::App for App {
             self.grid_width = (self.grid_width + scroll)
                 .clamp(Self::min_gridsize(), Self::max_gridsize()).ceil();
         }
+        {
+            let pointer = &ctx.input().pointer;
+            if self.grabbed {
+                self.origin -= pointer.delta();
+            }
+            if pointer.secondary_down() {
+                self.grabbed = true;
+            } else {
+                self.grabbed = false;
+            }
+        }
+
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -396,6 +417,13 @@ impl eframe::App for App {
             self.board.expand_x(chunks_dx as isize);
             self.board.expand_y(chunks_dy as isize);
 
+            // calc cell indices
+
+            let cell_begin_x = (self.origin.x * rdelta).floor() as usize;
+            let cell_begin_y = (self.origin.y * rdelta).floor() as usize;
+            let cell_end_x   = ((self.origin.x + regsize.x) * rdelta).ceil() as usize;
+            let cell_end_y   = ((self.origin.y + regsize.y) * rdelta).ceil() as usize;
+
             // change state by clicking
             loop { // use loop to break from this block later
                 let pointer = &ctx.input().pointer;
@@ -413,8 +441,8 @@ impl eframe::App for App {
                     break;
                 }
 
-                let ix = (dxy.x * rdelta).floor() as usize;
-                let iy = (dxy.y * rdelta).floor() as usize;
+                let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
+                let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
                 if self.board.width() <= ix || self.board.height() <= iy {
                     self.clicked = None;
                     break;
@@ -432,13 +460,17 @@ impl eframe::App for App {
 
             // draw grid
             let ofs = if delta <= 25.0 { 0.0 } else { 1.0 };
-            for j in 0..ny {
-                let y0 =  j    as f32 * delta + region.min.y + ofs;
-                let y1 = (j+1) as f32 * delta + region.min.y - ofs;
-                for i in 0..nx {
-                    let x0 =  i    as f32 * delta + region.min.x + ofs;
-                    let x1 = (i+1) as f32 * delta + region.min.x - ofs;
+            for j in cell_begin_y..cell_end_y {
+                let y0 =  j    as f32 * delta - self.origin.y + region.min.y + ofs;
+                let y1 = (j+1) as f32 * delta - self.origin.y + region.min.y - ofs;
 
+                for i in cell_begin_x..cell_end_x {
+                    let x0 =  i    as f32 * delta - self.origin.x + region.min.x + ofs;
+                    let x1 = (i+1) as f32 * delta - self.origin.x + region.min.x - ofs;
+
+                    if ! self.board.has_cell(i, j) {
+                        continue;
+                    }
                     if self.board.cell_at(i, j) == State::Dead {
                         painter.add(epaint::RectShape::filled(
                             egui::Rect {
