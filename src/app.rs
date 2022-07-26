@@ -80,7 +80,6 @@ impl Chunk {
             c.randomize(rng);
         }
     }
-
 }
 
 #[derive(Default)]
@@ -300,7 +299,6 @@ pub struct App {
     clicked: Option<(usize, usize)>,
     #[serde(skip)]
     rng: rand::rngs::StdRng,
-
 }
 
 impl Default for App {
