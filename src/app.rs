@@ -332,18 +332,6 @@ impl eframe::App for App {
             self.board.update();
         }
 
-        {
-            let pointer = &ctx.input().pointer;
-            if self.grabbed {
-                self.origin -= pointer.delta();
-            }
-            if pointer.secondary_down() {
-                self.grabbed = true;
-            } else {
-                self.grabbed = false;
-            }
-        }
-
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
@@ -388,6 +376,17 @@ impl eframe::App for App {
             });
         });
 
+        {
+            let pointer = &ctx.input().pointer;
+            if self.grabbed {
+                self.origin -= pointer.delta();
+            }
+            if pointer.secondary_down() {
+                self.grabbed = true;
+            } else {
+                self.grabbed = false;
+            }
+        }
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.running {
                 ui.ctx().request_repaint();
@@ -398,18 +397,7 @@ impl eframe::App for App {
                 ui.layer_id(),
                 ui.available_rect_before_wrap(),
             );
-
-            // draw grid
             let region = painter.clip_rect();
-            // clear region
-            painter.add(epaint::RectShape::filled(
-                egui::Rect {
-                    min: region.min,
-                    max: region.max,
-                },
-                egui::Rounding::none(),
-                self.background,
-            ));
 
             // determine the number of chunks after zoom in/out
             let delta = self.grid_width.ceil();
@@ -503,6 +491,16 @@ impl eframe::App for App {
                 self.clicked = Some((ix, iy));
                 break;
             }
+
+            // clear region
+            painter.add(epaint::RectShape::filled(
+                egui::Rect {
+                    min: region.min,
+                    max: region.max,
+                },
+                egui::Rounding::none(),
+                self.background,
+            ));
 
             // draw grid
             let ofs = if delta <= 25.0 { 0.0 } else { 1.0 };
