@@ -1,5 +1,8 @@
 use std::vec::Vec;
 
+use rand::distributions::{Bernoulli, Distribution};
+use rand::{Rng, SeedableRng};
+
 const CHUNK_LEN: usize = 16;
 const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
@@ -35,6 +38,14 @@ impl State {
     fn background() -> egui::Color32 {
         egui::Color32::from_rgb(0, 128, 0)
     }
+    fn randomize<R: Rng>(&mut self, rng: &mut R) {
+        let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
+        if distr.sample(rng) {
+            *self = State::Alive;
+        } else {
+            *self = State::Dead;
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -64,6 +75,12 @@ impl Chunk {
             *c = State::Dead;
         }
     }
+    fn randomize<R: Rng>(&mut self, rng: &mut R) {
+        for c in self.cells.iter_mut() {
+            c.randomize(rng);
+        }
+    }
+
 }
 
 #[derive(Default)]
@@ -255,6 +272,12 @@ impl Board {
             ch.clear();
         }
     }
+    fn randomize<R: Rng>(&mut self, rng: &mut R) {
+        for ch in self.chunks.iter_mut() {
+            ch.randomize(rng);
+        }
+        self.buffer = self.chunks.clone();
+    }
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -275,6 +298,9 @@ pub struct App {
     board: Board,
     #[serde(skip)]
     clicked: Option<(usize, usize)>,
+    #[serde(skip)]
+    rng: rand::rngs::StdRng,
+
 }
 
 impl Default for App {
@@ -287,6 +313,7 @@ impl Default for App {
             grabbed: false,
             board: Board::new(8, 8),
             clicked: None,
+            rng: rand::rngs::StdRng::seed_from_u64(123456789),
         }
     }
 }
@@ -363,6 +390,9 @@ impl eframe::App for App {
             }
             if ui.button("Reset").clicked() {
                 self.board.clear();
+            }
+            if ui.button("Randomize").clicked() {
+                self.board.randomize(&mut self.rng);
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
