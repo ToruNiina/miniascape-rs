@@ -1,6 +1,6 @@
+use crate::conway::{LifeGameState, LifeGameRule};
 use std::vec::Vec;
 
-use rand::distributions::{Bernoulli, Distribution};
 use rand::{Rng, SeedableRng};
 
 use serde::{Serialize, Deserialize};
@@ -23,89 +23,6 @@ pub trait Rule {
 
     fn background() -> egui::Color32;
     fn update(board: &mut Board);
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-#[derive(Deserialize, Serialize)]
-pub enum LifeGameState {
-    Dead,
-    Alive,
-}
-
-impl std::default::Default for LifeGameState {
-    fn default() -> Self {
-        LifeGameState::Dead
-    }
-}
-
-impl State for LifeGameState {
-    fn flip(&mut self) {
-        if *self == LifeGameState::Dead {
-            *self = LifeGameState::Alive;
-        } else {
-            *self = LifeGameState::Dead;
-        }
-    }
-
-    fn color(&self) -> egui::Color32 {
-        if *self == LifeGameState::Dead {
-            egui::Color32::from_rgb(0, 0, 0)
-        } else {
-            egui::Color32::from_rgb(0, 255, 0)
-        }
-    }
-
-    fn randomize<R: Rng>(&mut self, rng: &mut R) {
-        let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
-        if distr.sample(rng) {
-            *self = LifeGameState::Alive;
-        } else {
-            *self = LifeGameState::Dead;
-        }
-    }
-
-    fn clear(&mut self) {
-        *self = LifeGameState::Dead;
-    }
-}
-
-pub struct LifeGameRule {
-}
-
-impl Rule for LifeGameRule {
-    type CellState = LifeGameState;
-
-    fn background() -> egui::Color32 {
-        egui::Color32::from_rgb(0, 128, 0)
-    }
-
-    fn update(board: &mut Board) {
-        for j in 0..board.height() {
-            let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
-            let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
-            for i in 0..board.width() {
-                let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
-                let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
-                let mut nalive = 0;
-                for ny in [yprev, j, ynext] {
-                    for nx in [xprev, i, xnext] {
-                        if *board.cell_at(nx, ny) == LifeGameState::Alive {
-                            nalive += 1;
-                        }
-                    }
-                }
-                let board_is_alive = *board.cell_at(i, j) == LifeGameState::Alive;
-
-                let buf = board.bufcell_at_mut(i, j);
-                *buf = if nalive == 3 || (board_is_alive && nalive == 4) {
-                    LifeGameState::Alive
-                } else {
-                    LifeGameState::Dead
-                };
-            }
-        }
-        std::mem::swap(&mut board.chunks, &mut board.buffer);
-    }
 }
 
 const CHUNK_LEN: usize = 16;
@@ -147,14 +64,14 @@ impl<T: State> Chunk<T> {
 
 #[derive(Default)]
 pub struct Board {
-    num_chunks_x: usize,
-    num_chunks_y: usize,
-    chunks: Vec<Chunk<LifeGameState>>,
-    buffer: Vec<Chunk<LifeGameState>>,
+    pub(crate) num_chunks_x: usize,
+    pub(crate) num_chunks_y: usize,
+    pub(crate) chunks: Vec<Chunk<LifeGameState>>,
+    pub(crate) buffer: Vec<Chunk<LifeGameState>>,
 }
 
 impl Board {
-    fn new(x_chunks: usize, y_chunks: usize) -> Self {
+    pub fn new(x_chunks: usize, y_chunks: usize) -> Self {
         Self {
             num_chunks_x: x_chunks,
             num_chunks_y: y_chunks,
@@ -163,21 +80,21 @@ impl Board {
         }
     }
 
-    fn width(&self) -> usize {
+    pub fn width(&self) -> usize {
         self.num_chunks_x * CHUNK_LEN
     }
-    fn height(&self) -> usize {
+    pub fn height(&self) -> usize {
         self.num_chunks_y * CHUNK_LEN
     }
 
-    fn n_chunks_x(&self) -> usize {
+    pub(crate) fn n_chunks_x(&self) -> usize {
         self.num_chunks_x
     }
-    fn n_chunks_y(&self) -> usize {
+    pub(crate) fn n_chunks_y(&self) -> usize {
         self.num_chunks_y
     }
 
-    fn chunk_at(&self, x: usize, y: usize) -> &Chunk<LifeGameState> {
+    pub(crate) fn chunk_at(&self, x: usize, y: usize) -> &Chunk<LifeGameState> {
         assert!(
             x < self.num_chunks_x && y < self.num_chunks_y,
             "x = {}, width = {}, y = {}, height = {}",
@@ -190,11 +107,11 @@ impl Board {
         &self.chunks[y * self.num_chunks_x + x]
     }
 
-    fn has_cell(&self, x: usize, y: usize) -> bool {
+    pub fn has_cell(&self, x: usize, y: usize) -> bool {
         x < self.width() && y < self.height()
     }
 
-    fn cell_at(&self, x: usize, y: usize) -> &LifeGameState {
+    pub fn cell_at(&self, x: usize, y: usize) -> &LifeGameState {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -210,7 +127,7 @@ impl Board {
         let cly = y % CHUNK_LEN;
         self.chunks[chy * self.num_chunks_x + chx].cell_at(clx, cly)
     }
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
+    pub fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
         assert!(
             x < self.num_chunks_x * CHUNK_LEN && y < self.num_chunks_y * CHUNK_LEN,
             "x = {}, num_chunks_x = {}, y = {}, num_chunks_y = {}",
@@ -227,7 +144,7 @@ impl Board {
         self.chunks[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
 
-    fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
+    pub(crate) fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -244,7 +161,7 @@ impl Board {
         self.buffer[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
 
-    fn expand_x(&mut self, n: isize) {
+    pub fn expand_x(&mut self, n: isize) {
         if n == 0 {
             return;
         }
@@ -270,7 +187,7 @@ impl Board {
         );
         self.num_chunks_x += na;
     }
-    fn expand_y(&mut self, n: isize) {
+    pub fn expand_y(&mut self, n: isize) {
         if n == 0 {
             return;
         }
@@ -297,7 +214,7 @@ impl Board {
         self.num_chunks_y += na;
     }
 
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         for ch in self.chunks.iter_mut() {
             ch.clear();
         }
@@ -305,7 +222,7 @@ impl Board {
             ch.clear();
         }
     }
-    fn randomize<R: Rng>(&mut self, rng: &mut R) {
+    pub fn randomize<R: Rng>(&mut self, rng: &mut R) {
         for ch in self.chunks.iter_mut() {
             ch.randomize(rng);
         }
