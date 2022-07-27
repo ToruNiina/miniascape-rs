@@ -83,7 +83,7 @@ impl<T: State> Chunk<T> {
     }
     fn clear(&mut self) {
         for c in self.cells.iter_mut() {
-            *c = Default::default();
+            c.clear();
         }
     }
     fn randomize<R: Rng>(&mut self, rng: &mut R) {
