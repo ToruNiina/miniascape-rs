@@ -24,14 +24,6 @@ impl State for LifeGameState {
         }
     }
 
-    fn color(&self) -> egui::Color32 {
-        if *self == LifeGameState::Dead {
-            egui::Color32::from_rgb(0, 0, 0)
-        } else {
-            egui::Color32::from_rgb(0, 255, 0)
-        }
-    }
-
     fn randomize<R: Rng>(&mut self, rng: &mut R) {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
         if distr.sample(rng) {
@@ -53,6 +45,14 @@ impl Rule for LifeGameRule {
 
     fn background() -> egui::Color32 {
         egui::Color32::from_rgb(0, 128, 0)
+    }
+
+    fn color(st: &Self::CellState) -> egui::Color32 {
+        if *st == LifeGameState::Dead {
+            egui::Color32::from_rgb(0, 0, 0)
+        } else {
+            egui::Color32::from_rgb(0, 255, 0)
+        }
     }
 
     fn update(board: &mut Board) {

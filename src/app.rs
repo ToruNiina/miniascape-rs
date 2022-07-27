@@ -11,7 +11,6 @@ use serde::{Deserialize, Serialize};
 /// `Clone`. To clear the board, it requires `Default`.
 /// The update rule is implemented in `Rule` trait.
 pub trait State: Clone + Default {
-    fn color(&self) -> egui::Color32;
     fn flip(&mut self); // remove this later; there are more complicated rules
     fn randomize<R: Rng>(&mut self, rng: &mut R);
     fn clear(&mut self);
@@ -22,6 +21,7 @@ pub trait Rule {
     type CellState;
 
     fn background() -> egui::Color32;
+    fn color(st: &Self::CellState) -> egui::Color32;
     fn update(board: &mut Board);
 }
 
@@ -500,7 +500,7 @@ impl eframe::App for App {
                             max: egui::Pos2 { x: x1, y: y1 },
                         },
                         egui::Rounding::none(),
-                        self.board.cell_at(i, j).color(),
+                        LifeGameRule::color(self.board.cell_at(i, j)),
                     ));
                 }
             }
