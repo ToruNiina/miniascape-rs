@@ -21,6 +21,7 @@ egui = "0.18"
 epaint = "0.18"
 eframe = { version = "0.18", features = ["persistence"] }
 serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
+serde-big-array = "0.4"
 rand = "0.8"
 getrandom = { version = "0.2", features = ["js"] }
 
