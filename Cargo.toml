@@ -24,7 +24,7 @@ serde = { version = "1", features = ["derive"] } # You only need this if you wan
 serde-big-array = "0.4"
 rand = "0.8"
 getrandom = { version = "0.2", features = ["js"] }
-
+array-init = "2.0"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

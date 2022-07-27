@@ -64,6 +64,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "array-init"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfb6d71005dc22a708c7496eee5c8dc0300ee47355de6256c3b35b12b5fef596"
+
+[[package]]
 name = "atomic_refcell"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -796,6 +802,7 @@ dependencies = [
 name = "miniascape"
 version = "0.1.0"
 dependencies = [
+ "array-init",
  "console_error_panic_hook",
  "eframe",
  "egui",
