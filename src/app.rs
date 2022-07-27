@@ -3,10 +3,13 @@ use std::vec::Vec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::{Rng, SeedableRng};
 
+use serde_big_array::BigArray;
+
 const CHUNK_LEN: usize = 16;
 const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub enum State {
     Dead,
     Alive,
@@ -49,7 +52,10 @@ impl State {
 }
 
 #[derive(Clone)]
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 pub struct Chunk {
+    #[serde(with = "BigArray")]
     cells: [State; CHUNK_SIZE],
 }
 
@@ -83,6 +89,8 @@ impl Chunk {
 }
 
 #[derive(Default)]
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 pub struct Board {
     num_chunks_x: usize,
     num_chunks_y: usize,
@@ -283,6 +291,7 @@ impl Board {
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
+    board: Board,
     #[serde(skip)]
     running: bool,
     #[serde(skip)]
@@ -293,8 +302,6 @@ pub struct App {
     background: egui::Color32,
     #[serde(skip)]
     grabbed: bool,
-    #[serde(skip)]
-    board: Board,
     #[serde(skip)]
     clicked: Option<(usize, usize)>,
     #[serde(skip)]
