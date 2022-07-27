@@ -1,9 +1,9 @@
-use crate::conway::{LifeGameState, LifeGameRule};
+use crate::conway::{LifeGameRule, LifeGameState};
 use std::vec::Vec;
 
 use rand::{Rng, SeedableRng};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// State of a cell.
 ///
@@ -36,7 +36,7 @@ pub struct Chunk<T: State> {
 impl<T: State> std::default::Default for Chunk<T> {
     fn default() -> Self {
         Self {
-            cells: array_init::array_init(|_| Default::default())
+            cells: array_init::array_init(|_| Default::default()),
         }
     }
 }

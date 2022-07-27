@@ -1,10 +1,9 @@
-use crate::app::{State, Rule, Board};
+use crate::app::{Board, Rule, State};
 use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub enum LifeGameState {
     Dead,
     Alive,
@@ -47,8 +46,7 @@ impl State for LifeGameState {
     }
 }
 
-pub struct LifeGameRule {
-}
+pub struct LifeGameRule {}
 
 impl Rule for LifeGameRule {
     type CellState = LifeGameState;
@@ -85,4 +83,3 @@ impl Rule for LifeGameRule {
         std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
 }
-
