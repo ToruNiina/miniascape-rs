@@ -3,82 +3,87 @@ use std::vec::Vec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::{Rng, SeedableRng};
 
-use serde_big_array::BigArray;
+use serde::{Serialize, Deserialize};
 
-const CHUNK_LEN: usize = 16;
-const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
+pub trait State: Clone + Default {
+    fn color(&self) -> egui::Color32;
+    fn flip(&mut self); // remove this later; there are more complicated rules
+    fn randomize<R: Rng>(&mut self, rng: &mut R);
+    fn clear(&mut self);
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-#[derive(serde::Deserialize, serde::Serialize)]
-pub enum State {
+#[derive(Deserialize, Serialize)]
+pub enum LifeGameState {
     Dead,
     Alive,
 }
 
-impl std::default::Default for State {
+impl std::default::Default for LifeGameState {
     fn default() -> Self {
-        State::Dead
+        LifeGameState::Dead
     }
 }
 
-impl State {
+impl State for LifeGameState {
     fn flip(&mut self) {
-        if *self == State::Dead {
-            *self = State::Alive;
+        if *self == LifeGameState::Dead {
+            *self = LifeGameState::Alive;
         } else {
-            *self = State::Dead;
+            *self = LifeGameState::Dead;
         }
     }
 
     fn color(&self) -> egui::Color32 {
-        if *self == State::Dead {
+        if *self == LifeGameState::Dead {
             egui::Color32::from_rgb(0, 0, 0)
         } else {
             egui::Color32::from_rgb(0, 255, 0)
         }
     }
 
-    fn background() -> egui::Color32 {
-        egui::Color32::from_rgb(0, 128, 0)
-    }
     fn randomize<R: Rng>(&mut self, rng: &mut R) {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
         if distr.sample(rng) {
-            *self = State::Alive;
+            *self = LifeGameState::Alive;
         } else {
-            *self = State::Dead;
+            *self = LifeGameState::Dead;
         }
     }
+
+    fn clear(&mut self) {
+        *self = LifeGameState::Dead;
+    }
 }
+
+const CHUNK_LEN: usize = 16;
+const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
 #[derive(Clone)]
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)]
-pub struct Chunk {
-    #[serde(with = "BigArray")]
-    cells: [State; CHUNK_SIZE],
+pub struct Chunk<T: State> {
+    cells: [T; CHUNK_SIZE],
 }
 
-impl std::default::Default for Chunk {
+impl<T: State> std::default::Default for Chunk<T> {
     fn default() -> Self {
         Self {
-            cells: [State::default(); CHUNK_SIZE],
+            cells: array_init::array_init(|_| Default::default())
         }
     }
 }
 
-impl Chunk {
-    fn cell_at(&self, x: usize, y: usize) -> State {
+impl<T: State> Chunk<T> {
+    fn cell_at(&self, x: usize, y: usize) -> &T {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
-        self.cells[y * CHUNK_LEN + x]
+        &self.cells[y * CHUNK_LEN + x]
     }
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut State {
+    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut T {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &mut self.cells[y * CHUNK_LEN + x]
     }
     fn clear(&mut self) {
         for c in self.cells.iter_mut() {
-            *c = State::Dead;
+            *c = Default::default();
         }
     }
     fn randomize<R: Rng>(&mut self, rng: &mut R) {
@@ -89,13 +94,11 @@ impl Chunk {
 }
 
 #[derive(Default)]
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)]
 pub struct Board {
     num_chunks_x: usize,
     num_chunks_y: usize,
-    chunks: Vec<Chunk>,
-    buffer: Vec<Chunk>,
+    chunks: Vec<Chunk<LifeGameState>>,
+    buffer: Vec<Chunk<LifeGameState>>,
 }
 
 impl Board {
@@ -103,8 +106,8 @@ impl Board {
         Self {
             num_chunks_x: x_chunks,
             num_chunks_y: y_chunks,
-            chunks: vec![Chunk::default(); x_chunks * y_chunks],
-            buffer: vec![Chunk::default(); x_chunks * y_chunks],
+            chunks: vec![Chunk::<LifeGameState>::default(); x_chunks * y_chunks],
+            buffer: vec![Chunk::<LifeGameState>::default(); x_chunks * y_chunks],
         }
     }
 
@@ -122,7 +125,7 @@ impl Board {
         self.num_chunks_y
     }
 
-    fn chunk_at(&self, x: usize, y: usize) -> &Chunk {
+    fn chunk_at(&self, x: usize, y: usize) -> &Chunk<LifeGameState> {
         assert!(
             x < self.num_chunks_x && y < self.num_chunks_y,
             "x = {}, width = {}, y = {}, height = {}",
@@ -139,7 +142,7 @@ impl Board {
         x < self.width() && y < self.height()
     }
 
-    fn cell_at(&self, x: usize, y: usize) -> State {
+    fn cell_at(&self, x: usize, y: usize) -> &LifeGameState {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -155,7 +158,7 @@ impl Board {
         let cly = y % CHUNK_LEN;
         self.chunks[chy * self.num_chunks_x + chx].cell_at(clx, cly)
     }
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut State {
+    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
         assert!(
             x < self.num_chunks_x * CHUNK_LEN && y < self.num_chunks_y * CHUNK_LEN,
             "x = {}, num_chunks_x = {}, y = {}, num_chunks_y = {}",
@@ -172,7 +175,7 @@ impl Board {
         self.chunks[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
 
-    fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut State {
+    fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -253,18 +256,18 @@ impl Board {
                 let mut nalive = 0;
                 for ny in [yprev, j, ynext] {
                     for nx in [xprev, i, xnext] {
-                        if self.cell_at(nx, ny) == State::Alive {
+                        if *self.cell_at(nx, ny) == LifeGameState::Alive {
                             nalive += 1;
                         }
                     }
                 }
-                let self_is_alive = self.cell_at(i, j) == State::Alive;
+                let self_is_alive = *self.cell_at(i, j) == LifeGameState::Alive;
 
                 let buf = self.bufcell_at_mut(i, j);
                 *buf = if nalive == 3 || (self_is_alive && nalive == 4) {
-                    State::Alive
+                    LifeGameState::Alive
                 } else {
-                    State::Dead
+                    LifeGameState::Dead
                 };
             }
         }
@@ -288,9 +291,10 @@ impl Board {
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
+    #[serde(skip)]
     board: Board,
     #[serde(skip)]
     running: bool,
@@ -314,7 +318,7 @@ impl Default for App {
             running: false,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
-            background: State::background(),
+            background: egui::Color32::from_rgb(0, 128, 0),
             grabbed: false,
             board: Board::new(8, 8),
             clicked: None,
