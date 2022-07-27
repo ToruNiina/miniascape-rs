@@ -5,11 +5,24 @@ use rand::{Rng, SeedableRng};
 
 use serde::{Serialize, Deserialize};
 
+/// State of a cell.
+///
+/// Represents the current state of a cell. To initialize the board, it requires
+/// `Clone`. To clear the board, it requires `Default`.
+/// The update rule is implemented in `Rule` trait.
 pub trait State: Clone + Default {
     fn color(&self) -> egui::Color32;
     fn flip(&mut self); // remove this later; there are more complicated rules
     fn randomize<R: Rng>(&mut self, rng: &mut R);
     fn clear(&mut self);
+}
+
+/// Rule of the automaton.
+pub trait Rule {
+    type CellState;
+
+    fn background() -> egui::Color32;
+    fn update(board: &mut Board);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -53,6 +66,45 @@ impl State for LifeGameState {
 
     fn clear(&mut self) {
         *self = LifeGameState::Dead;
+    }
+}
+
+pub struct LifeGameRule {
+}
+
+impl Rule for LifeGameRule {
+    type CellState = LifeGameState;
+
+    fn background() -> egui::Color32 {
+        egui::Color32::from_rgb(0, 128, 0)
+    }
+
+    fn update(board: &mut Board) {
+        for j in 0..board.height() {
+            let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
+            let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
+            for i in 0..board.width() {
+                let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
+                let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
+                let mut nalive = 0;
+                for ny in [yprev, j, ynext] {
+                    for nx in [xprev, i, xnext] {
+                        if *board.cell_at(nx, ny) == LifeGameState::Alive {
+                            nalive += 1;
+                        }
+                    }
+                }
+                let board_is_alive = *board.cell_at(i, j) == LifeGameState::Alive;
+
+                let buf = board.bufcell_at_mut(i, j);
+                *buf = if nalive == 3 || (board_is_alive && nalive == 4) {
+                    LifeGameState::Alive
+                } else {
+                    LifeGameState::Dead
+                };
+            }
+        }
+        std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
 }
 
@@ -245,35 +297,6 @@ impl Board {
         self.num_chunks_y += na;
     }
 
-    fn update(&mut self) {
-        // inside
-        for j in 0..self.height() {
-            let yprev = if j == 0 { self.height() - 1 } else { j - 1 };
-            let ynext = if j == self.height() - 1 { 0 } else { j + 1 };
-            for i in 0..self.width() {
-                let xprev = if i == 0 { self.width() - 1 } else { i - 1 };
-                let xnext = if i == self.width() - 1 { 0 } else { i + 1 };
-                let mut nalive = 0;
-                for ny in [yprev, j, ynext] {
-                    for nx in [xprev, i, xnext] {
-                        if *self.cell_at(nx, ny) == LifeGameState::Alive {
-                            nalive += 1;
-                        }
-                    }
-                }
-                let self_is_alive = *self.cell_at(i, j) == LifeGameState::Alive;
-
-                let buf = self.bufcell_at_mut(i, j);
-                *buf = if nalive == 3 || (self_is_alive && nalive == 4) {
-                    LifeGameState::Alive
-                } else {
-                    LifeGameState::Dead
-                };
-            }
-        }
-        std::mem::swap(&mut self.chunks, &mut self.buffer);
-    }
-
     fn clear(&mut self) {
         for ch in self.chunks.iter_mut() {
             ch.clear();
@@ -365,7 +388,7 @@ impl eframe::App for App {
     #[rustfmt::skip] // keep whitespace to align
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         if self.running {
-            self.board.update();
+            LifeGameRule::update(&mut self.board);
         }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -394,7 +417,7 @@ impl eframe::App for App {
 
             ui.toggle_value(&mut self.running, "Run");
             if ui.button("Step").clicked() {
-                self.board.update();
+                LifeGameRule::update(&mut self.board);
                 ui.ctx().request_repaint();
             }
             if ui.button("Reset").clicked() {
