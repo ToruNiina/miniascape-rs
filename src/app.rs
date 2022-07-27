@@ -218,15 +218,11 @@ impl Board {
         for ch in self.chunks.iter_mut() {
             ch.clear();
         }
-        for ch in self.buffer.iter_mut() {
-            ch.clear();
-        }
     }
     pub fn randomize<R: Rng>(&mut self, rng: &mut R) {
         for ch in self.chunks.iter_mut() {
             ch.randomize(rng);
         }
-        self.buffer = self.chunks.clone();
     }
 }
 
