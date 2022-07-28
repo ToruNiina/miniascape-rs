@@ -18,11 +18,11 @@ pub trait State: Clone + Default {
 
 /// Rule of the automaton.
 pub trait Rule {
-    type CellState;
+    type CellState: State;
 
     fn background() -> egui::Color32;
     fn color(st: &Self::CellState) -> egui::Color32;
-    fn update(board: &mut Board);
+    fn update(board: &mut Board<Self::CellState>);
 }
 
 const CHUNK_LEN: usize = 16;
@@ -63,20 +63,20 @@ impl<T: State> Chunk<T> {
 }
 
 #[derive(Default)]
-pub struct Board {
+pub struct Board<T: State> {
     pub(crate) num_chunks_x: usize,
     pub(crate) num_chunks_y: usize,
-    pub(crate) chunks: Vec<Chunk<LifeGameState>>,
-    pub(crate) buffer: Vec<Chunk<LifeGameState>>,
+    pub(crate) chunks: Vec<Chunk<T>>,
+    pub(crate) buffer: Vec<Chunk<T>>,
 }
 
-impl Board {
+impl<T: State> Board<T> {
     pub fn new(x_chunks: usize, y_chunks: usize) -> Self {
         Self {
             num_chunks_x: x_chunks,
             num_chunks_y: y_chunks,
-            chunks: vec![Chunk::<LifeGameState>::default(); x_chunks * y_chunks],
-            buffer: vec![Chunk::<LifeGameState>::default(); x_chunks * y_chunks],
+            chunks: vec![Chunk::default(); x_chunks * y_chunks],
+            buffer: vec![Chunk::default(); x_chunks * y_chunks],
         }
     }
 
@@ -94,7 +94,7 @@ impl Board {
         self.num_chunks_y
     }
 
-    pub(crate) fn chunk_at(&self, x: usize, y: usize) -> &Chunk<LifeGameState> {
+    pub(crate) fn chunk_at(&self, x: usize, y: usize) -> &Chunk<T> {
         assert!(
             x < self.num_chunks_x && y < self.num_chunks_y,
             "x = {}, width = {}, y = {}, height = {}",
@@ -111,7 +111,7 @@ impl Board {
         x < self.width() && y < self.height()
     }
 
-    pub fn cell_at(&self, x: usize, y: usize) -> &LifeGameState {
+    pub fn cell_at(&self, x: usize, y: usize) -> &T {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -127,7 +127,7 @@ impl Board {
         let cly = y % CHUNK_LEN;
         self.chunks[chy * self.num_chunks_x + chx].cell_at(clx, cly)
     }
-    pub fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
+    pub fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut T {
         assert!(
             x < self.num_chunks_x * CHUNK_LEN && y < self.num_chunks_y * CHUNK_LEN,
             "x = {}, num_chunks_x = {}, y = {}, num_chunks_y = {}",
@@ -144,7 +144,7 @@ impl Board {
         self.chunks[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
 
-    pub(crate) fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut LifeGameState {
+    pub(crate) fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut T {
         assert!(
             x < self.width() && y < self.height(),
             "x = {}, width = {}, y = {}, height = {}",
@@ -231,7 +231,7 @@ impl Board {
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
     #[serde(skip)]
-    board: Board,
+    board: Board<LifeGameState>,
     #[serde(skip)]
     running: bool,
     #[serde(skip)]

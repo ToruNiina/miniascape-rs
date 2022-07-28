@@ -55,7 +55,7 @@ impl Rule for LifeGameRule {
         }
     }
 
-    fn update(board: &mut Board) {
+    fn update(board: &mut Board<Self::CellState>) {
         for j in 0..board.height() {
             let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
             let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
@@ -82,4 +82,5 @@ impl Rule for LifeGameRule {
         }
         std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
+    // draw rule-specific part of UI
 }
