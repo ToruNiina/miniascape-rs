@@ -1,7 +1,7 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
 mod app;
-pub mod conway;
+mod conway;
 pub use app::App;
 
 // ----------------------------------------------------------------------------
@@ -23,5 +23,5 @@ pub fn start(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
     // Redirect tracing to console.log and friends:
     tracing_wasm::set_as_global_default();
 
-    eframe::start_web(canvas_id, Box::new(|cc| Box::new(App::<crate::conway::LifeGameRule>::new(cc))))
+    eframe::start_web(canvas_id, Box::new(|cc| Box::new(App::new(cc))))
 }

@@ -1,8 +1,7 @@
-use std::vec::Vec;
-
+use crate::conway::LifeGameRule;
 use rand::{Rng, SeedableRng};
-
 use serde::{Deserialize, Serialize};
+use std::vec::Vec;
 
 /// State of a cell.
 ///
@@ -228,7 +227,7 @@ impl<T: State> Board<T> {
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct App<R: Rule> {
+pub struct GenericApp<R: Rule> {
     #[serde(skip)]
     board: Board<R::CellState>,
     #[serde(skip)]
@@ -247,7 +246,7 @@ pub struct App<R: Rule> {
     rng: rand::rngs::StdRng,
 }
 
-impl<R: Rule> Default for App<R> {
+impl<R: Rule> Default for GenericApp<R> {
     fn default() -> Self {
         Self {
             running: false,
@@ -262,21 +261,7 @@ impl<R: Rule> Default for App<R> {
     }
 }
 
-impl<R: Rule> App<R> {
-    /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customized the look at feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
-
-        Default::default()
-    }
-
+impl<R: Rule> GenericApp<R> {
     pub fn min_gridsize() -> f32 {
         8.0
     }
@@ -288,7 +273,7 @@ impl<R: Rule> App<R> {
     }
 }
 
-impl<R: Rule> eframe::App for App<R> {
+impl<R: Rule> eframe::App for GenericApp<R> {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -298,21 +283,10 @@ impl<R: Rule> eframe::App for App<R> {
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     #[allow(clippy::never_loop)]
     #[rustfmt::skip] // keep whitespace to align
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
             R::update(&mut self.board);
         }
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        frame.quit();
-                    }
-                });
-            });
-        });
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.heading("Side Panel");
@@ -502,5 +476,59 @@ impl<R: Rule> eframe::App for App<R> {
 
             egui::warn_if_debug_build(ui);
         });
+    }
+}
+
+pub struct App {
+    apps: Vec<Box<dyn eframe::App>>,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            apps: vec![Box::new(GenericApp::<LifeGameRule>::default())],
+        }
+    }
+}
+
+impl App {
+    /// Called once before the first frame.
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        // This is also where you can customized the look at feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        // Load previous app state (if any).
+        // Note that you must enable the `persistence` feature for this to work.
+        //         if let Some(storage) = cc.storage {
+        //             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        //         }
+
+        Default::default()
+    }
+}
+
+impl eframe::App for App {
+    /// Called by the frame work to save state before shutdown.
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {
+        //         eframe::set_value(storage, eframe::APP_KEY, self);
+    }
+
+    /// Called each time the UI needs repainting, which may be many times per second.
+    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        // TODO: show list of (board+rule)s built
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Quit").clicked() {
+                        frame.quit();
+                    }
+                });
+            });
+        });
+
+        for app in self.apps.iter_mut() {
+            app.update(ctx, frame);
+        }
     }
 }
