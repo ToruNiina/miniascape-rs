@@ -1,4 +1,3 @@
-use crate::conway::{LifeGameRule, LifeGameState};
 use std::vec::Vec;
 
 use rand::{Rng, SeedableRng};
@@ -229,9 +228,9 @@ impl<T: State> Board<T> {
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct App {
+pub struct App<R: Rule> {
     #[serde(skip)]
-    board: Board<LifeGameState>,
+    board: Board<R::CellState>,
     #[serde(skip)]
     running: bool,
     #[serde(skip)]
@@ -248,7 +247,7 @@ pub struct App {
     rng: rand::rngs::StdRng,
 }
 
-impl Default for App {
+impl<R: Rule> Default for App<R> {
     fn default() -> Self {
         Self {
             running: false,
@@ -263,7 +262,7 @@ impl Default for App {
     }
 }
 
-impl App {
+impl<R: Rule> App<R> {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customized the look at feel of egui using
@@ -289,7 +288,7 @@ impl App {
     }
 }
 
-impl eframe::App for App {
+impl<R: Rule> eframe::App for App<R> {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -301,7 +300,7 @@ impl eframe::App for App {
     #[rustfmt::skip] // keep whitespace to align
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         if self.running {
-            LifeGameRule::update(&mut self.board);
+            R::update(&mut self.board);
         }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -330,7 +329,7 @@ impl eframe::App for App {
 
             ui.toggle_value(&mut self.running, "Run");
             if ui.button("Step").clicked() {
-                LifeGameRule::update(&mut self.board);
+                R::update(&mut self.board);
                 ui.ctx().request_repaint();
             }
             if ui.button("Reset").clicked() {
@@ -496,7 +495,7 @@ impl eframe::App for App {
                             max: egui::Pos2 { x: x1, y: y1 },
                         },
                         egui::Rounding::none(),
-                        LifeGameRule::color(self.board.cell_at(i, j)),
+                        R::color(self.board.cell_at(i, j)),
                     ));
                 }
             }
