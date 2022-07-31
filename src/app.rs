@@ -581,25 +581,27 @@ impl eframe::App for App {
         egui::TopBottomPanel::top("tabs").show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
                 // default page
-                egui::Frame::group(ui.style()).show(ui, |ui| {
-                    if ui.selectable_label(self.focus == None, "Home").clicked() {
-                        self.focus = None;
-                    };
-                });
+                if ui.selectable_label(self.focus == None, "Home").clicked() {
+                    self.focus = None;
+                };
 
                 // list of running apps
                 let mut remove = None;
                 for (idx, (name, _)) in self.apps.iter().enumerate() {
-                    egui::Frame::group(ui.style()).show(ui, |ui| {
-                        ui.horizontal_wrapped(|ui| {
-                            if ui.selectable_label(self.focus == Some(idx), name).clicked() {
-                                self.focus = Some(idx);
-                            }
-                            if ui.button("🗙").clicked() {
-                                remove = Some(idx);
-                            }
+                    egui::Frame::group(ui.style())
+                        .inner_margin(egui::style::Margin{
+                            top:0.0_f32, bottom:0.0_f32, left:0.0_f32, right:0.0_f32
+                        })
+                        .show(ui, |ui| {
+                            ui.horizontal_wrapped(|ui| {
+                                if ui.selectable_label(self.focus == Some(idx), name).clicked() {
+                                    self.focus = Some(idx);
+                                }
+                                if ui.add(egui::Button::new("🗙").frame(false)).clicked() {
+                                    remove = Some(idx);
+                                }
+                            });
                         });
-                    });
                 }
                 if let Some(idx) = remove {
                     self.apps.remove(idx);
