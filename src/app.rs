@@ -272,7 +272,7 @@ impl<T: State> Board<T> {
                     let mut r = 0_u32;
                     let mut g = 0_u32;
                     let mut b = 0_u32;
-                    for pxl in self.chunk_at(i, j).cells.iter().map(|p| coloring(p)) {
+                    for pxl in self.chunk_at(i, j).cells.iter().map(&coloring) {
                         r += pxl.r() as u32;
                         g += pxl.g() as u32;
                         b += pxl.b() as u32;
@@ -397,9 +397,20 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             let max_grid = Self::max_gridsize();
             ui.add(egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"));
 
-            ui.label(format!("current cells: {}x{}", self.board.width(), self.board.height()));
-            ui.label(format!("current chunks: {}x{}", self.board.n_chunks_x(), self.board.n_chunks_y()));
-            ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
+            ui.label(format!(
+                "current cells: {}x{}",
+                self.board.width(),
+                self.board.height()
+            ));
+            ui.label(format!(
+                "current chunks: {}x{}",
+                self.board.n_chunks_x(),
+                self.board.n_chunks_y()
+            ));
+            ui.label(format!(
+                "current origin: ({},{})",
+                self.origin.x, self.origin.y
+            ));
 
             ui.toggle_value(&mut self.running, "Run");
             if ui.button("Step").clicked() {
@@ -447,7 +458,8 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
                 if scroll != 0.0 {
                     let new_grid_width = (self.grid_width * 1.1_f32.powf(scroll))
-                        .clamp(Self::min_gridsize(), Self::max_gridsize()).ceil();
+                        .clamp(Self::min_gridsize(), Self::max_gridsize())
+                        .ceil();
 
                     let magnification = new_grid_width / self.grid_width;
                     let center = self.origin.to_vec2() + (regsize * 0.5);
@@ -490,14 +502,16 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             }
 
             // change state by clicking
-            loop { // use loop to break from this block later
+            loop {
+                // use loop to break from this block later
                 let pointer = &ctx.input().pointer;
-                if ! pointer.primary_down() {
+                if !pointer.primary_down() {
                     self.clicked = None;
                     break;
                 }
 
-                let pos = pointer.interact_pos()
+                let pos = pointer
+                    .interact_pos()
                     .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
 
                 let dxy = pos - region.min;
@@ -524,7 +538,8 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             }
 
             // draw board to the central panel
-            self.board.paint(&painter, self.origin, delta, self.background, R::color);
+            self.board
+                .paint(&painter, self.origin, delta, self.background, R::color);
 
             // detect debug build
             egui::warn_if_debug_build(ui);
@@ -575,17 +590,16 @@ impl eframe::App for App {
                 // list of running apps
                 let mut remove = None;
                 for (idx, (name, _)) in self.apps.iter().enumerate() {
-                    egui::Frame::group(ui.style())
-                        .show(ui, |ui| {
-                            ui.horizontal_wrapped(|ui| {
-                                if ui.selectable_label(self.focus == Some(idx), name).clicked() {
-                                    self.focus = Some(idx);
-                                }
-                                if ui.button("🗙").clicked() {
-                                    remove = Some(idx);
-                                }
-                            });
+                    egui::Frame::group(ui.style()).show(ui, |ui| {
+                        ui.horizontal_wrapped(|ui| {
+                            if ui.selectable_label(self.focus == Some(idx), name).clicked() {
+                                self.focus = Some(idx);
+                            }
+                            if ui.button("🗙").clicked() {
+                                remove = Some(idx);
+                            }
                         });
+                    });
                 }
                 if let Some(idx) = remove {
                     self.apps.remove(idx);
@@ -617,7 +631,10 @@ impl eframe::App for App {
                 // TODO enable to set up a new app
                 if ui.button("start life game").clicked() {
                     self.focus = Some(self.apps.len());
-                    self.apps.push(("LifeGame".to_string(), Box::new(GenericApp::<LifeGameRule>::default())));
+                    self.apps.push((
+                        "LifeGame".to_string(),
+                        Box::new(GenericApp::<LifeGameRule>::default()),
+                    ));
                 }
             });
         }
