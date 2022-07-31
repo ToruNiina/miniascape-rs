@@ -563,13 +563,17 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        // TODO show all apps opened
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        egui::TopBottomPanel::top("tabs").show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
                 // default page
+                egui::Frame::group(ui.style()).show(ui, |ui| {
+                    if ui.selectable_label(self.focus == None, "Home").clicked() {
+                        self.focus = None;
+                    };
+                });
 
+                // list of running apps
                 let mut remove = None;
-                // running apps
                 for (idx, (name, _)) in self.apps.iter().enumerate() {
                     egui::Frame::group(ui.style())
                         .show(ui, |ui| {
@@ -577,7 +581,7 @@ impl eframe::App for App {
                                 if ui.selectable_label(self.focus == Some(idx), name).clicked() {
                                     self.focus = Some(idx);
                                 }
-                                if ui.button("x").clicked() {
+                                if ui.button("🗙").clicked() {
                                     remove = Some(idx);
                                 }
                             });
