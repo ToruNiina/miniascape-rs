@@ -613,7 +613,12 @@ impl eframe::App for App {
                         } else {
                             self.focus = Some(idx);
                         }
+                    } else if let Some(cur_focus) = self.focus {
+                        if idx < cur_focus {
+                            self.focus = Some(cur_focus - 1)
+                        }
                     }
+                    // if none, then still none.
                 }
             });
         });
