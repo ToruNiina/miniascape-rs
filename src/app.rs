@@ -565,11 +565,31 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // TODO show all apps opened
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            for (idx, (name, _)) in self.apps.iter().enumerate() {
-                if ui.selectable_label(self.focus == Some(idx), name).clicked() {
-                    self.focus = Some(idx);
+            ui.horizontal_wrapped(|ui| {
+                // default page
+
+                let mut remove = None;
+                // running apps
+                for (idx, (name, _)) in self.apps.iter().enumerate() {
+                    egui::Frame::group(ui.style())
+                        .show(ui, |ui| {
+                            ui.horizontal_wrapped(|ui| {
+                                if ui.selectable_label(self.focus == Some(idx), name).clicked() {
+                                    self.focus = Some(idx);
+                                }
+                                if ui.button("x").clicked() {
+                                    remove = Some(idx);
+                                }
+                            });
+                        });
                 }
-            }
+                if let Some(idx) = remove {
+                    self.apps.remove(idx);
+                    if self.focus == Some(idx) {
+                        self.focus = None;
+                    }
+                }
+            });
         });
 
         egui::TopBottomPanel::bottom("acknowledge").show(ctx, |ui| {
@@ -586,6 +606,7 @@ impl eframe::App for App {
 
         // run only one app at a time
         if let Some(idx) = self.focus {
+            assert!(idx <= self.apps.len());
             self.apps[idx].1.update(ctx, frame);
         } else {
             egui::CentralPanel::default().show(ctx, |ui| {
