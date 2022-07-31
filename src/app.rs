@@ -412,16 +412,6 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             if ui.button("Randomize").clicked() {
                 self.board.randomize(&mut self.rng);
             }
-
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("powered by ");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                    ui.label(" and ");
-                    ui.hyperlink_to("eframe", "https://github.com/emilk/egui/tree/master/eframe");
-                });
-            });
         });
 
         {
@@ -542,16 +532,10 @@ impl<R: Rule> eframe::App for GenericApp<R> {
     }
 }
 
+#[derive(Default)]
 pub struct App {
-    apps: Vec<Box<dyn eframe::App>>,
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            apps: vec![Box::new(GenericApp::<LifeGameRule>::default())],
-        }
-    }
+    apps: Vec<(String, Box<dyn eframe::App>)>,
+    focus: Option<usize>,
 }
 
 impl App {
@@ -579,19 +563,38 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        // TODO: show list of (board+rule)s built
+        // TODO show all apps opened
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        frame.quit();
-                    }
+            for (idx, (name, _)) in self.apps.iter().enumerate() {
+                if ui.selectable_label(self.focus == Some(idx), name).clicked() {
+                    self.focus = Some(idx);
+                }
+            }
+        });
+
+        egui::TopBottomPanel::bottom("acknowledge").show(ctx, |ui| {
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("powered by ");
+                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
+                    ui.label(" and ");
+                    ui.hyperlink_to("eframe", "https://github.com/emilk/egui/tree/master/eframe");
                 });
             });
         });
 
-        for app in self.apps.iter_mut() {
-            app.update(ctx, frame);
+        // run only one app at a time
+        if let Some(idx) = self.focus {
+            self.apps[idx].1.update(ctx, frame);
+        } else {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                // TODO enable to set up a new app
+                if ui.button("start life game").clicked() {
+                    self.focus = Some(self.apps.len());
+                    self.apps.push(("LifeGame".to_string(), Box::new(GenericApp::<LifeGameRule>::default())));
+                }
+            });
         }
     }
 }
