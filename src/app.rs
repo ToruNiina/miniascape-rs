@@ -604,7 +604,13 @@ impl eframe::App for App {
                 if let Some(idx) = remove {
                     self.apps.remove(idx);
                     if self.focus == Some(idx) {
-                        self.focus = None;
+                        if self.apps.is_empty() {
+                            self.focus = None;
+                        } else if self.apps.len() <= idx {
+                            self.focus = Some(self.apps.len()-1);
+                        } else {
+                            self.focus = Some(idx);
+                        }
                     }
                 }
             });
