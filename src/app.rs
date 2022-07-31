@@ -222,6 +222,59 @@ impl<T: State> Board<T> {
             ch.randomize(rng);
         }
     }
+
+    #[rustfmt::skip] // keep whitespace to align
+    pub fn paint(
+        &self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        bg: egui::Color32,
+        coloring: impl Fn(&T) -> egui::Color32,
+    ) {
+        let region = painter.clip_rect();
+        let regsize = region.max - region.min;
+        let rwidth = 1.0_f32 / cell_width;
+
+        let cell_begin_x = (origin.x * rwidth).floor() as usize;
+        let cell_begin_y = (origin.y * rwidth).floor() as usize;
+        let cell_end_x = ((origin.x + regsize.x) * rwidth).ceil() as usize;
+        let cell_end_y = ((origin.y + regsize.y) * rwidth).ceil() as usize;
+
+        // clear region
+        painter.add(epaint::RectShape::filled(
+            egui::Rect {
+                min: region.min,
+                max: region.max,
+            },
+            egui::Rounding::none(),
+            bg,
+        ));
+
+        // draw grid
+        let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
+        for j in cell_begin_y..cell_end_y {
+            let y0 =  j    as f32 * cell_width - origin.y + region.min.y + ofs;
+            let y1 = (j+1) as f32 * cell_width - origin.y + region.min.y - ofs;
+
+            for i in cell_begin_x..cell_end_x {
+                let x0 =  i    as f32 * cell_width - origin.x + region.min.x + ofs;
+                let x1 = (i+1) as f32 * cell_width - origin.x + region.min.x - ofs;
+
+                if !self.has_cell(i, j) {
+                    continue;
+                }
+                painter.add(epaint::RectShape::filled(
+                    egui::Rect {
+                        min: egui::Pos2 { x: x0, y: y0 },
+                        max: egui::Pos2 { x: x1, y: y1 },
+                    },
+                    egui::Rounding::none(),
+                    coloring(self.cell_at(i, j)),
+                ));
+            }
+        }
+    }
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -282,7 +335,6 @@ impl<R: Rule> eframe::App for GenericApp<R> {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     #[allow(clippy::never_loop)]
-    #[rustfmt::skip] // keep whitespace to align
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
             R::update(&mut self.board);
@@ -399,13 +451,6 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 }
             }
 
-            // calc cell indices
-
-            let cell_begin_x = (self.origin.x * rdelta).floor() as usize;
-            let cell_begin_y = (self.origin.y * rdelta).floor() as usize;
-            let cell_end_x   = ((self.origin.x + regsize.x) * rdelta).ceil() as usize;
-            let cell_end_y   = ((self.origin.y + regsize.y) * rdelta).ceil() as usize;
-
             // change state by clicking
             loop { // use loop to break from this block later
                 let pointer = &ctx.input().pointer;
@@ -440,40 +485,10 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 break;
             }
 
-            // clear region
-            painter.add(epaint::RectShape::filled(
-                egui::Rect {
-                    min: region.min,
-                    max: region.max,
-                },
-                egui::Rounding::none(),
-                self.background,
-            ));
+            // draw board to the central panel
+            self.board.paint(&painter, self.origin, delta, self.background, R::color);
 
-            // draw grid
-            let ofs = if delta <= 25.0 { 0.0 } else { 1.0 };
-            for j in cell_begin_y..cell_end_y {
-                let y0 =  j    as f32 * delta - self.origin.y + region.min.y + ofs;
-                let y1 = (j+1) as f32 * delta - self.origin.y + region.min.y - ofs;
-
-                for i in cell_begin_x..cell_end_x {
-                    let x0 =  i    as f32 * delta - self.origin.x + region.min.x + ofs;
-                    let x1 = (i+1) as f32 * delta - self.origin.x + region.min.x - ofs;
-
-                    if ! self.board.has_cell(i, j) {
-                        continue;
-                    }
-                    painter.add(epaint::RectShape::filled(
-                        egui::Rect {
-                            min: egui::Pos2 { x: x0, y: y0 },
-                            max: egui::Pos2 { x: x1, y: y1 },
-                        },
-                        egui::Rounding::none(),
-                        R::color(self.board.cell_at(i, j)),
-                    ));
-                }
-            }
-
+            // detect debug build
             egui::warn_if_debug_build(ui);
         });
     }
@@ -499,9 +514,9 @@ impl App {
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        //         if let Some(storage) = cc.storage {
-        //             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        //         }
+        // if let Some(storage) = cc.storage {
+        //     return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        // }
 
         Default::default()
     }
@@ -510,7 +525,7 @@ impl App {
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
-        //         eframe::set_value(storage, eframe::APP_KEY, self);
+        // eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
