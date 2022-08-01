@@ -16,12 +16,12 @@ pub trait State: Clone + Default {
 }
 
 /// Rule of the automaton.
-pub trait Rule {
+pub trait Rule: Default {
     type CellState: State;
 
-    fn background() -> egui::Color32;
-    fn color(st: &Self::CellState) -> egui::Color32;
-    fn update(board: &mut Board<Self::CellState>);
+    fn background(&self) -> egui::Color32;
+    fn color(&self, st: &Self::CellState) -> egui::Color32;
+    fn update(&self, board: &mut Board<Self::CellState>);
 }
 
 const CHUNK_LEN: usize = 16;
@@ -331,6 +331,8 @@ impl<T: State> Board<T> {
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GenericApp<R: Rule> {
     #[serde(skip)]
+    rule: R,
+    #[serde(skip)]
     board: Board<R::CellState>,
     #[serde(skip)]
     running: bool,
@@ -351,6 +353,7 @@ pub struct GenericApp<R: Rule> {
 impl<R: Rule> Default for GenericApp<R> {
     fn default() -> Self {
         Self {
+            rule: Default::default(),
             running: false,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
@@ -364,6 +367,19 @@ impl<R: Rule> Default for GenericApp<R> {
 }
 
 impl<R: Rule> GenericApp<R> {
+    pub fn new(rule: R) -> Self {
+        Self {
+            rule,
+            running: false,
+            grid_width: 32.0,
+            origin: egui::Pos2::new(0.0, 0.0),
+            background: egui::Color32::from_rgb(0, 128, 0),
+            grabbed: false,
+            board: Board::new(8, 8),
+            clicked: None,
+            rng: rand::rngs::StdRng::seed_from_u64(123456789),
+        }
+    }
     pub fn min_gridsize() -> f32 {
         8.0
     }
@@ -386,7 +402,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
     #[allow(clippy::never_loop)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
-            R::update(&mut self.board);
+            self.rule.update(&mut self.board);
         }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
@@ -434,7 +450,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 ui.toggle_value(&mut self.running, "Run");
 
                 if ui.button("Step").clicked() {
-                    R::update(&mut self.board);
+                    self.rule.update(&mut self.board);
                     ui.ctx().request_repaint();
                 }
                 if ui.button("Reset").clicked() {
@@ -583,7 +599,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 
             // draw board to the central panel
             self.board
-                .paint(&painter, self.origin, delta, self.background, R::color);
+                .paint(&painter, self.origin, delta, self.background, |s| {self.rule.color(s)});
 
             // detect debug build
             egui::warn_if_debug_build(ui);

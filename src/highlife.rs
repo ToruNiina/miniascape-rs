@@ -1,16 +1,17 @@
 use crate::app::{Board, Rule};
 use crate::conway::LifeGameState;
 
+#[derive(Default)]
 pub struct HighLifeRule {}
 
 impl Rule for HighLifeRule {
     type CellState = LifeGameState;
 
-    fn background() -> egui::Color32 {
+    fn background(&self) -> egui::Color32 {
         egui::Color32::from_rgb(0, 128, 0)
     }
 
-    fn color(st: &Self::CellState) -> egui::Color32 {
+    fn color(&self, st: &Self::CellState) -> egui::Color32 {
         if *st == LifeGameState::Dead {
             egui::Color32::from_rgb(0, 0, 0)
         } else {
@@ -18,7 +19,7 @@ impl Rule for HighLifeRule {
         }
     }
 
-    fn update(board: &mut Board<Self::CellState>) {
+    fn update(&self, board: &mut Board<Self::CellState>) {
         for j in 0..board.height() {
             let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
             let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
