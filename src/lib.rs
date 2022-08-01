@@ -4,6 +4,7 @@ mod app;
 mod conway;
 mod generalized_lifegame;
 mod highlife;
+mod wireworld;
 pub use app::App;
 
 // ----------------------------------------------------------------------------

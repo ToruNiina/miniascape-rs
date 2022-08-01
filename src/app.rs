@@ -1,6 +1,7 @@
 use crate::conway::LifeGameRule;
 use crate::generalized_lifegame::GeneralizedLifeGameRule;
 use crate::highlife::HighLifeRule;
+use crate::wireworld::WireWorldRule;
 
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -754,6 +755,14 @@ impl eframe::App for App {
                     ui.label("specify rule like: `23/3`");
                     let _ = ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
                 });
+
+                if ui.button("start WireWorld").clicked() {
+                    self.focus = Some(self.apps.len());
+                    self.apps.push((
+                        "WireWorld".to_string(),
+                        Box::new(GenericApp::<WireWorldRule>::default()),
+                    ));
+                }
             });
         }
     }
