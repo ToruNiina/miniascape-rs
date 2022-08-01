@@ -343,8 +343,6 @@ pub struct GenericApp<R: Rule> {
     #[serde(skip)]
     origin: egui::Pos2,
     #[serde(skip)]
-    background: egui::Color32,
-    #[serde(skip)]
     grabbed: bool,
     #[serde(skip)]
     clicked: Option<R::CellState>,
@@ -359,7 +357,6 @@ impl<R: Rule> Default for GenericApp<R> {
             running: false,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
-            background: egui::Color32::from_rgb(0, 128, 0),
             grabbed: false,
             board: Board::new(8, 8),
             clicked: None,
@@ -375,7 +372,6 @@ impl<R: Rule> GenericApp<R> {
             running: false,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
-            background: egui::Color32::from_rgb(0, 128, 0),
             grabbed: false,
             board: Board::new(8, 8),
             clicked: None,
@@ -601,7 +597,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 
             // draw board to the central panel
             self.board
-                .paint(&painter, self.origin, delta, self.background, |s| {
+                .paint(&painter, self.origin, delta, self.rule.background(), |s| {
                     self.rule.color(s)
                 });
 
