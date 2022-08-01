@@ -38,7 +38,10 @@ impl Rule for HighLifeRule {
 
                 let buf = board.bufcell_at_mut(i, j);
                 // 23/36
-                *buf = if nalive == 3 || (self_is_alive && nalive == 4) || (!self_is_alive && nalive == 6) {
+                *buf = if nalive == 3
+                    || (self_is_alive && nalive == 4)
+                    || (!self_is_alive && nalive == 6)
+                {
                     LifeGameState::Alive
                 } else {
                     LifeGameState::Dead

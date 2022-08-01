@@ -2,8 +2,8 @@
 
 mod app;
 mod conway;
-mod highlife;
 mod generalized_lifegame;
+mod highlife;
 pub use app::App;
 
 // ----------------------------------------------------------------------------

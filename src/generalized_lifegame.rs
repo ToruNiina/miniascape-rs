@@ -60,8 +60,9 @@ impl Rule for GeneralizedLifeGameRule {
 
                 let buf = board.bufcell_at_mut(i, j);
                 // 23/36
-                *buf = if (self_is_alive && self.alive.iter().map(|n| n+1).any(|n| n == nalive)) ||
-                    (!self_is_alive && self.birth.iter().any(|n| *n == nalive)) {
+                *buf = if (self_is_alive && self.alive.iter().map(|n| n + 1).any(|n| n == nalive))
+                    || (!self_is_alive && self.birth.iter().any(|n| *n == nalive))
+                {
                     LifeGameState::Alive
                 } else {
                     LifeGameState::Dead
