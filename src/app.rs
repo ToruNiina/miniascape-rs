@@ -402,16 +402,28 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 })
                 .body(|mut body| {
                     body.row(32.0, |mut row| {
-                        row.col(|ui| {ui.label("left click & drag");});
-                        row.col(|ui| {ui.label("change state of a cell clicked");});
+                        row.col(|ui| {
+                            ui.label("left click & drag");
+                        });
+                        row.col(|ui| {
+                            ui.label("change state of a cell clicked");
+                        });
                     });
                     body.row(32.0, |mut row| {
-                        row.col(|ui| {ui.label("wheel click & drag");});
-                        row.col(|ui| {ui.label("grab the board and move it");});
+                        row.col(|ui| {
+                            ui.label("wheel click & drag");
+                        });
+                        row.col(|ui| {
+                            ui.label("grab the board and move it");
+                        });
                     });
                     body.row(32.0, |mut row| {
-                        row.col(|ui| {ui.label("right click");});
-                        row.col(|ui| {ui.label("modify cell state");});
+                        row.col(|ui| {
+                            ui.label("right click");
+                        });
+                        row.col(|ui| {
+                            ui.label("modify cell state");
+                        });
                     });
                 });
 
@@ -620,8 +632,11 @@ impl eframe::App for App {
                 let mut remove = None;
                 for (idx, (name, _)) in self.apps.iter().enumerate() {
                     egui::Frame::group(ui.style())
-                        .inner_margin(egui::style::Margin{
-                            top:0.0_f32, bottom:0.0_f32, left:0.0_f32, right:0.0_f32
+                        .inner_margin(egui::style::Margin {
+                            top: 0.0_f32,
+                            bottom: 0.0_f32,
+                            left: 0.0_f32,
+                            right: 0.0_f32,
                         })
                         .show(ui, |ui| {
                             ui.horizontal_wrapped(|ui| {
@@ -640,7 +655,7 @@ impl eframe::App for App {
                         if self.apps.is_empty() {
                             self.focus = None;
                         } else if self.apps.len() <= idx {
-                            self.focus = Some(self.apps.len()-1);
+                            self.focus = Some(self.apps.len() - 1);
                         } else {
                             self.focus = Some(idx);
                         }
