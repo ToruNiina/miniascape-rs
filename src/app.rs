@@ -1,4 +1,5 @@
 use crate::conway::LifeGameRule;
+use crate::highlife::HighLifeRule;
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
@@ -693,6 +694,13 @@ impl eframe::App for App {
                     self.apps.push((
                         "LifeGame".to_string(),
                         Box::new(GenericApp::<LifeGameRule>::default()),
+                    ));
+                }
+                if ui.button("start high life").clicked() {
+                    self.focus = Some(self.apps.len());
+                    self.apps.push((
+                        "HighLife".to_string(),
+                        Box::new(GenericApp::<HighLifeRule>::default()),
                     ));
                 }
             });
