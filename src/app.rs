@@ -389,14 +389,57 @@ impl<R: Rule> eframe::App for GenericApp<R> {
         }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            ui.heading("Side Panel");
-            ui.label("left click: flip cell state");
-            ui.label("right click: drag board");
+            egui_extras::TableBuilder::new(ui)
+                .column(egui_extras::Size::initial(100.0))
+                .column(egui_extras::Size::remainder())
+                .header(24.0, |mut header| {
+                    header.col(|ui| {
+                        ui.heading("operation");
+                    });
+                    header.col(|ui| {
+                        ui.heading("effect");
+                    });
+                })
+                .body(|mut body| {
+                    body.row(32.0, |mut row| {
+                        row.col(|ui| {ui.label("left click & drag");});
+                        row.col(|ui| {ui.label("change state of a cell clicked");});
+                    });
+                    body.row(32.0, |mut row| {
+                        row.col(|ui| {ui.label("wheel click & drag");});
+                        row.col(|ui| {ui.label("grab the board and move it");});
+                    });
+                    body.row(32.0, |mut row| {
+                        row.col(|ui| {ui.label("right click");});
+                        row.col(|ui| {ui.label("modify cell state");});
+                    });
+                });
+
+            ui.separator(); // -------------------------------------------------
+
+            ui.horizontal_wrapped(|ui| {
+                ui.toggle_value(&mut self.running, "Run");
+
+                if ui.button("Step").clicked() {
+                    R::update(&mut self.board);
+                    ui.ctx().request_repaint();
+                }
+                if ui.button("Reset").clicked() {
+                    self.board.clear();
+                }
+                if ui.button("Randomize").clicked() {
+                    self.board.randomize(&mut self.rng);
+                }
+            });
+
+            ui.separator(); // -------------------------------------------------
 
             let min_grid = Self::min_gridsize();
             let max_grid = Self::max_gridsize();
             ui.add(egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"));
 
+            ui.separator();
+            ui.label("status:");
             ui.label(format!(
                 "current cells: {}x{}",
                 self.board.width(),
@@ -411,18 +454,6 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 "current origin: ({},{})",
                 self.origin.x, self.origin.y
             ));
-
-            ui.toggle_value(&mut self.running, "Run");
-            if ui.button("Step").clicked() {
-                R::update(&mut self.board);
-                ui.ctx().request_repaint();
-            }
-            if ui.button("Reset").clicked() {
-                self.board.clear();
-            }
-            if ui.button("Randomize").clicked() {
-                self.board.randomize(&mut self.rng);
-            }
         });
 
         {
