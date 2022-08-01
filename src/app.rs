@@ -728,7 +728,7 @@ impl eframe::App for App {
                         if ui.button("start lifegame with specified rule").clicked() {
                             // convert `23/3` into [2, 3] and [3]
                             if self.life_game_rule.chars().filter(|c| *c == '/').count() == 1 &&
-                                self.life_game_rule.chars().all(|c| c.is_digit(10) || c == '/') {
+                                self.life_game_rule.chars().all(|c| c.is_ascii_digit() || c == '/') {
                                 let alive_birth: Vec<&str> = self.life_game_rule.split('/').collect();
                                 assert!(alive_birth.len() == 2);
 

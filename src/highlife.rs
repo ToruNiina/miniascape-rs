@@ -38,19 +38,11 @@ impl Rule for HighLifeRule {
 
                 let buf = board.bufcell_at_mut(i, j);
                 // 23/36
-                *buf = if self_is_alive {
-                    if nalive == 2+1 || nalive == 3+1 {
-                        LifeGameState::Alive
-                    } else {
-                        LifeGameState::Dead
-                    }
+                *buf = if nalive == 3 || (self_is_alive && nalive == 4) || (!self_is_alive && nalive == 6) {
+                    LifeGameState::Alive
                 } else {
-                    if nalive == 3 || nalive == 6 {
-                        LifeGameState::Alive
-                    } else {
-                        LifeGameState::Dead
-                    }
-                };
+                    LifeGameState::Dead
+                }
             }
         }
         std::mem::swap(&mut board.chunks, &mut board.buffer);
