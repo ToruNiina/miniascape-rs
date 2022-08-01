@@ -1,5 +1,7 @@
 use crate::conway::LifeGameRule;
 use crate::highlife::HighLifeRule;
+use crate::generalized_lifegame::GeneralizedLifeGameRule;
+
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
@@ -611,6 +613,8 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 pub struct App {
     apps: Vec<(String, Box<dyn eframe::App>)>,
     focus: Option<usize>,
+
+    life_game_rule: String,
 }
 
 impl App {
@@ -712,13 +716,37 @@ impl eframe::App for App {
                         Box::new(GenericApp::<LifeGameRule>::default()),
                     ));
                 }
-                if ui.button("start high life").clicked() {
+                if ui.button("start highlife").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "HighLife".to_string(),
                         Box::new(GenericApp::<HighLifeRule>::default()),
                     ));
                 }
+                egui::Frame::group(ui.style())
+                    .show(ui, |ui| {
+                        if ui.button("start lifegame with specified rule").clicked() {
+                            // convert `23/3` into [2, 3] and [3]
+                            if self.life_game_rule.chars().filter(|c| *c == '/').count() == 1 &&
+                                self.life_game_rule.chars().all(|c| c.is_digit(10) || c == '/') {
+                                let alive_birth: Vec<&str> = self.life_game_rule.split('/').collect();
+                                assert!(alive_birth.len() == 2);
+
+                                let alive = alive_birth[0].chars().map(|c| c.to_digit(10).unwrap()).collect();
+                                let birth = alive_birth[1].chars().map(|c| c.to_digit(10).unwrap()).collect();
+
+                                self.focus = Some(self.apps.len());
+                                self.apps.push((
+                                    self.life_game_rule.clone(),
+                                    Box::new(GenericApp::<GeneralizedLifeGameRule>::new(
+                                            GeneralizedLifeGameRule::new(alive, birth)
+                                        )),
+                                ));
+                            }
+                        }
+                        ui.label("specify rule like: `23/3`");
+                        let _ = ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
+                    });
             });
         }
     }

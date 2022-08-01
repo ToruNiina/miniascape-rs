@@ -3,6 +3,7 @@
 mod app;
 mod conway;
 mod highlife;
+mod generalized_lifegame;
 pub use app::App;
 
 // ----------------------------------------------------------------------------
