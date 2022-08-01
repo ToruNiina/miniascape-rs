@@ -9,7 +9,7 @@ use std::vec::Vec;
 /// `Clone`. To clear the board, it requires `Default`.
 /// The update rule is implemented in `Rule` trait.
 pub trait State: Clone + Default {
-    fn flip(&mut self); // remove this later; there are more complicated rules
+    fn next(&self) -> Self;
     fn randomize<R: Rng>(&mut self, rng: &mut R);
     fn clear(&mut self);
 }
@@ -342,7 +342,7 @@ pub struct GenericApp<R: Rule> {
     #[serde(skip)]
     grabbed: bool,
     #[serde(skip)]
-    clicked: Option<(usize, usize)>,
+    clicked: Option<R::CellState>,
     #[serde(skip)]
     rng: rand::rngs::StdRng,
 }
@@ -473,7 +473,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             if self.grabbed {
                 self.origin -= pointer.delta();
             }
-            if pointer.secondary_down() {
+            if pointer.middle_down() {
                 self.grabbed = true;
             } else {
                 self.grabbed = false;
@@ -570,13 +570,13 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                     break;
                 }
 
-                if let Some((x, y)) = self.clicked {
-                    if x == ix && y == iy {
-                        break;
-                    }
+                if let Some(next) = &self.clicked {
+                    *self.board.cell_at_mut(ix, iy) = next.clone();
+                } else {
+                    let next = self.board.cell_at(ix, iy).next();
+                    *self.board.cell_at_mut(ix, iy) = next.clone();
+                    self.clicked = Some(next);
                 }
-                self.board.cell_at_mut(ix, iy).flip();
-                self.clicked = Some((ix, iy));
                 break;
             }
 

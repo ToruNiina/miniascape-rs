@@ -16,11 +16,11 @@ impl std::default::Default for LifeGameState {
 }
 
 impl State for LifeGameState {
-    fn flip(&mut self) {
+    fn next(&self) -> Self {
         if *self == LifeGameState::Dead {
-            *self = LifeGameState::Alive;
+            LifeGameState::Alive
         } else {
-            *self = LifeGameState::Dead;
+            LifeGameState::Dead
         }
     }
 
