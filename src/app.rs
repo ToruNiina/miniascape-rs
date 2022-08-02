@@ -13,21 +13,39 @@ use std::vec::Vec;
 /// `Clone`. To clear the board, it requires `Default`.
 /// The update rule is implemented in `Rule` trait.
 pub trait State: Clone + Default {
+    /// The next state. It will be used to change cell state from GUI
     fn next(&self) -> Self;
+
+    /// Randomize the cell state. It will be used to initialize the board.
     fn randomize<R: Rng>(&mut self, rng: &mut R);
+
+    /// Clear the current state.
     fn clear(&mut self);
 
+    /// Generate UI to inspect and modify the cell state.
     fn inspect(&mut self, ui: &mut egui::Ui);
 }
 
-/// Rule of the automaton.
+/// Rule of the cellular automaton.
 pub trait Rule: Default {
+    /// Corresponding cell state.
     type CellState: State;
 
+    /// Background color.
     fn background(&self) -> egui::Color32;
+
+    /// Color of a cell.
     fn color(&self, st: &Self::CellState) -> egui::Color32;
+
+    /// Update the whole board
     fn update(&self, board: &mut Board<Self::CellState>);
 }
+
+// ----------------------------------------------------------------------------
+//   ___ _             _
+//  / __| |_ _  _ _ _ | |__
+// | (__| ' \ || | ' \| / /
+//  \___|_||_\_,_|_||_|_\_\
 
 const CHUNK_LEN: usize = 16;
 const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
@@ -65,6 +83,12 @@ impl<T: State> Chunk<T> {
         }
     }
 }
+
+// ----------------------------------------------------------------------------
+//  ___                   _
+// | _ ) ___  __ _ _ _ __| |
+// | _ \/ _ \/ _` | '_/ _` |
+// |___/\___/\__,_|_| \__,_|
 
 #[derive(Default)]
 pub struct Board<T: State> {
@@ -331,6 +355,13 @@ impl<T: State> Board<T> {
     }
 }
 
+// ----------------------------------------------------------------------------
+//   ___                  _      _
+//  / __|___ _ _  ___ _ _(_)__  /_\  _ __ _ __
+// | (_ / -_) ' \/ -_) '_| / _|/ _ \| '_ \ '_ \
+//  \___\___|_||_\___|_| |_\__/_/ \_\ .__/ .__/
+//                                  |_|  |_|
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -427,11 +458,11 @@ impl<R: Rule> GenericApp<R> {
         }
 
         if pointer.primary_down() {
-            return Clicked::Primary(ix, iy);
+            Clicked::Primary(ix, iy)
         } else if pointer.secondary_down() {
-            return Clicked::Secondary(ix, iy);
+            Clicked::Secondary(ix, iy)
         } else {
-            return Clicked::NotClicked;
+            Clicked::NotClicked
         }
     }
 }
@@ -625,7 +656,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 let mut open = true;
                 egui::Window::new("Cell Inspector")
                     .open(&mut open)
-                    .show(&ctx, |ui| {
+                    .show(ctx, |ui| {
                         self.board.cell_at_mut(ix, iy).inspect(ui);
                     });
 
@@ -658,6 +689,13 @@ impl<R: Rule> eframe::App for GenericApp<R> {
         });
     }
 }
+
+// ----------------------------------------------------------------------------
+//    _
+//   /_\  _ __ _ __
+//  / _ \| '_ \ '_ \
+// /_/ \_\ .__/ .__/
+//       |_|  |_|
 
 #[derive(Default)]
 pub struct App {
