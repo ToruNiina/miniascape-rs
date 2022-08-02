@@ -16,6 +16,8 @@ pub trait State: Clone + Default {
     fn next(&self) -> Self;
     fn randomize<R: Rng>(&mut self, rng: &mut R);
     fn clear(&mut self);
+
+    fn inspect(&mut self, ui: &mut egui::Ui);
 }
 
 /// Rule of the automaton.
@@ -340,6 +342,8 @@ pub struct GenericApp<R: Rule> {
     #[serde(skip)]
     running: bool,
     #[serde(skip)]
+    inspector: Option<(usize, usize)>,
+    #[serde(skip)]
     grid_width: f32,
     #[serde(skip)]
     origin: egui::Pos2,
@@ -355,11 +359,12 @@ impl<R: Rule> Default for GenericApp<R> {
     fn default() -> Self {
         Self {
             rule: Default::default(),
+            board: Board::new(8, 8),
             running: false,
+            inspector: None,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
-            board: Board::new(8, 8),
             clicked: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
         }
@@ -370,11 +375,12 @@ impl<R: Rule> GenericApp<R> {
     pub fn new(rule: R) -> Self {
         Self {
             rule,
+            board: Board::new(8, 8),
             running: false,
+            inspector: None,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
-            board: Board::new(8, 8),
             clicked: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
         }
@@ -561,11 +567,48 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             }
 
             // change state by clicking
+            if self.inspector.is_none() {
+                loop {
+                    // use loop to break from this block later
+                    let pointer = &ctx.input().pointer;
+                    if !pointer.primary_down() {
+                        self.clicked = None;
+                        break;
+                    }
+
+                    let pos = pointer
+                        .interact_pos()
+                        .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
+
+                    let dxy = pos - region.min;
+                    if dxy.x < 0.0 || dxy.y < 0.0 {
+                        self.clicked = None;
+                        break;
+                    }
+
+                    let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
+                    let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
+                    if self.board.width() <= ix || self.board.height() <= iy {
+                        self.clicked = None;
+                        break;
+                    }
+
+                    if let Some(next) = &self.clicked {
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
+                    } else {
+                        let next = self.board.cell_at(ix, iy).next();
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
+                        self.clicked = Some(next);
+                    }
+                    break;
+                }
+            }
+
+            // inspect cell by right click
             loop {
                 // use loop to break from this block later
                 let pointer = &ctx.input().pointer;
-                if !pointer.primary_down() {
-                    self.clicked = None;
+                if !pointer.secondary_down() {
                     break;
                 }
 
@@ -575,25 +618,32 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 
                 let dxy = pos - region.min;
                 if dxy.x < 0.0 || dxy.y < 0.0 {
-                    self.clicked = None;
                     break;
                 }
 
                 let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
                 let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
                 if self.board.width() <= ix || self.board.height() <= iy {
-                    self.clicked = None;
                     break;
                 }
 
-                if let Some(next) = &self.clicked {
-                    *self.board.cell_at_mut(ix, iy) = next.clone();
-                } else {
-                    let next = self.board.cell_at(ix, iy).next();
-                    *self.board.cell_at_mut(ix, iy) = next.clone();
-                    self.clicked = Some(next);
+                if pointer.secondary_down() {
+                    self.running = false;
+                    self.inspector = Some((ix, iy));
                 }
                 break;
+            }
+            if let Some((ix, iy)) = self.inspector {
+                let mut open = true;
+                egui::Window::new("Cell Inspector")
+                    .open(&mut open)
+                    .show(&ctx, |ui| {
+                        self.board.cell_at_mut(ix, iy).inspect(ui);
+                    });
+
+                if !open {
+                    self.inspector = None;
+                }
             }
 
             // draw board to the central panel
@@ -707,7 +757,6 @@ impl eframe::App for App {
             self.apps[idx].1.update(ctx, frame);
         } else {
             egui::CentralPanel::default().show(ctx, |ui| {
-                // TODO enable to set up a new app
                 if ui.button("start life game").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((

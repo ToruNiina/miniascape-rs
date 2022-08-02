@@ -39,6 +39,13 @@ impl State for WireWorldState {
     fn clear(&mut self) {
         *self = WireWorldState::Void;
     }
+
+    fn inspect(&mut self, ui: &mut egui::Ui) {
+        ui.radio_value(self, WireWorldState::Void, "Void");
+        ui.radio_value(self, WireWorldState::Head, "Head");
+        ui.radio_value(self, WireWorldState::Tail, "Tail");
+        ui.radio_value(self, WireWorldState::Wire, "Wire");
+    }
 }
 
 #[derive(Default)]

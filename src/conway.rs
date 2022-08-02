@@ -36,6 +36,11 @@ impl State for LifeGameState {
     fn clear(&mut self) {
         *self = LifeGameState::Dead;
     }
+
+    fn inspect(&mut self, ui: &mut egui::Ui) {
+        ui.radio_value(self, LifeGameState::Dead, "Dead");
+        ui.radio_value(self, LifeGameState::Alive, "Alive");
+    }
 }
 
 #[derive(Default)]
