@@ -350,7 +350,7 @@ pub struct GenericApp<R: Rule> {
     #[serde(skip)]
     grabbed: bool,
     #[serde(skip)]
-    clicked: Option<R::CellState>,
+    cell_modifying: Option<R::CellState>,
     #[serde(skip)]
     rng: rand::rngs::StdRng,
 }
@@ -365,7 +365,7 @@ impl<R: Rule> Default for GenericApp<R> {
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
-            clicked: None,
+            cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
         }
     }
@@ -381,7 +381,7 @@ impl<R: Rule> GenericApp<R> {
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
-            clicked: None,
+            cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
         }
     }
@@ -393,6 +393,46 @@ impl<R: Rule> GenericApp<R> {
     }
     pub fn scroll_factor() -> f32 {
         1.0 / 128.0
+    }
+}
+
+/// to avoid context lock by ctx.input()
+pub enum Clicked {
+    Primary(usize, usize),
+    Secondary(usize, usize),
+    NotClicked,
+}
+
+impl<R: Rule> GenericApp<R> {
+    fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
+        let pointer = &ctx.input().pointer;
+        if !pointer.primary_down() && !pointer.secondary_down() {
+            return Clicked::NotClicked;
+        }
+
+        let pos = pointer
+            .interact_pos()
+            .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
+
+        let dxy = pos - region_min;
+        if dxy.x < 0.0 || dxy.y < 0.0 {
+            return Clicked::NotClicked;
+        }
+
+        let rdelta = 1.0 / self.grid_width;
+        let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
+        let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
+        if self.board.width() <= ix || self.board.height() <= iy {
+            return Clicked::NotClicked;
+        }
+
+        if pointer.primary_down() {
+            return Clicked::Primary(ix, iy);
+        } else if pointer.secondary_down() {
+            return Clicked::Secondary(ix, iy);
+        } else {
+            return Clicked::NotClicked;
+        }
     }
 }
 
@@ -514,8 +554,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             let region = painter.clip_rect();
 
             // determine the number of chunks after zoom in/out
-            let delta = self.grid_width.ceil();
-            let rdelta = 1.0 / delta;
+            let delta = self.grid_width;
             let regsize = region.max - region.min;
 
             // zoom in/out scroll
@@ -566,73 +605,15 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 }
             }
 
-            // change state by clicking
-            if self.inspector.is_none() {
-                loop {
-                    // use loop to break from this block later
-                    let pointer = &ctx.input().pointer;
-                    if !pointer.primary_down() {
-                        self.clicked = None;
-                        break;
-                    }
+            let clicked = self.clicked(ctx, region.min);
 
-                    let pos = pointer
-                        .interact_pos()
-                        .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
-
-                    let dxy = pos - region.min;
-                    if dxy.x < 0.0 || dxy.y < 0.0 {
-                        self.clicked = None;
-                        break;
-                    }
-
-                    let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
-                    let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
-                    if self.board.width() <= ix || self.board.height() <= iy {
-                        self.clicked = None;
-                        break;
-                    }
-
-                    if let Some(next) = &self.clicked {
-                        *self.board.cell_at_mut(ix, iy) = next.clone();
-                    } else {
-                        let next = self.board.cell_at(ix, iy).next();
-                        *self.board.cell_at_mut(ix, iy) = next.clone();
-                        self.clicked = Some(next);
-                    }
-                    break;
-                }
+            // stop running and inspect cell state by right click
+            if let Clicked::Secondary(ix, iy) = clicked {
+                self.running = false;
+                self.inspector = Some((ix, iy));
             }
 
-            // inspect cell by right click
-            loop {
-                // use loop to break from this block later
-                let pointer = &ctx.input().pointer;
-                if !pointer.secondary_down() {
-                    break;
-                }
-
-                let pos = pointer
-                    .interact_pos()
-                    .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
-
-                let dxy = pos - region.min;
-                if dxy.x < 0.0 || dxy.y < 0.0 {
-                    break;
-                }
-
-                let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
-                let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
-                if self.board.width() <= ix || self.board.height() <= iy {
-                    break;
-                }
-
-                if pointer.secondary_down() {
-                    self.running = false;
-                    self.inspector = Some((ix, iy));
-                }
-                break;
-            }
+            // if inspector is open
             if let Some((ix, iy)) = self.inspector {
                 let mut open = true;
                 egui::Window::new("Cell Inspector")
@@ -643,6 +624,17 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 
                 if !open {
                     self.inspector = None;
+                }
+            } else {
+                // if inspector is closed, then we can click a cell
+                if let Clicked::Primary(ix, iy) = clicked {
+                    if let Some(next) = &self.cell_modifying {
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
+                    } else {
+                        let next = self.board.cell_at(ix, iy).next();
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
+                        self.cell_modifying = Some(next);
+                    }
                 }
             }
 
