@@ -545,19 +545,23 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             if self.running {
                 ui.ctx().request_repaint();
             }
+
+            // ----------------------------------------------------------------
             // First make a painter only for inside the region.
             let painter = egui::Painter::new(
                 ui.ctx().clone(),
                 ui.layer_id(),
                 ui.available_rect_before_wrap(),
             );
+
             let region = painter.clip_rect();
 
             // determine the number of chunks after zoom in/out
             let delta = self.grid_width;
             let regsize = region.max - region.min;
 
-            // zoom in/out scroll
+            // ----------------------------------------------------------------
+            // zoom in/out by scroll
             {
                 let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
                 if scroll != 0.0 {
@@ -573,37 +577,40 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 }
             }
 
-            // expand board size
-            {
-                let chunk_pxls = CHUNK_LEN as f32 * delta;
+            // ----------------------------------------------------------------
+            // expand board size if needed
 
-                if self.origin.x < 0.0 {
-                    let d = (self.origin.x / chunk_pxls).floor();
-                    self.board.expand_x(d as isize);
-                    self.origin.x -= chunk_pxls * d;
-                    assert!(0.0 <= self.origin.x);
-                }
+            let chunk_pxls = CHUNK_LEN as f32 * delta;
 
-                if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
-                    let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
-                    assert!(0.0 <= dx);
-                    let d = (dx / chunk_pxls).ceil();
-                    self.board.expand_x(d as isize);
-                }
-
-                if self.origin.y < 0.0 {
-                    let d = (self.origin.y / chunk_pxls).floor();
-                    self.board.expand_y(d as isize);
-                    self.origin.y -= chunk_pxls * d;
-                    assert!(0.0 <= self.origin.y);
-                }
-                if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
-                    let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
-                    assert!(0.0 <= dy);
-                    let d = (dy / chunk_pxls).ceil();
-                    self.board.expand_y(d as isize);
-                }
+            if self.origin.x < 0.0 {
+                let d = (self.origin.x / chunk_pxls).floor();
+                self.board.expand_x(d as isize);
+                self.origin.x -= chunk_pxls * d;
+                assert!(0.0 <= self.origin.x);
             }
+
+            if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
+                let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
+                assert!(0.0 <= dx);
+                let d = (dx / chunk_pxls).ceil();
+                self.board.expand_x(d as isize);
+            }
+
+            if self.origin.y < 0.0 {
+                let d = (self.origin.y / chunk_pxls).floor();
+                self.board.expand_y(d as isize);
+                self.origin.y -= chunk_pxls * d;
+                assert!(0.0 <= self.origin.y);
+            }
+            if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
+                let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
+                assert!(0.0 <= dy);
+                let d = (dy / chunk_pxls).ceil();
+                self.board.expand_y(d as isize);
+            }
+
+            // ----------------------------------------------------------------
+            // handle left/right click
 
             let clicked = self.clicked(ctx, region.min);
 
@@ -638,7 +645,9 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 }
             }
 
+            // ----------------------------------------------------------------
             // draw board to the central panel
+
             self.board
                 .paint(&painter, self.origin, delta, self.rule.background(), |s| {
                     self.rule.color(s)
