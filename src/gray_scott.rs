@@ -1,4 +1,5 @@
-use crate::app::{Board, Rule, State};
+use crate::board::Board;
+use crate::rule::{Rule, State};
 use rand::Rng;
 use rand::distributions::{Distribution, Uniform};
 use serde::{Deserialize, Serialize};
@@ -112,8 +113,9 @@ impl Rule for GrayScottRule {
 
                     // du/dt = Du * nabla^2 u + u^2*v - (f + k) u
                     // dv/dt = Dv * nabla^2 v - u^2*v + f(1 - v)
-                    board.bufcell_at_mut(i, j).u = u0 + dt * (d_u * lu + u0 * u0 * v0 - (f + k) * u0);
-                    board.bufcell_at_mut(i, j).v = v0 + dt * (d_v * lv - u0 * u0 * v0 + (1.0 - v0) * f);
+                    let u = u0 + dt * (d_u * lu + u0 * u0 * v0 - (f + k) * u0);
+                    let v = v0 + dt * (d_v * lv - u0 * u0 * v0 + (1.0 - v0) * f);
+                    *board.bufcell_at_mut(i, j) = GrayScottState{u, v};
                 }
             }
             std::mem::swap(&mut board.chunks, &mut board.buffer);

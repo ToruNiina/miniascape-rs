@@ -1,4 +1,5 @@
-use crate::app::{Board, Rule, State};
+use crate::board::Board;
+use crate::rule::{Rule, State};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 

@@ -1,6 +1,8 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
 mod app;
+mod rule;
+mod board;
 mod gray_scott;
 mod lifegame;
 mod wireworld;
