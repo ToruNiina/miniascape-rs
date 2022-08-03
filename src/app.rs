@@ -27,6 +27,7 @@ pub struct GenericApp<R: Rule> {
     running: bool,
     #[serde(skip)]
     inspector: Option<(usize, usize)>,
+    inspector_indicator: bool,
     #[serde(skip)]
     grid_width: f32,
     #[serde(skip)]
@@ -46,6 +47,7 @@ impl<R: Rule> Default for GenericApp<R> {
             board: Board::new(8, 8),
             running: false,
             inspector: None,
+            inspector_indicator: true,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
@@ -62,6 +64,7 @@ impl<R: Rule> GenericApp<R> {
             board: Board::new(8, 8),
             running: false,
             inspector: None,
+            inspector_indicator: true,
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
@@ -311,6 +314,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             if let Some((ix, iy)) = self.inspector {
                 let mut open = true;
                 egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
+                    ui.checkbox(&mut self.inspector_indicator, "Indicator");
                     self.board.cell_at_mut(ix, iy).inspect(ui);
                 });
                 if !open {
@@ -319,25 +323,27 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 
                 // point the cell that is inspected by a line if inspector is opened
 
-                let cx = (ix as f32 + 0.5) * delta - self.origin.x + region.min.x;
-                let cy = (iy as f32 + 0.5) * delta - self.origin.y + region.min.y;
-                let r  = delta * 0.5_f32.sqrt();
-                painter.add(epaint::CircleShape::stroke(
-                        egui::Pos2{x: cx, y: cy},
-                        r,
-                        epaint::Stroke{
-                            width: 5.0,
-                            color: egui::Color32::from_rgb(255, 255, 255)
-                        },
-                    ));
-                painter.add(epaint::CircleShape::stroke(
-                        egui::Pos2{x: cx, y: cy},
-                        r,
-                        epaint::Stroke{
-                            width: 2.0,
-                            color: egui::Color32::from_rgb(0, 0, 0)
-                        },
-                    ));
+                if self.inspector_indicator {
+                    let cx = (ix as f32 + 0.5) * delta - self.origin.x + region.min.x;
+                    let cy = (iy as f32 + 0.5) * delta - self.origin.y + region.min.y;
+                    let r  = delta * 0.5_f32.sqrt();
+                    painter.add(epaint::CircleShape::stroke(
+                            egui::Pos2{x: cx, y: cy},
+                            r,
+                            epaint::Stroke{
+                                width: 5.0,
+                                color: egui::Color32::from_rgb(255, 255, 255)
+                            },
+                        ));
+                    painter.add(epaint::CircleShape::stroke(
+                            egui::Pos2{x: cx, y: cy},
+                            r,
+                            epaint::Stroke{
+                                width: 2.0,
+                                color: egui::Color32::from_rgb(0, 0, 0)
+                            },
+                        ));
+                }
             } else {
                 // if inspector is closed, then we can click a cell
                 if let Clicked::Primary(ix, iy) = clicked {
