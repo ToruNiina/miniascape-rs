@@ -287,6 +287,13 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             }
 
             // ----------------------------------------------------------------
+            // draw board to the central panel
+
+            self.board.paint(&painter, self.origin, delta, self.rule.background(), |s| {
+                self.rule.color(s)
+            });
+
+            // ----------------------------------------------------------------
             // handle left/right click
 
             let clicked = self.clicked(ctx, region.min);
@@ -301,16 +308,36 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 self.cell_modifying = None;
             }
 
-            // if inspector is open
             if let Some((ix, iy)) = self.inspector {
                 let mut open = true;
                 egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
                     self.board.cell_at_mut(ix, iy).inspect(ui);
                 });
-
                 if !open {
                     self.inspector = None;
                 }
+
+                // point the cell that is inspected by a line if inspector is opened
+
+                let cx = (ix as f32 + 0.5) * delta - self.origin.x + region.min.x;
+                let cy = (iy as f32 + 0.5) * delta - self.origin.y + region.min.y;
+                let r  = delta * 0.5_f32.sqrt();
+                painter.add(epaint::CircleShape::stroke(
+                        egui::Pos2{x: cx, y: cy},
+                        r,
+                        epaint::Stroke{
+                            width: 5.0,
+                            color: egui::Color32::from_rgb(255, 255, 255)
+                        },
+                    ));
+                painter.add(epaint::CircleShape::stroke(
+                        egui::Pos2{x: cx, y: cy},
+                        r,
+                        epaint::Stroke{
+                            width: 2.0,
+                            color: egui::Color32::from_rgb(0, 0, 0)
+                        },
+                    ));
             } else {
                 // if inspector is closed, then we can click a cell
                 if let Clicked::Primary(ix, iy) = clicked {
@@ -323,13 +350,6 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                     }
                 }
             }
-
-            // ----------------------------------------------------------------
-            // draw board to the central panel
-
-            self.board.paint(&painter, self.origin, delta, self.rule.background(), |s| {
-                self.rule.color(s)
-            });
 
             // detect debug build
             egui::warn_if_debug_build(ui);
