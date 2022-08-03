@@ -814,29 +814,12 @@ impl eframe::App for App {
                 egui::Frame::group(ui.style()).show(ui, |ui| {
                     if ui.button("start lifegame with specified rule").clicked() {
                         // convert `23/3` into [2, 3] and [3]
-                        if self.life_game_rule.chars().filter(|c| *c == '/').count() == 1
-                            && self
-                                .life_game_rule
-                                .chars()
-                                .all(|c| c.is_ascii_digit() || c == '/')
-                        {
-                            let alive_birth: Vec<&str> = self.life_game_rule.split('/').collect();
-                            assert!(alive_birth.len() == 2);
-
-                            let alive = alive_birth[0]
-                                .chars()
-                                .map(|c| c.to_digit(10).unwrap())
-                                .collect();
-                            let birth = alive_birth[1]
-                                .chars()
-                                .map(|c| c.to_digit(10).unwrap())
-                                .collect();
-
+                        if GeneralizedLifeGameRule::is_correct_rule(&self.life_game_rule) {
                             self.focus = Some(self.apps.len());
                             self.apps.push((
                                 self.life_game_rule.clone(),
                                 Box::new(GenericApp::<GeneralizedLifeGameRule>::new(
-                                    GeneralizedLifeGameRule::new(alive, birth),
+                                    GeneralizedLifeGameRule::parse_rule(&self.life_game_rule),
                                 )),
                             ));
                         }
