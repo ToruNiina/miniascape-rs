@@ -1,5 +1,6 @@
 use crate::conway::LifeGameRule;
 use crate::generalized_lifegame::GeneralizedLifeGameRule;
+use crate::gray_scott::GrayScottRule;
 use crate::highlife::HighLifeRule;
 use crate::wireworld::WireWorldRule;
 
@@ -851,6 +852,14 @@ impl eframe::App for App {
                         Box::new(GenericApp::<WireWorldRule>::default()),
                     ));
                 }
+                if ui.button("start Gray-Scott").clicked() {
+                    self.focus = Some(self.apps.len());
+                    self.apps.push((
+                        "Gray-Scott".to_string(),
+                        Box::new(GenericApp::<GrayScottRule>::default()),
+                    ));
+                }
+
             });
         }
     }

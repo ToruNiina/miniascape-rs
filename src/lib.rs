@@ -2,6 +2,7 @@
 
 mod app;
 mod conway;
+mod gray_scott;
 mod generalized_lifegame;
 mod highlife;
 mod wireworld;
