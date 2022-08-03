@@ -650,6 +650,10 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             if let Clicked::Secondary(ix, iy) = clicked {
                 self.running = false;
                 self.inspector = Some((ix, iy));
+                self.cell_modifying = None;
+            }
+            if let Clicked::NotClicked = clicked {
+                self.cell_modifying = None;
             }
 
             // if inspector is open
