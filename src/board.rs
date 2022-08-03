@@ -17,9 +17,7 @@ pub struct Chunk<T: State> {
 
 impl<T: State> std::default::Default for Chunk<T> {
     fn default() -> Self {
-        Self {
-            cells: array_init::array_init(|_| Default::default()),
-        }
+        Self { cells: array_init::array_init(|_| Default::default()) }
     }
 }
 
@@ -162,10 +160,7 @@ impl<T: State> Board<T> {
 
         let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
-        new_chunks.resize(
-            (self.num_chunks_x + na) * self.num_chunks_y,
-            Default::default(),
-        );
+        new_chunks.resize((self.num_chunks_x + na) * self.num_chunks_y, Default::default());
 
         let x_ofs = if 0 <= n { 0 } else { na };
         for j in 0..self.num_chunks_y {
@@ -175,10 +170,8 @@ impl<T: State> Board<T> {
             }
         }
         self.chunks = new_chunks;
-        self.buffer.resize(
-            (self.num_chunks_x + na) * self.num_chunks_y,
-            Default::default(),
-        );
+        self.buffer
+            .resize((self.num_chunks_x + na) * self.num_chunks_y, Default::default());
         self.num_chunks_x += na;
     }
     pub fn expand_y(&mut self, n: isize) {
@@ -188,10 +181,7 @@ impl<T: State> Board<T> {
 
         let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
-        new_chunks.resize(
-            self.num_chunks_x * (self.num_chunks_y + na),
-            Default::default(),
-        );
+        new_chunks.resize(self.num_chunks_x * (self.num_chunks_y + na), Default::default());
 
         let y_ofs = if 0 <= n { 0 } else { na };
         for j in 0..self.num_chunks_y {
@@ -201,10 +191,8 @@ impl<T: State> Board<T> {
             }
         }
         self.chunks = new_chunks;
-        self.buffer.resize(
-            self.num_chunks_x * (self.num_chunks_y + na),
-            Default::default(),
-        );
+        self.buffer
+            .resize(self.num_chunks_x * (self.num_chunks_y + na), Default::default());
         self.num_chunks_y += na;
     }
 
@@ -317,4 +305,3 @@ impl<T: State> Board<T> {
         }
     }
 }
-

@@ -1,7 +1,7 @@
 use crate::board::Board;
 use crate::rule::{Rule, State};
-use rand::Rng;
 use rand::distributions::{Distribution, Uniform};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, PartialEq, Deserialize, Serialize)]
@@ -12,19 +12,13 @@ pub struct GrayScottState {
 
 impl std::default::Default for GrayScottState {
     fn default() -> Self {
-        Self{
-            u: 0.0,
-            v: 0.0,
-        }
+        Self { u: 0.0, v: 0.0 }
     }
 }
 
 impl State for GrayScottState {
     fn next(&self) -> Self {
-        Self{
-            u: (self.u + 0.01).min(1.0),
-            v: self.v,
-        }
+        Self { u: (self.u + 0.01).min(1.0), v: self.v }
     }
 
     fn randomize<R: Rng>(&mut self, rng: &mut R) {
@@ -49,25 +43,25 @@ impl State for GrayScottState {
 /// dv/dt = Dv * nabla^2 v - u^2*v + f(1 - v)
 ///
 pub struct GrayScottRule {
-    dt:  f32,
-    dx:  f32,
+    dt: f32,
+    dx: f32,
     d_u: f32, // D_u
     d_v: f32, // D_v
-    f:   f32,
-    k:   f32,
-    n:   u32,
+    f: f32,
+    k: f32,
+    n: u32,
 }
 
 impl std::default::Default for GrayScottRule {
     fn default() -> Self {
         Self {
-            dt:   0.1,
-            dx:   0.1,
-            d_u:  0.001, // D_u
-            d_v:  0.005, // D_v
-            f:    0.09,
-            k:    0.06,
-            n:    40,
+            dt: 0.1,
+            dx: 0.1,
+            d_u: 0.001, // D_u
+            d_v: 0.005, // D_v
+            f: 0.09,
+            k: 0.06,
+            n: 40,
         }
     }
 }
@@ -88,7 +82,7 @@ impl Rule for GrayScottRule {
 
     fn update(&self, board: &mut Board<Self::CellState>) {
         for _ in 0..self.n {
-            let Self { dt, dx, d_u, d_v, f, k, n:_ } = *self;
+            let Self { dt, dx, d_u, d_v, f, k, n: _ } = *self;
             let rdx2 = 1.0 / (dx * dx);
 
             for j in 0..board.height() {
@@ -104,7 +98,7 @@ impl Rule for GrayScottRule {
                     let mut lu = -4.0 * u0;
                     let mut lv = -4.0 * v0;
                     for (nx, ny) in [(i, yprev), (i, ynext), (xprev, j), (xnext, j)] {
-                        let GrayScottState{u, v} = *board.cell_at(nx, ny);
+                        let GrayScottState { u, v } = *board.cell_at(nx, ny);
                         lu += u;
                         lv += v;
                     }
@@ -115,7 +109,7 @@ impl Rule for GrayScottRule {
                     // dv/dt = Dv * nabla^2 v - u^2*v + f(1 - v)
                     let u = u0 + dt * (d_u * lu + u0 * u0 * v0 - (f + k) * u0);
                     let v = v0 + dt * (d_v * lv - u0 * u0 * v0 + (1.0 - v0) * f);
-                    *board.bufcell_at_mut(i, j) = GrayScottState{u, v};
+                    *board.bufcell_at_mut(i, j) = GrayScottState { u, v };
                 }
             }
             std::mem::swap(&mut board.chunks, &mut board.buffer);

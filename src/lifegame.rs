@@ -1,9 +1,9 @@
 use crate::board::Board;
 use crate::rule::{Rule, State};
+use arrayvec::ArrayVec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use arrayvec::ArrayVec;
 
 #[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub enum LifeGameState {
@@ -174,7 +174,7 @@ impl GeneralizedLifeGameRule {
     }
 
     pub fn is_correct_rule(rule: &str) -> bool {
-        let has_separator  = rule.chars().filter(|c| *c == '/').count() == 1;
+        let has_separator = rule.chars().filter(|c| *c == '/').count() == 1;
         let has_digit_only = rule.chars().all(|c| c.is_ascii_digit() || c == '/');
         has_separator && has_digit_only
     }
@@ -185,14 +185,8 @@ impl GeneralizedLifeGameRule {
         // convert `23/3` into [2, 3] and [3]
         let alive_birth: Vec<&str> = rule.split('/').collect();
 
-        let alive = alive_birth[0]
-            .chars()
-            .map(|c| c.to_digit(10).unwrap())
-            .collect();
-        let birth = alive_birth[1]
-            .chars()
-            .map(|c| c.to_digit(10).unwrap())
-            .collect();
+        let alive = alive_birth[0].chars().map(|c| c.to_digit(10).unwrap()).collect();
+        let birth = alive_birth[1].chars().map(|c| c.to_digit(10).unwrap()).collect();
 
         GeneralizedLifeGameRule::new(alive, birth)
     }

@@ -1,8 +1,8 @@
-use crate::rule::{State, Rule};
 use crate::board::Board;
+use crate::rule::{Rule, State};
 
 use crate::gray_scott::GrayScottRule;
-use crate::lifegame::{LifeGameRule, GeneralizedLifeGameRule, HighLifeRule};
+use crate::lifegame::{GeneralizedLifeGameRule, HighLifeRule, LifeGameRule};
 use crate::wireworld::WireWorldRule;
 
 use rand::SeedableRng;
@@ -198,20 +198,13 @@ impl<R: Rule> eframe::App for GenericApp<R> {
 
             ui.separator();
             ui.label("status:");
-            ui.label(format!(
-                "current cells: {}x{}",
-                self.board.width(),
-                self.board.height()
-            ));
+            ui.label(format!("current cells: {}x{}", self.board.width(), self.board.height()));
             ui.label(format!(
                 "current chunks: {}x{}",
                 self.board.n_chunks_x(),
                 self.board.n_chunks_y()
             ));
-            ui.label(format!(
-                "current origin: ({},{})",
-                self.origin.x, self.origin.y
-            ));
+            ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
         });
 
         {
@@ -311,11 +304,9 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             // if inspector is open
             if let Some((ix, iy)) = self.inspector {
                 let mut open = true;
-                egui::Window::new("Cell Inspector")
-                    .open(&mut open)
-                    .show(ctx, |ui| {
-                        self.board.cell_at_mut(ix, iy).inspect(ui);
-                    });
+                egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
+                    self.board.cell_at_mut(ix, iy).inspect(ui);
+                });
 
                 if !open {
                     self.inspector = None;
@@ -336,10 +327,9 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             // ----------------------------------------------------------------
             // draw board to the central panel
 
-            self.board
-                .paint(&painter, self.origin, delta, self.rule.background(), |s| {
-                    self.rule.color(s)
-                });
+            self.board.paint(&painter, self.origin, delta, self.rule.background(), |s| {
+                self.rule.color(s)
+            });
 
             // detect debug build
             egui::warn_if_debug_build(ui);
@@ -498,7 +488,6 @@ impl eframe::App for App {
                         Box::new(GenericApp::<GrayScottRule>::default()),
                     ));
                 }
-
             });
         }
     }
