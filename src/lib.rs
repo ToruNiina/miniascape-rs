@@ -1,10 +1,8 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
 mod app;
-mod conway;
 mod gray_scott;
-mod generalized_lifegame;
-mod highlife;
+mod lifegame;
 mod wireworld;
 pub use app::App;
 

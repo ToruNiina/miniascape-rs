@@ -1,7 +1,5 @@
-use crate::conway::LifeGameRule;
-use crate::generalized_lifegame::GeneralizedLifeGameRule;
 use crate::gray_scott::GrayScottRule;
-use crate::highlife::HighLifeRule;
+use crate::lifegame::{LifeGameRule, GeneralizedLifeGameRule, HighLifeRule};
 use crate::wireworld::WireWorldRule;
 
 use rand::{Rng, SeedableRng};
