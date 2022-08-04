@@ -486,12 +486,12 @@ impl eframe::App for App {
                 egui::Frame::group(ui.style()).show(ui, |ui| {
                     if ui.button("start lifegame with specified rule").clicked() {
                         // convert `23/3` into [2, 3] and [3]
-                        if GeneralizedLifeGameRule::is_correct_rule(&self.life_game_rule) {
+                        if GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule) {
                             self.focus = Some(self.apps.len());
                             self.apps.push((
                                 self.life_game_rule.clone(),
                                 Box::new(GenericApp::<GeneralizedLifeGameRule>::new(
-                                    GeneralizedLifeGameRule::parse_rule(&self.life_game_rule),
+                                    GeneralizedLifeGameRule::from_rule(&self.life_game_rule),
                                 )),
                             ));
                         }
