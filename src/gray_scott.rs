@@ -50,6 +50,10 @@ pub struct GrayScottRule {
     f: f32,
     k: f32,
     n: u32,
+
+    u_color: egui::Color32,
+    v_color: egui::Color32,
+    background: egui::Color32,
 }
 
 impl std::default::Default for GrayScottRule {
@@ -62,6 +66,9 @@ impl std::default::Default for GrayScottRule {
             f: 0.09,
             k: 0.06,
             n: 40,
+            u_color: egui::Color32::from_rgb(16, 0, 255),
+            v_color: egui::Color32::from_rgb(16, 255, 0),
+            background:  egui::Color32::from_rgb(0, 0, 0),
         }
     }
 }
@@ -70,19 +77,23 @@ impl Rule for GrayScottRule {
     type CellState = GrayScottState;
 
     fn background(&self) -> egui::Color32 {
-        egui::Color32::from_rgb(0, 0, 0)
+        self.background
     }
 
     fn color(&self, st: &Self::CellState) -> egui::Color32 {
-        let r = 16_u8;
-        let g = (st.v * 256.0).clamp(0.0, 255.0) as u8;
-        let b = (st.u * 256.0).clamp(0.0, 255.0) as u8;
+        let (u_r, u_g, u_b) = (self.u_color.r(), self.u_color.g(), self.u_color.b());
+        let (v_r, v_g, v_b) = (self.v_color.r(), self.v_color.g(), self.v_color.b());
+
+        let r = (st.u * u_r as f32 + st.v * v_r as f32).clamp(0.0, 255.0) as u8;
+        let g = (st.u * u_g as f32 + st.v * v_g as f32).clamp(0.0, 255.0) as u8;
+        let b = (st.u * u_b as f32 + st.v * v_b as f32).clamp(0.0, 255.0) as u8;
+
         egui::Color32::from_rgb(r, g, b)
     }
 
     fn update(&self, board: &mut Board<Self::CellState>) {
         for _ in 0..self.n {
-            let Self { dt, dx, d_u, d_v, f, k, n: _ } = *self;
+            let Self { dt, dx, d_u, d_v, f, k, .. } = *self;
             let rdx2 = 1.0 / (dx * dx);
 
             for j in 0..board.height() {
@@ -115,5 +126,34 @@ impl Rule for GrayScottRule {
             std::mem::swap(&mut board.chunks, &mut board.buffer);
         }
     }
-    // draw rule-specific part of UI
+
+    fn ui(&mut self, ui: &mut egui::Ui) {
+
+        ui.label(format!("dt = {}", self.dt));
+        ui.label(format!("dx = {}", self.dx));
+
+        ui.add(egui::Slider::new(&mut self.d_u, 0.0..=0.01).text("Du"));
+        ui.add(egui::Slider::new(&mut self.d_v, 0.0..=0.01).text("Dv"));
+
+        ui.add(egui::Slider::new(&mut self.f, 0.0..=0.1).text("f"));
+        ui.add(egui::Slider::new(&mut self.k, 0.0..=0.1).text("k"));
+
+        ui.add(egui::Slider::new(&mut self.n, 0..=100).text("how many time integrations per frame"));
+
+        ui.separator();
+
+        ui.label("Grid Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.background, egui::widgets::color_picker::Alpha::Opaque);
+        ui.separator();
+
+        ui.label("u Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.u_color, egui::widgets::color_picker::Alpha::Opaque);
+        ui.separator();
+
+        ui.label("v Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.v_color, egui::widgets::color_picker::Alpha::Opaque);
+    }
 }

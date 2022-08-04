@@ -208,6 +208,10 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 self.board.n_chunks_y()
             ));
             ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
+
+            ui.separator(); // -------------------------------------------------
+
+            self.rule.ui(ui);
         });
 
         {

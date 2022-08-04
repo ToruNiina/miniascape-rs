@@ -33,4 +33,6 @@ pub trait Rule: Default {
 
     /// Update the whole board
     fn update(&self, board: &mut Board<Self::CellState>);
+
+    fn ui(&mut self, ui: &mut egui::Ui);
 }

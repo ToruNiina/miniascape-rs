@@ -49,22 +49,39 @@ impl State for WireWorldState {
     }
 }
 
-#[derive(Default)]
-pub struct WireWorldRule {}
+pub struct WireWorldRule {
+    grid_color: egui::Color32,
+    void_color: egui::Color32,
+    wire_color: egui::Color32,
+    head_color: egui::Color32,
+    tail_color: egui::Color32,
+}
+
+impl Default for WireWorldRule {
+    fn default() -> Self {
+        Self {
+            grid_color: egui::Color32::from_rgb(128, 128, 0),
+            void_color: egui::Color32::from_rgb(0, 0, 0),
+            wire_color: egui::Color32::from_rgb(255, 255, 0),
+            head_color: egui::Color32::from_rgb(0, 0, 255),
+            tail_color: egui::Color32::from_rgb(255, 0, 0),
+        }
+    }
+}
 
 impl Rule for WireWorldRule {
     type CellState = WireWorldState;
 
     fn background(&self) -> egui::Color32 {
-        egui::Color32::from_rgb(128, 128, 0)
+        self.grid_color
     }
 
     fn color(&self, st: &Self::CellState) -> egui::Color32 {
         match *st {
-            WireWorldState::Void => egui::Color32::from_rgb(0, 0, 0),
-            WireWorldState::Head => egui::Color32::from_rgb(0, 0, 255),
-            WireWorldState::Tail => egui::Color32::from_rgb(255, 0, 0),
-            WireWorldState::Wire => egui::Color32::from_rgb(255, 255, 0),
+            WireWorldState::Void => self.void_color,
+            WireWorldState::Head => self.head_color,
+            WireWorldState::Tail => self.tail_color,
+            WireWorldState::Wire => self.wire_color,
         }
     }
 
@@ -105,5 +122,31 @@ impl Rule for WireWorldRule {
         }
         std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
-    // draw rule-specific part of UI
+
+    fn ui(&mut self, ui: &mut egui::Ui) {
+
+        ui.label("Grid Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.grid_color, egui::widgets::color_picker::Alpha::Opaque);
+        ui.separator();
+
+        ui.label("Void Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.void_color, egui::widgets::color_picker::Alpha::Opaque);
+        ui.separator();
+
+        ui.label("Wire Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.wire_color, egui::widgets::color_picker::Alpha::Opaque);
+        ui.separator();
+
+        ui.label("Electron Head Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.head_color, egui::widgets::color_picker::Alpha::Opaque);
+        ui.separator();
+
+        ui.label("Electron Tail Color");
+        egui::widgets::color_picker::color_edit_button_srgba(
+            ui, &mut self.tail_color, egui::widgets::color_picker::Alpha::Opaque);
+    }
 }
