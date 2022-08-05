@@ -23,6 +23,7 @@ pub struct GenericApp<R: Rule> {
     rule: R,
     #[serde(skip)]
     board: Board<R::CellState>,
+    fix_board_size: bool,
     #[serde(skip)]
     running: bool,
     #[serde(skip)]
@@ -45,6 +46,7 @@ impl<R: Rule> Default for GenericApp<R> {
         Self {
             rule: Default::default(),
             board: Board::new(8, 8),
+            fix_board_size: false,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -62,6 +64,7 @@ impl<R: Rule> GenericApp<R> {
         Self {
             rule,
             board: Board::new(8, 8),
+            fix_board_size: false,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -198,6 +201,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             let min_grid = Self::min_gridsize();
             let max_grid = Self::max_gridsize();
             ui.add(egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"));
+            ui.checkbox(&mut self.fix_board_size, "Fix Board Size");
 
             ui.separator();
             ui.label("status:");
@@ -264,33 +268,35 @@ impl<R: Rule> eframe::App for GenericApp<R> {
             // ----------------------------------------------------------------
             // expand board size if needed
 
-            let chunk_pxls = Board::<R::CellState>::chunk_len() as f32 * delta;
+            if !self.fix_board_size {
+                let chunk_pxls = Board::<R::CellState>::chunk_len() as f32 * delta;
 
-            if self.origin.x < 0.0 {
-                let d = (self.origin.x / chunk_pxls).floor();
-                self.board.expand_x(d as isize);
-                self.origin.x -= chunk_pxls * d;
-                assert!(0.0 <= self.origin.x);
-            }
+                if self.origin.x < 0.0 {
+                    let d = (self.origin.x / chunk_pxls).floor();
+                    self.board.expand_x(d as isize);
+                    self.origin.x -= chunk_pxls * d;
+                    assert!(0.0 <= self.origin.x);
+                }
 
-            if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
-                let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
-                assert!(0.0 <= dx);
-                let d = (dx / chunk_pxls).ceil();
-                self.board.expand_x(d as isize);
-            }
+                if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
+                    let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
+                    assert!(0.0 <= dx);
+                    let d = (dx / chunk_pxls).ceil();
+                    self.board.expand_x(d as isize);
+                }
 
-            if self.origin.y < 0.0 {
-                let d = (self.origin.y / chunk_pxls).floor();
-                self.board.expand_y(d as isize);
-                self.origin.y -= chunk_pxls * d;
-                assert!(0.0 <= self.origin.y);
-            }
-            if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
-                let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
-                assert!(0.0 <= dy);
-                let d = (dy / chunk_pxls).ceil();
-                self.board.expand_y(d as isize);
+                if self.origin.y < 0.0 {
+                    let d = (self.origin.y / chunk_pxls).floor();
+                    self.board.expand_y(d as isize);
+                    self.origin.y -= chunk_pxls * d;
+                    assert!(0.0 <= self.origin.y);
+                }
+                if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
+                    let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
+                    assert!(0.0 <= dy);
+                    let d = (dy / chunk_pxls).ceil();
+                    self.board.expand_y(d as isize);
+                }
             }
 
             // ----------------------------------------------------------------
