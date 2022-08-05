@@ -1,4 +1,3 @@
-use crate::board::Board;
 use crate::rule::{Rule, State};
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
@@ -45,6 +44,7 @@ impl State for GrayScottState {
 pub struct GrayScottRule {
     dt: f32,
     dx: f32,
+    invdx2: f32,
     d_u: f32, // D_u
     d_v: f32, // D_v
     f: f32,
@@ -61,6 +61,7 @@ impl std::default::Default for GrayScottRule {
         Self {
             dt: 0.1,
             dx: 0.1,
+            invdx2: 100.0, // 1/dx^2
             d_u: 0.001, // D_u
             d_v: 0.005, // D_v
             f: 0.09,
@@ -91,40 +92,32 @@ impl Rule for GrayScottRule {
         egui::Color32::from_rgb(r, g, b)
     }
 
-    fn update(&self, board: &mut Board<Self::CellState>) {
-        for _ in 0..self.n {
-            let Self { dt, dx, d_u, d_v, f, k, .. } = *self;
-            let rdx2 = 1.0 / (dx * dx);
+    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+        // TODO require von neumann neighborhood
+        // currently it assumes that neighbor is in the following order:
+        // (x, y) = [
+        //   (-, -), (0, -), (+, -)
+        //   (-, 0),         (+, 0)
+        //   (-, +), (0, +), (+, +)
+        // ]
+        // 1, 3, 4, 6
 
-            for j in 0..board.height() {
-                let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
-                let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
-                for i in 0..board.width() {
-                    let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
-                    let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
+        let u0 = center.u;
+        let v0 = center.v;
+        let (lu, lv) = neighbor.enumerate().filter_map(|(i, c)| {
+            if i == 1 || i == 3 || i == 4 || i == 6 { Some(c) } else { None }
+        }).fold((-4.0 * u0, -4.0 * v0), |acc, c| (acc.0 + c.u, acc.1 + c.v));
 
-                    let u0 = board.cell_at(i, j).u;
-                    let v0 = board.cell_at(i, j).v;
+        let Self{dt, invdx2, d_u, d_v, f, k, ..} = *self;
 
-                    let mut lu = -4.0 * u0;
-                    let mut lv = -4.0 * v0;
-                    for (nx, ny) in [(i, yprev), (i, ynext), (xprev, j), (xnext, j)] {
-                        let GrayScottState { u, v } = *board.cell_at(nx, ny);
-                        lu += u;
-                        lv += v;
-                    }
-                    lu *= rdx2;
-                    lv *= rdx2;
+        let u = u0 + dt * (d_u * lu * invdx2 + u0 * u0 * v0 - (f + k) * u0);
+        let v = v0 + dt * (d_v * lv * invdx2 - u0 * u0 * v0 + (1.0 - v0) * f);
 
-                    // du/dt = Du * nabla^2 u + u^2*v - (f + k) u
-                    // dv/dt = Dv * nabla^2 v - u^2*v + f(1 - v)
-                    let u = u0 + dt * (d_u * lu + u0 * u0 * v0 - (f + k) * u0);
-                    let v = v0 + dt * (d_v * lv - u0 * u0 * v0 + (1.0 - v0) * f);
-                    *board.bufcell_at_mut(i, j) = GrayScottState { u, v };
-                }
-            }
-            std::mem::swap(&mut board.chunks, &mut board.buffer);
-        }
+        Self::CellState{ u, v }
+    }
+
+    fn iteration_per_step(&self) -> u32 {
+        self.n
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {

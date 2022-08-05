@@ -1,4 +1,3 @@
-use crate::board::Board;
 use crate::rule::{Rule, State};
 use arrayvec::ArrayVec;
 use rand::distributions::{Bernoulli, Distribution};
@@ -78,32 +77,15 @@ impl Rule for LifeGameRule {
         }
     }
 
-    fn update(&self, board: &mut Board<Self::CellState>) {
-        for j in 0..board.height() {
-            let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
-            let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
-            for i in 0..board.width() {
-                let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
-                let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
-                let mut nalive = 0;
-                for ny in [yprev, j, ynext] {
-                    for nx in [xprev, i, xnext] {
-                        if *board.cell_at(nx, ny) == LifeGameState::Alive {
-                            nalive += 1;
-                        }
-                    }
-                }
-                let board_is_alive = *board.cell_at(i, j) == LifeGameState::Alive;
+    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive {1} else {0}).sum();
 
-                let buf = board.bufcell_at_mut(i, j);
-                *buf = if nalive == 3 || (board_is_alive && nalive == 4) {
-                    LifeGameState::Alive
-                } else {
-                    LifeGameState::Dead
-                };
-            }
+        // 23/3
+        if n_alive == 3 || (center == LifeGameState::Alive && n_alive == 2) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
         }
-        std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {
@@ -156,36 +138,16 @@ impl Rule for HighLifeRule {
         }
     }
 
-    fn update(&self, board: &mut Board<Self::CellState>) {
-        for j in 0..board.height() {
-            let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
-            let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
-            for i in 0..board.width() {
-                let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
-                let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
-                let mut nalive = 0;
-                for ny in [yprev, j, ynext] {
-                    for nx in [xprev, i, xnext] {
-                        if *board.cell_at(nx, ny) == LifeGameState::Alive {
-                            nalive += 1;
-                        }
-                    }
-                }
-                let self_is_alive = *board.cell_at(i, j) == LifeGameState::Alive;
+    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+        let center_is_alive = center == LifeGameState::Alive;
+        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive {1} else {0}).sum();
 
-                let buf = board.bufcell_at_mut(i, j);
-                // 23/36
-                *buf = if nalive == 3
-                    || (self_is_alive && nalive == 4)
-                    || (!self_is_alive && nalive == 6)
-                {
-                    LifeGameState::Alive
-                } else {
-                    LifeGameState::Dead
-                }
-            }
+        // 23/36
+        if n_alive == 3 || (center_is_alive && n_alive == 2) || (!center_is_alive && n_alive == 6) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
         }
-        std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {
@@ -293,35 +255,18 @@ impl Rule for GeneralizedLifeGameRule {
         }
     }
 
-    fn update(&self, board: &mut Board<Self::CellState>) {
-        for j in 0..board.height() {
-            let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
-            let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
-            for i in 0..board.width() {
-                let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
-                let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
-                let mut nalive = 0;
-                for ny in [yprev, j, ynext] {
-                    for nx in [xprev, i, xnext] {
-                        if *board.cell_at(nx, ny) == LifeGameState::Alive {
-                            nalive += 1;
-                        }
-                    }
-                }
-                let self_is_alive = *board.cell_at(i, j) == LifeGameState::Alive;
+    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+        let center_is_alive = center == LifeGameState::Alive;
+        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive {1} else {0}).sum();
 
-                let buf = board.bufcell_at_mut(i, j);
-                // 23/36
-                *buf = if (self_is_alive && self.alive.iter().map(|n| n + 1).any(|n| n == nalive))
-                    || (!self_is_alive && self.birth.iter().any(|n| *n == nalive))
-                {
-                    LifeGameState::Alive
-                } else {
-                    LifeGameState::Dead
-                };
-            }
+        let meet_alive_rule = self.alive.iter().any(|n| *n == n_alive);
+        let meet_birth_rule = self.birth.iter().any(|n| *n == n_alive);
+
+        if (center_is_alive && meet_alive_rule) || (!center_is_alive && meet_birth_rule) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
         }
-        std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {

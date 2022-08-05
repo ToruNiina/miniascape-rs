@@ -1,4 +1,4 @@
-use crate::rule::State;
+use crate::rule::{Rule, State};
 use rand::Rng;
 
 // ----------------------------------------------------------------------------
@@ -204,6 +204,34 @@ impl<T: State> Board<T> {
     pub fn randomize<R: Rng>(&mut self, rng: &mut R) {
         for ch in self.chunks.iter_mut() {
             ch.randomize(rng);
+        }
+    }
+
+    pub fn update<R>(&mut self, rule: &R)
+        where R: Rule<CellState = T>
+    {
+        for _ in 0..rule.iteration_per_step() {
+            for j in 0..self.height() {
+                let yprev = if j == 0 { self.height() - 1 } else { j - 1 };
+                let ynext = if j == self.height() - 1 { 0 } else { j + 1 };
+                for i in 0..self.width() {
+                    let xprev = if i == 0 { self.width() - 1 } else { i - 1 };
+                    let xnext = if i == self.width() - 1 { 0 } else { i + 1 };
+
+                    #[rustfmt::skip]
+                    let idxs = [
+                        (xprev, yprev), (i,     yprev), (xnext, yprev),
+                        (xprev, j    ),                 (xnext, j    ),
+                        (xprev, ynext), (i,     ynext), (xnext, ynext),
+                    ];
+
+                    *self.bufcell_at_mut(i, j) = rule.update(
+                            *self.cell_at(i, j),
+                            idxs.map(|(x, y)| *self.cell_at(x, y)).into_iter()
+                        );
+                }
+            }
+            std::mem::swap(&mut self.chunks, &mut self.buffer);
         }
     }
 

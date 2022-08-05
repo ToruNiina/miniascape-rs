@@ -1,4 +1,3 @@
-use crate::board::Board;
 use crate::rule::{Rule, State};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -85,42 +84,20 @@ impl Rule for WireWorldRule {
         }
     }
 
-    fn update(&self, board: &mut Board<Self::CellState>) {
-        for j in 0..board.height() {
-            let yprev = if j == 0 { board.height() - 1 } else { j - 1 };
-            let ynext = if j == board.height() - 1 { 0 } else { j + 1 };
-            for i in 0..board.width() {
-                match *board.cell_at(i, j) {
-                    WireWorldState::Void => {
-                        *board.bufcell_at_mut(i, j) = WireWorldState::Void;
-                    }
-                    WireWorldState::Head => {
-                        *board.bufcell_at_mut(i, j) = WireWorldState::Tail;
-                    }
-                    WireWorldState::Tail => {
-                        *board.bufcell_at_mut(i, j) = WireWorldState::Wire;
-                    }
-                    WireWorldState::Wire => {
-                        let xprev = if i == 0 { board.width() - 1 } else { i - 1 };
-                        let xnext = if i == board.width() - 1 { 0 } else { i + 1 };
-                        let mut nheads = 0;
-                        for ny in [yprev, j, ynext] {
-                            for nx in [xprev, i, xnext] {
-                                if *board.cell_at(nx, ny) == WireWorldState::Head {
-                                    nheads += 1;
-                                }
-                            }
-                        }
-                        if nheads == 1 || nheads == 2 {
-                            *board.bufcell_at_mut(i, j) = WireWorldState::Head;
-                        } else {
-                            *board.bufcell_at_mut(i, j) = WireWorldState::Wire;
-                        }
-                    }
+    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+        match center {
+            WireWorldState::Void => WireWorldState::Void,
+            WireWorldState::Head => WireWorldState::Tail,
+            WireWorldState::Tail => WireWorldState::Wire,
+            WireWorldState::Wire => {
+                let nheads: u32 = neighbor.map(|c| if c == WireWorldState::Head {1} else {0}).sum();
+                if nheads == 1 || nheads == 2 {
+                    WireWorldState::Head
+                } else {
+                    WireWorldState::Wire
                 }
             }
         }
-        std::mem::swap(&mut board.chunks, &mut board.buffer);
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {

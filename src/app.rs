@@ -137,7 +137,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
     #[allow(clippy::never_loop)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
-            self.rule.update(&mut self.board);
+            self.board.update(&self.rule);
         }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
@@ -185,7 +185,7 @@ impl<R: Rule> eframe::App for GenericApp<R> {
                 ui.toggle_value(&mut self.running, "Run");
 
                 if ui.button("Step").clicked() {
-                    self.rule.update(&mut self.board);
+                    self.board.update(&self.rule);
                     ui.ctx().request_repaint();
                 }
                 if ui.button("Reset").clicked() {

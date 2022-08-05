@@ -1,4 +1,4 @@
-use crate::board::Board;
+// use crate::board::Board;
 use rand::Rng;
 
 /// State of a cell.
@@ -6,7 +6,7 @@ use rand::Rng;
 /// Represents the current state of a cell. To initialize the board, it requires
 /// `Clone`. To clear the board, it requires `Default`.
 /// The update rule is implemented in `Rule` trait.
-pub trait State: Clone + Default {
+pub trait State: Clone + Copy + Default {
     /// The next state. It will be used to change cell state from GUI
     fn next(&self) -> Self;
 
@@ -31,8 +31,11 @@ pub trait Rule: Default {
     /// Color of a cell.
     fn color(&self, st: &Self::CellState) -> egui::Color32;
 
-    /// Update the whole board
-    fn update(&self, board: &mut Board<Self::CellState>);
+    fn update(&self, center: Self::CellState, neighbors: impl Iterator<Item = Self::CellState>) -> Self::CellState;
+
+    fn iteration_per_step(&self) -> u32 {
+        1
+    }
 
     fn ui(&mut self, ui: &mut egui::Ui);
 }
