@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State};
+use crate::rule::{Rule, State, VonNeumannNeighborhood};
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -74,7 +74,7 @@ impl std::default::Default for GrayScottRule {
     }
 }
 
-impl Rule for GrayScottRule {
+impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
     type CellState = GrayScottState;
 
     fn background(&self) -> egui::Color32 {

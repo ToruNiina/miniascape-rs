@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State};
+use crate::rule::{Rule, State, MooreNeighborhood};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -68,7 +68,7 @@ impl Default for WireWorldRule {
     }
 }
 
-impl Rule for WireWorldRule {
+impl Rule<8, MooreNeighborhood> for WireWorldRule {
     type CellState = WireWorldState;
 
     fn background(&self) -> egui::Color32 {

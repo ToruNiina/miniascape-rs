@@ -1,12 +1,11 @@
 use crate::board::Board;
-use crate::rule::{Rule, State};
+use crate::rule::{Rule, State, Neighbors, MooreNeighborhood, VonNeumannNeighborhood};
 
 use crate::gray_scott::GrayScottRule;
 use crate::lifegame::{GeneralizedLifeGameRule, HighLifeRule, LifeGameRule};
 use crate::wireworld::WireWorldRule;
 
 use rand::SeedableRng;
-use serde::{Deserialize, Serialize};
 
 // ----------------------------------------------------------------------------
 //   ___                  _      _
@@ -16,32 +15,21 @@ use serde::{Deserialize, Serialize};
 //                                  |_|  |_|
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(Deserialize, Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct GenericApp<R: Rule> {
-    #[serde(skip)]
+pub struct GenericApp<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> {
     rule: R,
-    #[serde(skip)]
     board: Board<R::CellState>,
     fix_board_size: bool,
-    #[serde(skip)]
     running: bool,
-    #[serde(skip)]
     inspector: Option<(usize, usize)>,
     inspector_indicator: bool,
-    #[serde(skip)]
     grid_width: f32,
-    #[serde(skip)]
     origin: egui::Pos2,
-    #[serde(skip)]
     grabbed: bool,
-    #[serde(skip)]
     cell_modifying: Option<R::CellState>,
-    #[serde(skip)]
     rng: rand::rngs::StdRng,
 }
 
-impl<R: Rule> Default for GenericApp<R> {
+impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> Default for GenericApp<N, Neighborhood, R> {
     fn default() -> Self {
         Self {
             rule: Default::default(),
@@ -59,7 +47,7 @@ impl<R: Rule> Default for GenericApp<R> {
     }
 }
 
-impl<R: Rule> GenericApp<R> {
+impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> GenericApp<N, Neighborhood, R> {
     pub fn new(rule: R) -> Self {
         Self {
             rule,
@@ -93,7 +81,7 @@ pub enum Clicked {
     NotClicked,
 }
 
-impl<R: Rule> GenericApp<R> {
+impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> GenericApp<N, Neighborhood, R> {
     fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
         let pointer = &ctx.input().pointer;
         if !pointer.primary_down() && !pointer.secondary_down() {
@@ -126,10 +114,10 @@ impl<R: Rule> GenericApp<R> {
     }
 }
 
-impl<R: Rule> eframe::App for GenericApp<R> {
+impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> eframe::App for GenericApp<N, Neighborhood, R> {
     /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {
+//         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
@@ -483,14 +471,14 @@ impl eframe::App for App {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "LifeGame".to_string(),
-                        Box::new(GenericApp::<LifeGameRule>::default()),
+                        Box::new(GenericApp::<8, MooreNeighborhood, LifeGameRule>::default()),
                     ));
                 }
                 if ui.button("start highlife").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "HighLife".to_string(),
-                        Box::new(GenericApp::<HighLifeRule>::default()),
+                        Box::new(GenericApp::<8, MooreNeighborhood, HighLifeRule>::default()),
                     ));
                 }
                 egui::Frame::group(ui.style()).show(ui, |ui| {
@@ -500,7 +488,7 @@ impl eframe::App for App {
                             self.focus = Some(self.apps.len());
                             self.apps.push((
                                 self.life_game_rule.clone(),
-                                Box::new(GenericApp::<GeneralizedLifeGameRule>::new(
+                                Box::new(GenericApp::<8, MooreNeighborhood, GeneralizedLifeGameRule>::new(
                                     GeneralizedLifeGameRule::from_rule(&self.life_game_rule),
                                 )),
                             ));
@@ -514,14 +502,14 @@ impl eframe::App for App {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "WireWorld".to_string(),
-                        Box::new(GenericApp::<WireWorldRule>::default()),
+                        Box::new(GenericApp::<8, MooreNeighborhood, WireWorldRule>::default()),
                     ));
                 }
                 if ui.button("start Gray-Scott").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "Gray-Scott".to_string(),
-                        Box::new(GenericApp::<GrayScottRule>::default()),
+                        Box::new(GenericApp::<4, VonNeumannNeighborhood, GrayScottRule>::default()),
                     ));
                 }
             });

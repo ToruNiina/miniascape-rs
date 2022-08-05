@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State};
+use crate::rule::{Rule, State, Neighbors};
 use rand::Rng;
 
 // ----------------------------------------------------------------------------
@@ -207,8 +207,8 @@ impl<T: State> Board<T> {
         }
     }
 
-    pub fn update<R>(&mut self, rule: &R)
-        where R: Rule<CellState = T>
+    pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(&mut self, rule: &R)
+        where R: Rule<N, Neighborhood, CellState = T>
     {
         for _ in 0..rule.iteration_per_step() {
             for j in 0..self.height() {

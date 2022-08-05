@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State};
+use crate::rule::{Rule, State, Neighbors};
 use arrayvec::ArrayVec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
@@ -62,7 +62,7 @@ impl Default for LifeGameRule {
     }
 }
 
-impl Rule for LifeGameRule {
+impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeGameRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {
@@ -123,7 +123,7 @@ impl Default for HighLifeRule {
     }
 }
 
-impl Rule for HighLifeRule {
+impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighLifeRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {
@@ -240,7 +240,7 @@ impl GeneralizedLifeGameRule {
     }
 }
 
-impl Rule for GeneralizedLifeGameRule {
+impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for GeneralizedLifeGameRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {
