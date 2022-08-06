@@ -104,9 +104,8 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
 
         let u0 = center.u;
         let v0 = center.v;
-        let (lu, lv) = neighbor.enumerate().filter_map(|(i, c)| {
-            if i == 1 || i == 3 || i == 4 || i == 6 { Some(c) } else { None }
-        }).fold((-4.0 * u0, -4.0 * v0), |acc, c| (acc.0 + c.u, acc.1 + c.v));
+        let (lu, lv) = neighbor
+            .fold((-4.0 * u0, -4.0 * v0), |acc, c| (acc.0 + c.u, acc.1 + c.v));
 
         let Self{dt, invdx2, d_u, d_v, f, k, ..} = *self;
 

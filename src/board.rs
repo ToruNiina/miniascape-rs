@@ -211,24 +211,33 @@ impl<T: State> Board<T> {
         where R: Rule<N, Neighborhood, CellState = T>
     {
         for _ in 0..rule.iteration_per_step() {
-            for j in 0..self.height() {
-                let yprev = if j == 0 { self.height() - 1 } else { j - 1 };
-                let ynext = if j == self.height() - 1 { 0 } else { j + 1 };
-                for i in 0..self.width() {
-                    let xprev = if i == 0 { self.width() - 1 } else { i - 1 };
-                    let xnext = if i == self.width() - 1 { 0 } else { i + 1 };
+            for cj in 0..self.n_chunks_y() {
+                let y0 = cj * CHUNK_LEN;
+                for ci in 0..self.n_chunks_x() {
+                    let x0 = ci * CHUNK_LEN;
+                    for j in 0..CHUNK_LEN {
+                        for i in 0..CHUNK_LEN {
+                            let x = x0 + i;
+                            let y = y0 + j;
+                            let idxs = R::neighbors(x as isize, y as isize);
 
-                    #[rustfmt::skip]
-                    let idxs = [
-                        (xprev, yprev), (i,     yprev), (xnext, yprev),
-                        (xprev, j    ),                 (xnext, j    ),
-                        (xprev, ynext), (i,     ynext), (xnext, ynext),
-                    ];
-
-                    *self.bufcell_at_mut(i, j) = rule.update(
-                            *self.cell_at(i, j),
-                            idxs.map(|(x, y)| *self.cell_at(x, y)).into_iter()
-                        );
+                            *self.bufcell_at_mut(x, y) = rule.update(
+                                    *self.cell_at(x, y),
+                                    idxs.map(|(x, y)| {
+                                        if x < 0 || y < 0 {
+                                            Default::default()
+                                        }
+                                        let x = x as usize;
+                                        let y = y as usize;
+                                        if self.has_cell(x, y) {
+                                            *self.cell_at(x, y)
+                                        } else {
+                                            Default::default()
+                                        }
+                                    }).into_iter()
+                                );
+                        }
+                    }
                 }
             }
             std::mem::swap(&mut self.chunks, &mut self.buffer);

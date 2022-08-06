@@ -30,8 +30,8 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     /// Color of a cell.
     fn color(&self, st: &Self::CellState) -> egui::Color32;
 
-    fn neighbors() -> Neighborhood {
-        Default::default()
+    fn neighbors(x: isize, y: isize) -> [(isize, isize); N] {
+        Neighborhood::neighbors(x, y)
     }
 
     fn update(&self, center: Self::CellState, neighbors: impl Iterator<Item = Self::CellState>) -> Self::CellState;
