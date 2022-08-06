@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State, Neighbors};
+use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
 
 // ----------------------------------------------------------------------------
@@ -204,7 +204,8 @@ impl<T: State> Grid<T> {
     }
 
     pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(&mut self, rule: &R)
-        where R: Rule<N, Neighborhood, CellState = T>
+    where
+        R: Rule<N, Neighborhood, CellState = T>,
     {
         for _ in 0..rule.iteration_per_step() {
             for cj in 0..self.n_chunks_y() {
@@ -218,20 +219,21 @@ impl<T: State> Grid<T> {
                             let idxs = R::neighbors(x as isize, y as isize);
 
                             *self.bufcell_at_mut(x, y) = rule.update(
-                                    *self.cell_at(x, y),
-                                    idxs.map(|(x, y)| {
-                                        if x < 0 || y < 0 {
-                                            Default::default()
-                                        }
-                                        let x = x as usize;
-                                        let y = y as usize;
-                                        if self.has_cell(x, y) {
-                                            *self.cell_at(x, y)
-                                        } else {
-                                            Default::default()
-                                        }
-                                    }).into_iter()
-                                );
+                                *self.cell_at(x, y),
+                                idxs.map(|(x, y)| {
+                                    if x < 0 || y < 0 {
+                                        Default::default()
+                                    }
+                                    let x = x as usize;
+                                    let y = y as usize;
+                                    if self.has_cell(x, y) {
+                                        *self.cell_at(x, y)
+                                    } else {
+                                        Default::default()
+                                    }
+                                })
+                                .into_iter(),
+                            );
                         }
                     }
                 }
@@ -264,7 +266,14 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     fn clear(&mut self);
     fn randomize<Rn: Rng>(&mut self, rng: &mut Rn);
 
-    fn location(&self, x: usize, y: usize, origin: egui::Pos2, region_min: egui::Pos2, cell_width: f32) -> egui::Pos2;
+    fn location(
+        &self,
+        x: usize,
+        y: usize,
+        origin: egui::Pos2,
+        region_min: egui::Pos2,
+        cell_width: f32,
+    ) -> egui::Pos2;
     fn clicked(&self, x: f32, y: f32, cell_width: f32) -> Option<(usize, usize)>;
 
     fn update(&mut self, rule: &R);
@@ -275,18 +284,35 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
 pub struct SquareGrid<T: State> {
     grid: Grid<T>,
 }
-impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> Board<N, Ne, R> for SquareGrid<T> {
+impl<T, const N: usize, Ne, R> Board<N, Ne, R> for SquareGrid<T>
+where
+    T: State,
+    Ne: Neighbors<N>,
+    R: Rule<N, Ne, CellState = T>,
+{
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
-        Self{ grid: Grid::new(x_chunks, y_chunks) }
+        Self { grid: Grid::new(x_chunks, y_chunks) }
     }
 
-    fn width(&self) -> usize { self.grid.num_chunks_x * CHUNK_LEN }
-    fn height(&self) -> usize { self.grid.num_chunks_y * CHUNK_LEN }
+    fn width(&self) -> usize {
+        self.grid.num_chunks_x * CHUNK_LEN
+    }
+    fn height(&self) -> usize {
+        self.grid.num_chunks_y * CHUNK_LEN
+    }
 
-    fn n_chunks_x(&self) -> usize { self.grid.n_chunks_x() }
-    fn n_chunks_y(&self) -> usize { self.grid.n_chunks_y() }
-    fn has_chunk(&self, x: usize, y: usize) -> bool { self.grid.has_chunk(x, y) }
-    fn chunk_len(&self) -> usize { self.grid.chunk_len() }
+    fn n_chunks_x(&self) -> usize {
+        self.grid.n_chunks_x()
+    }
+    fn n_chunks_y(&self) -> usize {
+        self.grid.n_chunks_y()
+    }
+    fn has_chunk(&self, x: usize, y: usize) -> bool {
+        self.grid.has_chunk(x, y)
+    }
+    fn chunk_len(&self) -> usize {
+        self.grid.chunk_len()
+    }
     fn chunk_at(&self, x: usize, y: usize) -> &Chunk<T> {
         self.grid.chunk_at(x, y)
     }
@@ -319,7 +345,14 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
         self.grid.randomize(rng)
     }
 
-    fn location(&self, x: usize, y: usize, origin: egui::Pos2, region_min: egui::Pos2, cell_width: f32) -> egui::Pos2 {
+    fn location(
+        &self,
+        x: usize,
+        y: usize,
+        origin: egui::Pos2,
+        region_min: egui::Pos2,
+        cell_width: f32,
+    ) -> egui::Pos2 {
         let x = (x as f32 + 0.5) * cell_width - origin.x + region_min.x;
         let y = (y as f32 + 0.5) * cell_width - origin.y + region_min.y;
 
@@ -335,7 +368,7 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
         let x = x.floor() as usize;
         let y = y.floor() as usize;
         if self.grid.width() < x || self.grid.height() < y {
-            return None;
+            None
         } else {
             Some((x, y))
         }
@@ -345,22 +378,13 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
         self.grid.update(rule)
     }
 
-    fn paint(
-        &self,
-        painter: &egui::Painter,
-        origin: egui::Pos2,
-        cell_width: f32,
-        rule: &R
-    ) {
+    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R) {
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
         // clear region
         painter.add(epaint::RectShape::filled(
-            egui::Rect {
-                min: region.min,
-                max: region.max,
-            },
+            egui::Rect { min: region.min, max: region.max },
             egui::Rounding::none(),
             rule.background(),
         ));
@@ -374,12 +398,12 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
         // draw grid
         let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
         for j in cell_begin_y..cell_end_y {
-            let y0 =  j    as f32 * cell_width - origin.y + region.min.y + ofs;
-            let y1 = (j+1) as f32 * cell_width - origin.y + region.min.y - ofs;
+            let y0 = j as f32 * cell_width - origin.y + region.min.y + ofs;
+            let y1 = (j + 1) as f32 * cell_width - origin.y + region.min.y - ofs;
 
             for i in cell_begin_x..cell_end_x {
-                let x0 =  i    as f32 * cell_width - origin.x + region.min.x + ofs;
-                let x1 = (i+1) as f32 * cell_width - origin.x + region.min.x - ofs;
+                let x0 = i as f32 * cell_width - origin.x + region.min.x + ofs;
+                let x1 = (i + 1) as f32 * cell_width - origin.x + region.min.x - ofs;
 
                 if !self.grid.has_cell(i, j) {
                     continue;
@@ -400,18 +424,35 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
 pub struct HexGrid<T: State> {
     grid: Grid<T>,
 }
-impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> Board<N, Ne, R> for HexGrid<T> {
+impl<T, const N: usize, Ne, R> Board<N, Ne, R> for HexGrid<T>
+where
+    T: State,
+    Ne: Neighbors<N>,
+    R: Rule<N, Ne, CellState = T>,
+{
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
-        Self{ grid: Grid::new(x_chunks, y_chunks) }
+        Self { grid: Grid::new(x_chunks, y_chunks) }
     }
 
-    fn width(&self) -> usize { self.grid.num_chunks_x * CHUNK_LEN }
-    fn height(&self) -> usize { self.grid.num_chunks_y * CHUNK_LEN }
+    fn width(&self) -> usize {
+        self.grid.num_chunks_x * CHUNK_LEN
+    }
+    fn height(&self) -> usize {
+        self.grid.num_chunks_y * CHUNK_LEN
+    }
 
-    fn n_chunks_x(&self) -> usize { self.grid.n_chunks_x() }
-    fn n_chunks_y(&self) -> usize { self.grid.n_chunks_y() }
-    fn has_chunk(&self, x: usize, y: usize) -> bool { self.grid.has_chunk(x, y) }
-    fn chunk_len(&self) -> usize { self.grid.chunk_len() }
+    fn n_chunks_x(&self) -> usize {
+        self.grid.n_chunks_x()
+    }
+    fn n_chunks_y(&self) -> usize {
+        self.grid.n_chunks_y()
+    }
+    fn has_chunk(&self, x: usize, y: usize) -> bool {
+        self.grid.has_chunk(x, y)
+    }
+    fn chunk_len(&self) -> usize {
+        self.grid.chunk_len()
+    }
     fn chunk_at(&self, x: usize, y: usize) -> &Chunk<T> {
         self.grid.chunk_at(x, y)
     }
@@ -448,7 +489,14 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
         self.grid.update(rule)
     }
 
-    fn location(&self, x: usize, y: usize, origin: egui::Pos2, region_min: egui::Pos2, cell_width: f32) -> egui::Pos2 {
+    fn location(
+        &self,
+        x: usize,
+        y: usize,
+        origin: egui::Pos2,
+        region_min: egui::Pos2,
+        cell_width: f32,
+    ) -> egui::Pos2 {
         let diameter = cell_width;
         let r = cell_width * 0.5_f32;
 
@@ -473,28 +521,19 @@ impl<const N: usize, Ne: Neighbors<N>, T: State, R: Rule<N, Ne, CellState = T>> 
         let x = x.floor() as usize;
 
         if self.grid.width() < x || self.grid.height() < y {
-            return None;
+            None
         } else {
             Some((x, y))
         }
     }
 
-    fn paint(
-        &self,
-        painter: &egui::Painter,
-        origin: egui::Pos2,
-        cell_width: f32,
-        rule: &R
-    ) {
+    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R) {
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
         // clear region
         painter.add(epaint::RectShape::filled(
-            egui::Rect {
-                min: region.min,
-                max: region.max,
-            },
+            egui::Rect { min: region.min, max: region.max },
             egui::Rounding::none(),
             rule.background(),
         ));

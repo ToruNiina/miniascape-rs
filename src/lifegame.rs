@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State, Neighbors};
+use crate::rule::{Neighbors, Rule, State};
 use arrayvec::ArrayVec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
@@ -47,17 +47,17 @@ impl State for LifeGameState {
 // ---------------------------------------------------------------------------
 
 pub struct LifeGameRule {
-    background:  egui::Color32,
+    background: egui::Color32,
     alive_color: egui::Color32,
-    dead_color:  egui::Color32,
+    dead_color: egui::Color32,
 }
 
 impl Default for LifeGameRule {
     fn default() -> Self {
         Self {
-            background:  egui::Color32::from_rgb(0, 128, 0),
+            background: egui::Color32::from_rgb(0, 128, 0),
             alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color:  egui::Color32::from_rgb(0, 0, 0),
+            dead_color: egui::Color32::from_rgb(0, 0, 0),
         }
     }
 }
@@ -77,8 +77,12 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
         }
     }
 
-    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
-        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive {1} else {0}).sum();
+    fn update(
+        &self,
+        center: Self::CellState,
+        neighbor: impl Iterator<Item = Self::CellState>,
+    ) -> Self::CellState {
+        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive { 1 } else { 0 }).sum();
 
         // 23/3
         if n_alive == 3 || (center == LifeGameState::Alive && n_alive == 2) {
@@ -91,34 +95,43 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
     fn ui(&mut self, ui: &mut egui::Ui) {
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.background, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.background,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Live Cell Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.alive_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.alive_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Dead Cell Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.dead_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.dead_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
     }
 }
 
 // ---------------------------------------------------------------------------
 
 pub struct HighLifeRule {
-    background:  egui::Color32,
+    background: egui::Color32,
     alive_color: egui::Color32,
-    dead_color:  egui::Color32,
+    dead_color: egui::Color32,
 }
 
 impl Default for HighLifeRule {
     fn default() -> Self {
         Self {
-            background:  egui::Color32::from_rgb(0, 128, 0),
+            background: egui::Color32::from_rgb(0, 128, 0),
             alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color:  egui::Color32::from_rgb(0, 0, 0),
+            dead_color: egui::Color32::from_rgb(0, 0, 0),
         }
     }
 }
@@ -138,9 +151,13 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
         }
     }
 
-    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+    fn update(
+        &self,
+        center: Self::CellState,
+        neighbor: impl Iterator<Item = Self::CellState>,
+    ) -> Self::CellState {
         let center_is_alive = center == LifeGameState::Alive;
-        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive {1} else {0}).sum();
+        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive { 1 } else { 0 }).sum();
 
         // 23/36
         if n_alive == 3 || (center_is_alive && n_alive == 2) || (!center_is_alive && n_alive == 6) {
@@ -153,17 +170,26 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
     fn ui(&mut self, ui: &mut egui::Ui) {
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.background, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.background,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Live Cell Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.alive_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.alive_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Dead Cell Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.dead_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.dead_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
     }
 }
 
@@ -176,9 +202,9 @@ pub struct GeneralizedLifeGameRule {
     rule: String,
     show_err_msg_about_rule: bool,
 
-    background:  egui::Color32,
+    background: egui::Color32,
     alive_color: egui::Color32,
-    dead_color:  egui::Color32,
+    dead_color: egui::Color32,
 }
 
 impl Default for GeneralizedLifeGameRule {
@@ -188,26 +214,28 @@ impl Default for GeneralizedLifeGameRule {
             birth: (&[3_u32] as &[_]).try_into().unwrap(),
             rule: "23/3".to_string(),
             show_err_msg_about_rule: false,
-            background:  egui::Color32::from_rgb(0, 128, 0),
+            background: egui::Color32::from_rgb(0, 128, 0),
             alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color:  egui::Color32::from_rgb(0, 0, 0),
+            dead_color: egui::Color32::from_rgb(0, 0, 0),
         }
     }
 }
 
 impl GeneralizedLifeGameRule {
     pub fn new(alive: Vec<u32>, birth: Vec<u32>) -> Self {
-        let rule = format!("{}/{}",
+        let rule = format!(
+            "{}/{}",
             alive.iter().fold("".to_string(), |acc, x| acc + &x.to_string()),
-            birth.iter().fold("".to_string(), |acc, x| acc + &x.to_string()));
+            birth.iter().fold("".to_string(), |acc, x| acc + &x.to_string())
+        );
         Self {
             alive: ArrayVec::from_iter(alive.into_iter()),
             birth: ArrayVec::from_iter(birth.into_iter()),
-            rule: rule,
+            rule,
             show_err_msg_about_rule: false,
-            background:  egui::Color32::from_rgb(0, 128, 0),
+            background: egui::Color32::from_rgb(0, 128, 0),
             alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color:  egui::Color32::from_rgb(0, 0, 0),
+            dead_color: egui::Color32::from_rgb(0, 0, 0),
         }
     }
 
@@ -255,9 +283,13 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
         }
     }
 
-    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+    fn update(
+        &self,
+        center: Self::CellState,
+        neighbor: impl Iterator<Item = Self::CellState>,
+    ) -> Self::CellState {
         let center_is_alive = center == LifeGameState::Alive;
-        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive {1} else {0}).sum();
+        let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive { 1 } else { 0 }).sum();
 
         let meet_alive_rule = self.alive.iter().any(|n| *n == n_alive);
         let meet_birth_rule = self.birth.iter().any(|n| *n == n_alive);
@@ -292,16 +324,25 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
 
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.background, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.background,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Live Cell Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.alive_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.alive_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Dead Cell Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.dead_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.dead_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
     }
 }

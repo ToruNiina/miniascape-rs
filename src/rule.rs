@@ -34,7 +34,11 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
         Neighborhood::neighbors(x, y)
     }
 
-    fn update(&self, center: Self::CellState, neighbors: impl Iterator<Item = Self::CellState>) -> Self::CellState;
+    fn update(
+        &self,
+        center: Self::CellState,
+        neighbors: impl Iterator<Item = Self::CellState>,
+    ) -> Self::CellState;
 
     fn iteration_per_step(&self) -> u32 {
         1
@@ -48,15 +52,15 @@ pub trait Neighbors<const N: usize>: Default {
 }
 
 #[derive(Default)]
-pub struct VonNeumannNeighborhood{}
+pub struct VonNeumannNeighborhood {}
 #[derive(Default)]
-pub struct MooreNeighborhood{}
+pub struct MooreNeighborhood {}
 #[derive(Default)]
-pub struct HexGridNeighborhood{}
+pub struct HexGridNeighborhood {}
 
 impl Neighbors<4> for VonNeumannNeighborhood {
     fn neighbors(x: isize, y: isize) -> [(isize, isize); 4] {
-        [(x, y-1), (x-1, y), (x+1, y), (x, y+1)]
+        [(x, y - 1), (x - 1, y), (x + 1, y), (x, y + 1)]
     }
 }
 impl Neighbors<8> for MooreNeighborhood {

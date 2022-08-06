@@ -62,14 +62,14 @@ impl std::default::Default for GrayScottRule {
             dt: 0.1,
             dx: 0.1,
             invdx2: 100.0, // 1/dx^2
-            d_u: 0.001, // D_u
-            d_v: 0.005, // D_v
+            d_u: 0.001,    // D_u
+            d_v: 0.005,    // D_v
             f: 0.09,
             k: 0.06,
             n: 40,
             u_color: egui::Color32::from_rgb(16, 0, 255),
             v_color: egui::Color32::from_rgb(16, 255, 0),
-            background:  egui::Color32::from_rgb(0, 0, 0),
+            background: egui::Color32::from_rgb(0, 0, 0),
         }
     }
 }
@@ -92,7 +92,11 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         egui::Color32::from_rgb(r, g, b)
     }
 
-    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+    fn update(
+        &self,
+        center: Self::CellState,
+        neighbor: impl Iterator<Item = Self::CellState>,
+    ) -> Self::CellState {
         // TODO require von neumann neighborhood
         // currently it assumes that neighbor is in the following order:
         // (x, y) = [
@@ -104,15 +108,14 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
 
         let u0 = center.u;
         let v0 = center.v;
-        let (lu, lv) = neighbor
-            .fold((-4.0 * u0, -4.0 * v0), |acc, c| (acc.0 + c.u, acc.1 + c.v));
+        let (lu, lv) = neighbor.fold((-4.0 * u0, -4.0 * v0), |acc, c| (acc.0 + c.u, acc.1 + c.v));
 
-        let Self{dt, invdx2, d_u, d_v, f, k, ..} = *self;
+        let Self { dt, invdx2, d_u, d_v, f, k, .. } = *self;
 
         let u = u0 + dt * (d_u * lu * invdx2 + u0 * u0 * v0 - (f + k) * u0);
         let v = v0 + dt * (d_v * lv * invdx2 - u0 * u0 * v0 + (1.0 - v0) * f);
 
-        Self::CellState{ u, v }
+        Self::CellState { u, v }
     }
 
     fn iteration_per_step(&self) -> u32 {
@@ -120,7 +123,6 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {
-
         ui.label(format!("dt = {}", self.dt));
         ui.label(format!("dx = {}", self.dx));
 
@@ -130,22 +132,33 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         ui.add(egui::Slider::new(&mut self.f, 0.0..=0.1).text("f"));
         ui.add(egui::Slider::new(&mut self.k, 0.0..=0.1).text("k"));
 
-        ui.add(egui::Slider::new(&mut self.n, 0..=100).text("how many time integrations per frame"));
+        ui.add(
+            egui::Slider::new(&mut self.n, 0..=100).text("how many time integrations per frame"),
+        );
 
         ui.separator();
 
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.background, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.background,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("u Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.u_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.u_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("v Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.v_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.v_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
     }
 }

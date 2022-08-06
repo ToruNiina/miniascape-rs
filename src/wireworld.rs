@@ -1,4 +1,4 @@
-use crate::rule::{Rule, State, MooreNeighborhood};
+use crate::rule::{MooreNeighborhood, Rule, State};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -84,13 +84,18 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
         }
     }
 
-    fn update(&self, center: Self::CellState, neighbor: impl Iterator<Item = Self::CellState>) -> Self::CellState {
+    fn update(
+        &self,
+        center: Self::CellState,
+        neighbor: impl Iterator<Item = Self::CellState>,
+    ) -> Self::CellState {
         match center {
             WireWorldState::Void => WireWorldState::Void,
             WireWorldState::Head => WireWorldState::Tail,
             WireWorldState::Tail => WireWorldState::Wire,
             WireWorldState::Wire => {
-                let nheads: u32 = neighbor.map(|c| if c == WireWorldState::Head {1} else {0}).sum();
+                let nheads: u32 =
+                    neighbor.map(|c| if c == WireWorldState::Head { 1 } else { 0 }).sum();
                 if nheads == 1 || nheads == 2 {
                     WireWorldState::Head
                 } else {
@@ -101,29 +106,43 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {
-
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.grid_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.grid_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Void Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.void_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.void_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Wire Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.wire_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.wire_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Electron Head Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.head_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.head_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
         ui.separator();
 
         ui.label("Electron Tail Color");
         egui::widgets::color_picker::color_edit_button_srgba(
-            ui, &mut self.tail_color, egui::widgets::color_picker::Alpha::Opaque);
+            ui,
+            &mut self.tail_color,
+            egui::widgets::color_picker::Alpha::Opaque,
+        );
     }
 }
