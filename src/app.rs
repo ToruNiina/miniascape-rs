@@ -1,9 +1,9 @@
-use crate::board::Board;
-use crate::rule::{Rule, State, Neighbors, MooreNeighborhood, VonNeumannNeighborhood};
+use crate::board::{Board, SquareGrid, HexGrid};
+use crate::rule::{Rule, State, Neighbors, MooreNeighborhood, VonNeumannNeighborhood, HexGridNeighborhood};
 
-use crate::gray_scott::GrayScottRule;
-use crate::lifegame::{GeneralizedLifeGameRule, HighLifeRule, LifeGameRule};
-use crate::wireworld::WireWorldRule;
+use crate::gray_scott::{GrayScottState, GrayScottRule};
+use crate::lifegame::{LifeGameState, GeneralizedLifeGameRule, HighLifeRule, LifeGameRule};
+use crate::wireworld::{WireWorldState, WireWorldRule};
 
 use rand::SeedableRng;
 
@@ -15,9 +15,9 @@ use rand::SeedableRng;
 //                                  |_|  |_|
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-pub struct GenericApp<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> {
+pub struct GenericApp<const N:usize, Ne: Neighbors<N>, R: Rule<N, Ne>, B: Board<N, Ne, R>> {
     rule: R,
-    board: Board<R::CellState>,
+    board: B,
     fix_board_size: bool,
     running: bool,
     inspector: Option<(usize, usize)>,
@@ -29,11 +29,11 @@ pub struct GenericApp<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neig
     rng: rand::rngs::StdRng,
 }
 
-impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> Default for GenericApp<N, Neighborhood, R> {
+impl<const N:usize, Ne: Neighbors<N>, R: Rule<N, Ne>, B: Board<N, Ne, R>> Default for GenericApp<N, Ne, R, B> {
     fn default() -> Self {
         Self {
             rule: Default::default(),
-            board: Board::new(8, 8),
+            board: B::new(8, 8),
             fix_board_size: false,
             running: false,
             inspector: None,
@@ -47,7 +47,14 @@ impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> Defaul
     }
 }
 
-impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> GenericApp<N, Neighborhood, R> {
+/// to avoid context lock by ctx.input()
+pub enum Clicked {
+    Primary(usize, usize),
+    Secondary(usize, usize),
+    NotClicked,
+}
+
+impl<const N:usize, Ne: Neighbors<N>, R: Rule<N, Ne>, B: Board<N, Ne, R>> GenericApp<N, Ne, R, B> {
     pub fn new(rule: R) -> Self {
         Self {
             rule,
@@ -72,17 +79,8 @@ impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> Generi
     pub fn scroll_factor() -> f32 {
         1.0 / 128.0
     }
-}
 
-/// to avoid context lock by ctx.input()
-pub enum Clicked {
-    Primary(usize, usize),
-    Secondary(usize, usize),
-    NotClicked,
-}
-
-impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> GenericApp<N, Neighborhood, R> {
-    fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
+    pub fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
         let pointer = &ctx.input().pointer;
         if !pointer.primary_down() && !pointer.secondary_down() {
             return Clicked::NotClicked;
@@ -92,29 +90,24 @@ impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> Generi
             .interact_pos()
             .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
 
-        let dxy = pos - region_min;
-        if dxy.x < 0.0 || dxy.y < 0.0 {
-            return Clicked::NotClicked;
-        }
+        let dx = pos.x - region_min.x + self.origin.x;
+        let dy = pos.y - region_min.y + self.origin.y;
 
-        let rdelta = 1.0 / self.grid_width;
-        let ix = ((dxy.x + self.origin.x) * rdelta).floor() as usize;
-        let iy = ((dxy.y + self.origin.y) * rdelta).floor() as usize;
-        if self.board.width() <= ix || self.board.height() <= iy {
-            return Clicked::NotClicked;
-        }
-
-        if pointer.primary_down() {
-            Clicked::Primary(ix, iy)
-        } else if pointer.secondary_down() {
-            Clicked::Secondary(ix, iy)
+        if let Some((ix, iy)) = self.board.clicked(dx, dy, self.grid_width) {
+            if pointer.primary_down() {
+                Clicked::Primary(ix, iy)
+            } else if pointer.secondary_down() {
+                Clicked::Secondary(ix, iy)
+            } else {
+                Clicked::NotClicked
+            }
         } else {
             Clicked::NotClicked
         }
     }
 }
 
-impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> eframe::App for GenericApp<N, Neighborhood, R> {
+impl<const N:usize, Ne: Neighbors<N>, R: Rule<N, Ne>, B: Board<N, Ne, R>> eframe::App for GenericApp<N, Ne, R, B> {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
 //         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -257,7 +250,7 @@ impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> eframe
             // expand board size if needed
 
             if !self.fix_board_size {
-                let chunk_pxls = Board::<R::CellState>::chunk_len() as f32 * delta;
+                let chunk_pxls = self.board.chunk_len() as f32 * delta;
 
                 if self.origin.x < 0.0 {
                     let d = (self.origin.x / chunk_pxls).floor();
@@ -290,9 +283,7 @@ impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> eframe
             // ----------------------------------------------------------------
             // draw board to the central panel
 
-            self.board.paint(&painter, self.origin, delta, self.rule.background(), |s| {
-                self.rule.color(s)
-            });
+            self.board.paint(&painter, self.origin, delta, &self.rule);
 
             // ----------------------------------------------------------------
             // handle left/right click
@@ -322,21 +313,16 @@ impl<const N:usize, Neighborhood: Neighbors<N>, R: Rule<N, Neighborhood>> eframe
                 // point the cell that is inspected by a line if inspector is opened
 
                 if self.inspector_indicator {
-                    let cx = (ix as f32 + 0.5) * delta - self.origin.x + region.min.x;
-                    let cy = (iy as f32 + 0.5) * delta - self.origin.y + region.min.y;
-                    let r  = delta * 0.5_f32.sqrt();
+                    let c = self.board.location(ix, iy, self.origin, region.min, delta);
+                    let r = delta * 0.5_f32.sqrt();
                     painter.add(epaint::CircleShape::stroke(
-                            egui::Pos2{x: cx, y: cy},
-                            r,
-                            epaint::Stroke{
+                            c, r, epaint::Stroke{
                                 width: 5.0,
                                 color: egui::Color32::from_rgb(255, 255, 255)
                             },
                         ));
                     painter.add(epaint::CircleShape::stroke(
-                            egui::Pos2{x: cx, y: cy},
-                            r,
-                            epaint::Stroke{
+                            c, r, epaint::Stroke{
                                 width: 2.0,
                                 color: egui::Color32::from_rgb(0, 0, 0)
                             },
@@ -471,14 +457,14 @@ impl eframe::App for App {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "LifeGame".to_string(),
-                        Box::new(GenericApp::<8, MooreNeighborhood, LifeGameRule>::default()),
+                        Box::new(GenericApp::<8, MooreNeighborhood, LifeGameRule, SquareGrid<LifeGameState>>::default()),
                     ));
                 }
                 if ui.button("start highlife").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "HighLife".to_string(),
-                        Box::new(GenericApp::<8, MooreNeighborhood, HighLifeRule>::default()),
+                        Box::new(GenericApp::<8, MooreNeighborhood, HighLifeRule, SquareGrid<LifeGameState>>::default()),
                     ));
                 }
                 egui::Frame::group(ui.style()).show(ui, |ui| {
@@ -488,7 +474,23 @@ impl eframe::App for App {
                             self.focus = Some(self.apps.len());
                             self.apps.push((
                                 self.life_game_rule.clone(),
-                                Box::new(GenericApp::<8, MooreNeighborhood, GeneralizedLifeGameRule>::new(
+                                Box::new(GenericApp::<8, MooreNeighborhood, GeneralizedLifeGameRule, SquareGrid<LifeGameState>>::new(
+                                    GeneralizedLifeGameRule::from_rule(&self.life_game_rule),
+                                )),
+                            ));
+                        }
+                    }
+                    ui.label("specify rule like: `23/3`");
+                    let _ = ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
+                });
+                egui::Frame::group(ui.style()).show(ui, |ui| {
+                    if ui.button("start hex lifegame with specified rule").clicked() {
+                        // convert `23/3` into [2, 3] and [3]
+                        if GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule) {
+                            self.focus = Some(self.apps.len());
+                            self.apps.push((
+                                self.life_game_rule.clone(),
+                                Box::new(GenericApp::<6, HexGridNeighborhood, GeneralizedLifeGameRule, HexGrid<LifeGameState>>::new(
                                     GeneralizedLifeGameRule::from_rule(&self.life_game_rule),
                                 )),
                             ));
@@ -498,18 +500,19 @@ impl eframe::App for App {
                     let _ = ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
                 });
 
+
                 if ui.button("start WireWorld").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "WireWorld".to_string(),
-                        Box::new(GenericApp::<8, MooreNeighborhood, WireWorldRule>::default()),
+                        Box::new(GenericApp::<8, MooreNeighborhood, WireWorldRule, SquareGrid<WireWorldState>>::default()),
                     ));
                 }
                 if ui.button("start Gray-Scott").clicked() {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "Gray-Scott".to_string(),
-                        Box::new(GenericApp::<4, VonNeumannNeighborhood, GrayScottRule>::default()),
+                        Box::new(GenericApp::<4, VonNeumannNeighborhood, GrayScottRule, SquareGrid<GrayScottState>>::default()),
                     ));
                 }
             });
