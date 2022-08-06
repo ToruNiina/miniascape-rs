@@ -266,78 +266,33 @@ impl<T: State> Board<T> {
             bg,
         ));
 
-        if cell_width < 8.0 {
-            let chunk_width = cell_width * CHUNK_LEN as f32;
-            let rwidth = 1.0_f32 / chunk_width;
-            let chunk_begin_x = (origin.x * rwidth).floor() as usize;
-            let chunk_begin_y = (origin.y * rwidth).floor() as usize;
-            let chunk_end_x = ((origin.x + regsize.x) * rwidth).ceil() as usize;
-            let chunk_end_y = ((origin.y + regsize.y) * rwidth).ceil() as usize;
+        let rwidth = 1.0_f32 / cell_width;
+        let cell_begin_x = (origin.x * rwidth).floor() as usize;
+        let cell_begin_y = (origin.y * rwidth).floor() as usize;
+        let cell_end_x = ((origin.x + regsize.x) * rwidth).ceil() as usize;
+        let cell_end_y = ((origin.y + regsize.y) * rwidth).ceil() as usize;
 
-            let ofs = 1.0;
-            for j in chunk_begin_y..chunk_end_y {
-                let y0 =  j    as f32 * chunk_width - origin.y + region.min.y + ofs;
-                let y1 = (j+1) as f32 * chunk_width - origin.y + region.min.y - ofs;
+        // draw grid
+        let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
+        for j in cell_begin_y..cell_end_y {
+            let y0 =  j    as f32 * cell_width - origin.y + region.min.y + ofs;
+            let y1 = (j+1) as f32 * cell_width - origin.y + region.min.y - ofs;
 
-                for i in chunk_begin_x..chunk_end_x {
-                    let x0 =  i    as f32 * chunk_width - origin.x + region.min.x + ofs;
-                    let x1 = (i+1) as f32 * chunk_width - origin.x + region.min.x - ofs;
+            for i in cell_begin_x..cell_end_x {
+                let x0 =  i    as f32 * cell_width - origin.x + region.min.x + ofs;
+                let x1 = (i+1) as f32 * cell_width - origin.x + region.min.x - ofs;
 
-                    if !self.has_chunk(i, j) {
-                        continue;
-                    }
-
-                    let mut r = 0_u32;
-                    let mut g = 0_u32;
-                    let mut b = 0_u32;
-                    for pxl in self.chunk_at(i, j).cells.iter().map(&coloring) {
-                        r += pxl.r() as u32;
-                        g += pxl.g() as u32;
-                        b += pxl.b() as u32;
-                    }
-                    r /= CHUNK_SIZE as u32;
-                    g /= CHUNK_SIZE as u32;
-                    b /= CHUNK_SIZE as u32;
-
-                    painter.add(epaint::RectShape::filled(
-                        egui::Rect {
-                            min: egui::Pos2 { x: x0, y: y0 },
-                            max: egui::Pos2 { x: x1, y: y1 },
-                        },
-                        egui::Rounding::none(),
-                        egui::Color32::from_rgb(r as u8, g as u8, b as u8),
-                    ));
+                if !self.has_cell(i, j) {
+                    continue;
                 }
-            }
-        } else {
-            let rwidth = 1.0_f32 / cell_width;
-            let cell_begin_x = (origin.x * rwidth).floor() as usize;
-            let cell_begin_y = (origin.y * rwidth).floor() as usize;
-            let cell_end_x = ((origin.x + regsize.x) * rwidth).ceil() as usize;
-            let cell_end_y = ((origin.y + regsize.y) * rwidth).ceil() as usize;
-
-            // draw grid
-            let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
-            for j in cell_begin_y..cell_end_y {
-                let y0 =  j    as f32 * cell_width - origin.y + region.min.y + ofs;
-                let y1 = (j+1) as f32 * cell_width - origin.y + region.min.y - ofs;
-
-                for i in cell_begin_x..cell_end_x {
-                    let x0 =  i    as f32 * cell_width - origin.x + region.min.x + ofs;
-                    let x1 = (i+1) as f32 * cell_width - origin.x + region.min.x - ofs;
-
-                    if !self.has_cell(i, j) {
-                        continue;
-                    }
-                    painter.add(epaint::RectShape::filled(
-                        egui::Rect {
-                            min: egui::Pos2 { x: x0, y: y0 },
-                            max: egui::Pos2 { x: x1, y: y1 },
-                        },
-                        egui::Rounding::none(),
-                        coloring(self.cell_at(i, j)),
-                    ));
-                }
+                painter.add(epaint::RectShape::filled(
+                    egui::Rect {
+                        min: egui::Pos2 { x: x0, y: y0 },
+                        max: egui::Pos2 { x: x1, y: y1 },
+                    },
+                    egui::Rounding::none(),
+                    coloring(self.cell_at(i, j)),
+                ));
             }
         }
     }
