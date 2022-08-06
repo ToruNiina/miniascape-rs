@@ -102,7 +102,7 @@ impl Neighbors<8> for MooreNeighborhood {
 impl Neighbors<6> for HexGridNeighborhood {
     #[rustfmt::skip]
     fn neighbors(x: isize, y: isize) -> [(isize, isize); 6] {
-        if x % 2 == 0 {
+        if y % 2 == 0 {
             [(x-1, y-1), (x, y-1),
              (x-1, y  ), (x+1, y),
              (x-1, y+1), (x, y+1)]
