@@ -30,8 +30,8 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     /// Color of a cell.
     fn color(&self, st: &Self::CellState) -> egui::Color32;
 
-    fn neighbors(x: isize, y: isize) -> [(isize, isize); N] {
-        Neighborhood::neighbors(x, y)
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N] {
+        Neighborhood::neighbors(x, y, w, h)
     }
 
     fn update(
@@ -48,7 +48,7 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
 }
 
 pub trait Neighbors<const N: usize>: Default {
-    fn neighbors(x: isize, y: isize) -> [(isize, isize); N];
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N];
 }
 
 #[derive(Default)]
@@ -59,16 +59,28 @@ pub struct MooreNeighborhood {}
 pub struct HexGridNeighborhood {}
 
 impl Neighbors<4> for VonNeumannNeighborhood {
-    fn neighbors(x: isize, y: isize) -> [(isize, isize); 4] {
-        [(x, y - 1), (x - 1, y), (x + 1, y), (x, y + 1)]
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); 4] {
+        let xprev = (if x == 0 { w - 1 } else { x - 1 }) as usize;
+        let xnext = (if x == w - 1 { 0 } else { x + 1 }) as usize;
+        let yprev = (if y == 0 { h - 1 } else { y - 1 }) as usize;
+        let ynext = (if y == h - 1 { 0 } else { y + 1 }) as usize;
+        let x = x as usize;
+        let y = y as usize;
+        [(x, yprev), (xnext, y), (xprev, y), (x, ynext)]
     }
 }
 impl Neighbors<8> for MooreNeighborhood {
     #[rustfmt::skip]
-    fn neighbors(x: isize, y: isize) -> [(isize, isize); 8] {
-        [(x-1, y-1), (x, y-1), (x+1, y-1),
-         (x-1, y  ),           (x+1, y  ),
-         (x-1, y+1), (x, y+1), (x+1, y+1)]
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); 8] {
+        let xprev = (if x == 0 { w - 1 } else { x - 1 }) as usize;
+        let xnext = (if x == w - 1 { 0 } else { x + 1 }) as usize;
+        let yprev = (if y == 0 { h - 1 } else { y - 1 }) as usize;
+        let ynext = (if y == h - 1 { 0 } else { y + 1 }) as usize;
+        let x = x as usize;
+        let y = y as usize;
+        [(xprev, yprev), (x, yprev), (xnext, yprev),
+         (xprev, y    ),             (xnext, y    ),
+         (xprev, ynext), (x, ynext), (xnext, ynext)]
     }
 }
 
@@ -105,15 +117,22 @@ impl Neighbors<8> for MooreNeighborhood {
 //
 impl Neighbors<6> for HexGridNeighborhood {
     #[rustfmt::skip]
-    fn neighbors(x: isize, y: isize) -> [(isize, isize); 6] {
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); 6] {
+        let xprev = (if x == 0 { w - 1 } else { x - 1 }) as usize;
+        let xnext = (if x == w - 1 { 0 } else { x + 1 }) as usize;
+        let yprev = (if y == 0 { h - 1 } else { y - 1 }) as usize;
+        let ynext = (if y == h - 1 { 0 } else { y + 1 }) as usize;
+        let x = x as usize;
+        let y = y as usize;
+
         if y % 2 == 0 {
-            [(x-1, y-1), (x, y-1),
-             (x-1, y  ), (x+1, y),
-             (x-1, y+1), (x, y+1)]
+            [(xprev, yprev), (x,     yprev),
+             (xprev, y    ), (xnext, y),
+             (xprev, ynext), (x,     ynext)]
         } else {
-            [(x, y-1), (x+1, y-1),
-             (x-1, y), (x+1, y  ),
-             (x, y+1), (x+1, y+1)]
+            [(x, yprev), (xnext, yprev),
+             (xprev, y), (xnext, y),
+             (x, ynext), (xnext, ynext)]
         }
     }
 }

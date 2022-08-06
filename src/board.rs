@@ -216,23 +216,16 @@ impl<T: State> Grid<T> {
                         for i in 0..CHUNK_LEN {
                             let x = x0 + i;
                             let y = y0 + j;
-                            let idxs = R::neighbors(x as isize, y as isize);
+                            let idxs = R::neighbors(
+                                x as isize,
+                                y as isize,
+                                self.width() as isize,
+                                self.height() as isize,
+                            );
 
                             *self.bufcell_at_mut(x, y) = rule.update(
                                 *self.cell_at(x, y),
-                                idxs.map(|(x, y)| {
-                                    if x < 0 || y < 0 {
-                                        Default::default()
-                                    }
-                                    let x = x as usize;
-                                    let y = y as usize;
-                                    if self.has_cell(x, y) {
-                                        *self.cell_at(x, y)
-                                    } else {
-                                        Default::default()
-                                    }
-                                })
-                                .into_iter(),
+                                idxs.map(|(x, y)| *self.cell_at(x, y)).into_iter(),
                             );
                         }
                     }
