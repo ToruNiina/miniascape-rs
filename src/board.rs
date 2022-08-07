@@ -31,16 +31,22 @@ impl<T: State> Chunk<T> {
         &mut self.cells[y * CHUNK_LEN + x]
     }
     fn clear<const N: usize, Ne, R>(&mut self, rule: &R)
-    where R: Rule<N, Ne, CellState = T>,
-          Ne: Neighbors<N>
+    where
+        R: Rule<N, Ne, CellState = T>,
+        Ne: Neighbors<N>,
     {
         for c in self.cells.iter_mut() {
             *c = rule.default_state();
         }
     }
-    fn randomize<R: Rng>(&mut self, rng: &mut R) {
+    fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn)
+    where
+        R: Rule<N, Ne, CellState = T>,
+        Ne: Neighbors<N>,
+        Rn: Rng,
+    {
         for c in self.cells.iter_mut() {
-            c.randomize(rng);
+            *c = rule.randomize(rng);
         }
     }
 }
@@ -196,16 +202,22 @@ impl<T: State> Grid<T> {
     }
 
     pub fn clear<const N: usize, Ne, R>(&mut self, rule: &R)
-        where R: Rule<N, Ne, CellState = T>,
-              Ne: Neighbors<N>
+    where
+        R: Rule<N, Ne, CellState = T>,
+        Ne: Neighbors<N>,
     {
         for ch in self.chunks.iter_mut() {
             ch.clear(rule);
         }
     }
-    pub fn randomize<R: Rng>(&mut self, rng: &mut R) {
+    pub fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn)
+    where
+        R: Rule<N, Ne, CellState = T>,
+        Ne: Neighbors<N>,
+        Rn: Rng,
+    {
         for ch in self.chunks.iter_mut() {
-            ch.randomize(rng);
+            ch.randomize(rule, rng);
         }
     }
 
@@ -263,7 +275,7 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     fn expand_y(&mut self, n: isize);
 
     fn clear(&mut self, rule: &R);
-    fn randomize<Rn: Rng>(&mut self, rng: &mut Rn);
+    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn);
 
     fn location(
         &self,
@@ -340,8 +352,8 @@ where
     fn clear(&mut self, rule: &R) {
         self.grid.clear(rule)
     }
-    fn randomize<Rn: Rng>(&mut self, rng: &mut Rn) {
-        self.grid.randomize(rng)
+    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) {
+        self.grid.randomize(rule, rng)
     }
 
     fn location(
@@ -480,8 +492,8 @@ where
     fn clear(&mut self, rule: &R) {
         self.grid.clear(rule)
     }
-    fn randomize<Rn: Rng>(&mut self, rng: &mut Rn) {
-        self.grid.randomize(rng)
+    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) {
+        self.grid.randomize(rule, rng)
     }
 
     fn update(&mut self, rule: &R) {

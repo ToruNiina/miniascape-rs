@@ -26,16 +26,6 @@ impl State for WireWorldState {
         }
     }
 
-    fn randomize<R: Rng>(&mut self, rng: &mut R) {
-        *self = match rng.gen_range(0..4) {
-            0 => WireWorldState::Void,
-            1 => WireWorldState::Head,
-            2 => WireWorldState::Tail,
-            3 => WireWorldState::Wire,
-            _ => unreachable!(),
-        }
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.radio_value(self, WireWorldState::Void, "Void");
         ui.radio_value(self, WireWorldState::Head, "Head");
@@ -82,6 +72,16 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
 
     fn default_state(&self) -> Self::CellState {
         WireWorldState::Void
+    }
+
+    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
+        match rng.gen_range(0..4) {
+            0 => WireWorldState::Void,
+            1 => WireWorldState::Head,
+            2 => WireWorldState::Tail,
+            3 => WireWorldState::Wire,
+            _ => unreachable!(),
+        }
     }
 
     fn update(

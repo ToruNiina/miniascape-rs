@@ -25,15 +25,6 @@ impl State for LifeGameState {
         }
     }
 
-    fn randomize<R: Rng>(&mut self, rng: &mut R) {
-        let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
-        if distr.sample(rng) {
-            *self = LifeGameState::Alive;
-        } else {
-            *self = LifeGameState::Dead;
-        }
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.radio_value(self, LifeGameState::Dead, "Dead");
         ui.radio_value(self, LifeGameState::Alive, "Alive");
@@ -75,6 +66,15 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
 
     fn default_state(&self) -> Self::CellState {
         LifeGameState::Dead
+    }
+
+    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
+        let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
+        if distr.sample(rng) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
+        }
     }
 
     fn update(
@@ -153,6 +153,15 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
 
     fn default_state(&self) -> Self::CellState {
         LifeGameState::Dead
+    }
+
+    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
+        let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
+        if distr.sample(rng) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
+        }
     }
 
     fn update(
@@ -289,6 +298,15 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
 
     fn default_state(&self) -> Self::CellState {
         LifeGameState::Dead
+    }
+
+    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
+        let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
+        if distr.sample(rng) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
+        }
     }
 
     fn update(

@@ -182,7 +182,7 @@ where
                     self.board.clear(&self.rule);
                 }
                 if ui.button("Randomize").clicked() {
-                    self.board.randomize(&mut self.rng);
+                    self.board.randomize(&self.rule, &mut self.rng);
                 }
             });
 

@@ -10,10 +10,6 @@ pub trait State: Clone + Copy + Default {
     /// The next state. It will be used to change cell state from GUI
     fn next(&self) -> Self;
 
-    // TODO move this to Rule
-    /// Randomize the cell state. It will be used to initialize the board.
-    fn randomize<R: Rng>(&mut self, rng: &mut R);
-
     /// Generate UI to inspect and modify the cell state.
     fn inspect(&mut self, ui: &mut egui::Ui);
 }
@@ -30,6 +26,8 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     fn color(&self, st: &Self::CellState) -> egui::Color32;
 
     fn default_state(&self) -> Self::CellState;
+
+    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState;
 
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N] {
         Neighborhood::neighbors(x, y, w, h)
