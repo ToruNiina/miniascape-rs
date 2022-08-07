@@ -6,10 +6,6 @@ use rand::Rng;
 /// `Clone`. To clear the board, it requires `Default`.
 /// The update rule is implemented in `Rule` trait.
 pub trait State: Clone + Copy + Default {
-    // TODO move this to Rule?
-    /// The next state. It will be used to change cell state from GUI
-    fn next(&self) -> Self;
-
     /// Generate UI to inspect and modify the cell state.
     fn inspect(&mut self, ui: &mut egui::Ui);
 }
@@ -28,6 +24,9 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     fn default_state(&self) -> Self::CellState;
 
     fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState;
+
+    /// The next state. It will be used to change cell state from GUI
+    fn next(&self, st: Self::CellState) -> Self::CellState;
 
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N] {
         Neighborhood::neighbors(x, y, w, h)

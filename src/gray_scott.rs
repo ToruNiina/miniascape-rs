@@ -16,10 +16,6 @@ impl std::default::Default for GrayScottState {
 }
 
 impl State for GrayScottState {
-    fn next(&self) -> Self {
-        Self { u: (self.u + 0.01).min(1.0), v: self.v }
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.add(egui::Slider::new(&mut self.u, 0.0..=1.0).text("u"));
         ui.add(egui::Slider::new(&mut self.v, 0.0..=1.0).text("v"));
@@ -88,6 +84,10 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
     fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
         let distr = Uniform::new_inclusive(0.0, 1.0);
         Self::CellState { u: distr.sample(rng), v: distr.sample(rng) }
+    }
+
+    fn next(&self, st: Self::CellState) -> Self::CellState {
+        Self::CellState { u: (st.u + 0.01).min(1.0), v: st.v }
     }
 
     fn update(

@@ -17,14 +17,6 @@ impl std::default::Default for LifeGameState {
 }
 
 impl State for LifeGameState {
-    fn next(&self) -> Self {
-        if *self == LifeGameState::Dead {
-            LifeGameState::Alive
-        } else {
-            LifeGameState::Dead
-        }
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.radio_value(self, LifeGameState::Dead, "Dead");
         ui.radio_value(self, LifeGameState::Alive, "Alive");
@@ -71,6 +63,14 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
     fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
         if distr.sample(rng) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
+        }
+    }
+
+    fn next(&self, st: Self::CellState) -> Self::CellState {
+        if st == LifeGameState::Dead {
             LifeGameState::Alive
         } else {
             LifeGameState::Dead
@@ -158,6 +158,14 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
     fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
         if distr.sample(rng) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
+        }
+    }
+
+    fn next(&self, st: Self::CellState) -> Self::CellState {
+        if st == LifeGameState::Dead {
             LifeGameState::Alive
         } else {
             LifeGameState::Dead
@@ -303,6 +311,14 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
     fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
         if distr.sample(rng) {
+            LifeGameState::Alive
+        } else {
+            LifeGameState::Dead
+        }
+    }
+
+    fn next(&self, st: Self::CellState) -> Self::CellState {
+        if st == LifeGameState::Dead {
             LifeGameState::Alive
         } else {
             LifeGameState::Dead

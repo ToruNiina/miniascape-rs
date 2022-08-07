@@ -17,15 +17,6 @@ impl std::default::Default for WireWorldState {
 }
 
 impl State for WireWorldState {
-    fn next(&self) -> Self {
-        match *self {
-            WireWorldState::Void => WireWorldState::Wire,
-            WireWorldState::Wire => WireWorldState::Head,
-            WireWorldState::Head => WireWorldState::Tail,
-            WireWorldState::Tail => WireWorldState::Void,
-        }
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.radio_value(self, WireWorldState::Void, "Void");
         ui.radio_value(self, WireWorldState::Head, "Head");
@@ -81,6 +72,15 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
             2 => WireWorldState::Tail,
             3 => WireWorldState::Wire,
             _ => unreachable!(),
+        }
+    }
+
+    fn next(&self, st: Self::CellState) -> Self::CellState {
+        match st {
+            WireWorldState::Void => WireWorldState::Wire,
+            WireWorldState::Wire => WireWorldState::Head,
+            WireWorldState::Head => WireWorldState::Tail,
+            WireWorldState::Tail => WireWorldState::Void,
         }
     }
 

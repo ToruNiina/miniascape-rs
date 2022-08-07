@@ -344,7 +344,7 @@ where
                     if let Some(next) = &self.cell_modifying {
                         *self.board.cell_at_mut(ix, iy) = *next;
                     } else {
-                        let next = self.board.cell_at(ix, iy).next();
+                        let next = self.rule.next(*self.board.cell_at(ix, iy));
                         *self.board.cell_at_mut(ix, iy) = next;
                         self.cell_modifying = Some(next);
                     }
