@@ -6,7 +6,8 @@ mod gray_scott;
 mod lifegame;
 mod rule;
 mod wireworld;
-pub use app::App;
+mod wrap_app;
+pub use wrap_app::WrapApp as App;
 
 // ----------------------------------------------------------------------------
 // When compiling for web:
