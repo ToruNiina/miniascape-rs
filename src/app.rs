@@ -179,7 +179,7 @@ where
                     ui.ctx().request_repaint();
                 }
                 if ui.button("Reset").clicked() {
-                    self.board.clear();
+                    self.board.clear(&self.rule);
                 }
                 if ui.button("Randomize").clicked() {
                     self.board.randomize(&mut self.rng);

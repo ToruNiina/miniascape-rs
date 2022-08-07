@@ -36,10 +36,6 @@ impl State for WireWorldState {
         }
     }
 
-    fn clear(&mut self) {
-        *self = WireWorldState::Void;
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.radio_value(self, WireWorldState::Void, "Void");
         ui.radio_value(self, WireWorldState::Head, "Head");
@@ -82,6 +78,10 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
             WireWorldState::Tail => self.tail_color,
             WireWorldState::Wire => self.wire_color,
         }
+    }
+
+    fn default_state(&self) -> Self::CellState {
+        WireWorldState::Void
     }
 
     fn update(

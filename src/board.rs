@@ -30,9 +30,12 @@ impl<T: State> Chunk<T> {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &mut self.cells[y * CHUNK_LEN + x]
     }
-    fn clear(&mut self) {
+    fn clear<const N: usize, Ne, R>(&mut self, rule: &R)
+    where R: Rule<N, Ne, CellState = T>,
+          Ne: Neighbors<N>
+    {
         for c in self.cells.iter_mut() {
-            c.clear();
+            *c = rule.default_state();
         }
     }
     fn randomize<R: Rng>(&mut self, rng: &mut R) {
@@ -192,9 +195,12 @@ impl<T: State> Grid<T> {
         self.num_chunks_y += na;
     }
 
-    pub fn clear(&mut self) {
+    pub fn clear<const N: usize, Ne, R>(&mut self, rule: &R)
+        where R: Rule<N, Ne, CellState = T>,
+              Ne: Neighbors<N>
+    {
         for ch in self.chunks.iter_mut() {
-            ch.clear();
+            ch.clear(rule);
         }
     }
     pub fn randomize<R: Rng>(&mut self, rng: &mut R) {
@@ -256,7 +262,7 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     fn expand_x(&mut self, n: isize);
     fn expand_y(&mut self, n: isize);
 
-    fn clear(&mut self);
+    fn clear(&mut self, rule: &R);
     fn randomize<Rn: Rng>(&mut self, rng: &mut Rn);
 
     fn location(
@@ -331,8 +337,8 @@ where
         self.grid.expand_y(n)
     }
 
-    fn clear(&mut self) {
-        self.grid.clear()
+    fn clear(&mut self, rule: &R) {
+        self.grid.clear(rule)
     }
     fn randomize<Rn: Rng>(&mut self, rng: &mut Rn) {
         self.grid.randomize(rng)
@@ -471,8 +477,8 @@ where
         self.grid.expand_y(n)
     }
 
-    fn clear(&mut self) {
-        self.grid.clear()
+    fn clear(&mut self, rule: &R) {
+        self.grid.clear(rule)
     }
     fn randomize<Rn: Rng>(&mut self, rng: &mut Rn) {
         self.grid.randomize(rng)

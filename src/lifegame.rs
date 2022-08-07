@@ -34,10 +34,6 @@ impl State for LifeGameState {
         }
     }
 
-    fn clear(&mut self) {
-        *self = LifeGameState::Dead;
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.radio_value(self, LifeGameState::Dead, "Dead");
         ui.radio_value(self, LifeGameState::Alive, "Alive");
@@ -75,6 +71,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
         } else {
             self.alive_color
         }
+    }
+
+    fn default_state(&self) -> Self::CellState {
+        LifeGameState::Dead
     }
 
     fn update(
@@ -149,6 +149,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
         } else {
             self.alive_color
         }
+    }
+
+    fn default_state(&self) -> Self::CellState {
+        LifeGameState::Dead
     }
 
     fn update(
@@ -281,6 +285,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
         } else {
             self.alive_color
         }
+    }
+
+    fn default_state(&self) -> Self::CellState {
+        LifeGameState::Dead
     }
 
     fn update(

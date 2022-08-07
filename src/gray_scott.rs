@@ -26,11 +26,6 @@ impl State for GrayScottState {
         self.v = distr.sample(rng);
     }
 
-    fn clear(&mut self) {
-        self.u = 0.0;
-        self.v = 0.0;
-    }
-
     fn inspect(&mut self, ui: &mut egui::Ui) {
         ui.add(egui::Slider::new(&mut self.u, 0.0..=1.0).text("u"));
         ui.add(egui::Slider::new(&mut self.v, 0.0..=1.0).text("v"));
@@ -90,6 +85,10 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         let b = (st.u * u_b as f32 + st.v * v_b as f32).clamp(0.0, 255.0) as u8;
 
         egui::Color32::from_rgb(r, g, b)
+    }
+
+    fn default_state(&self) -> Self::CellState {
+        GrayScottState{ u: 0.0, v: 0.0 }
     }
 
     fn update(
