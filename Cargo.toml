@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 egui = "0.18"
-egui_extras = "0.18"
+egui_extras = {version = "0.18", features = ["image"]}
 epaint = "0.18"
 eframe = { version = "0.18", features = ["persistence"] }
 serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
@@ -27,6 +27,7 @@ rand = "0.8"
 getrandom = { version = "0.2", features = ["js"] }
 array-init = "2.0"
 arrayvec = "0.7"
+image = { version = "0.24", default-features = false, features = ["png"] }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
