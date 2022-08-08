@@ -38,12 +38,36 @@ impl WrapApp {
             apps: Vec::new(),
             focus: None,
             life_game_rule: "23/3".to_string(),
-            thumbnail_lifegame:             RetainedImage::from_image_bytes("thumbnail_lifegame.png", include_bytes!("thumbnail_lifegame.png")).unwrap(),
-            thumbnail_generalized_lifegame: RetainedImage::from_image_bytes("thumbnail_generalized_lifegame.png", include_bytes!("thumbnail_generalized_lifegame.png")).unwrap(),
-            thumbnail_hexlife:              RetainedImage::from_image_bytes("thumbnail_hexlife.png", include_bytes!("thumbnail_hexlife.png")).unwrap(),
-            thumbnail_highlife:             RetainedImage::from_image_bytes("thumbnail_highlife.png", include_bytes!("thumbnail_highlife.png")).unwrap(),
-            thumbnail_wireworld:            RetainedImage::from_image_bytes("thumbnail_wireworld.png", include_bytes!("thumbnail_wireworld.png")).unwrap(),
-            thumbnail_gray_scott:           RetainedImage::from_image_bytes("thumbnail_gray_scott.png", include_bytes!("thumbnail_gray_scott.png")).unwrap(),
+            thumbnail_lifegame: RetainedImage::from_image_bytes(
+                "thumbnail_lifegame.png",
+                include_bytes!("thumbnail_lifegame.png"),
+            )
+            .unwrap(),
+            thumbnail_generalized_lifegame: RetainedImage::from_image_bytes(
+                "thumbnail_generalized_lifegame.png",
+                include_bytes!("thumbnail_generalized_lifegame.png"),
+            )
+            .unwrap(),
+            thumbnail_hexlife: RetainedImage::from_image_bytes(
+                "thumbnail_hexlife.png",
+                include_bytes!("thumbnail_hexlife.png"),
+            )
+            .unwrap(),
+            thumbnail_highlife: RetainedImage::from_image_bytes(
+                "thumbnail_highlife.png",
+                include_bytes!("thumbnail_highlife.png"),
+            )
+            .unwrap(),
+            thumbnail_wireworld: RetainedImage::from_image_bytes(
+                "thumbnail_wireworld.png",
+                include_bytes!("thumbnail_wireworld.png"),
+            )
+            .unwrap(),
+            thumbnail_gray_scott: RetainedImage::from_image_bytes(
+                "thumbnail_gray_scott.png",
+                include_bytes!("thumbnail_gray_scott.png"),
+            )
+            .unwrap(),
         }
     }
 }
@@ -123,7 +147,7 @@ impl eframe::App for WrapApp {
             self.apps[idx].1.update(ctx, frame);
         } else {
             let card_height = 260.0;
-            let card_width  = 320.0;
+            let card_width = 320.0;
             egui::CentralPanel::default().show(ctx, |ui| {
                 egui::ScrollArea::horizontal().show(ui, |ui| {
                     ui.horizontal_wrapped(|ui| {
@@ -132,10 +156,13 @@ impl eframe::App for WrapApp {
                             ui.set_width(card_width);
                             ui.set_height(card_height);
                             ui.vertical_centered(|ui| {
-                                if ui.add(egui::ImageButton::new(
-                                    self.thumbnail_lifegame.texture_id(ctx),
-                                    self.thumbnail_lifegame.size_vec2(),
-                                )).clicked() {
+                                if ui
+                                    .add(egui::ImageButton::new(
+                                        self.thumbnail_lifegame.texture_id(ctx),
+                                        self.thumbnail_lifegame.size_vec2(),
+                                    ))
+                                    .clicked()
+                                {
                                     self.focus = Some(self.apps.len());
                                     self.apps.push((
                                         "LifeGame".to_string(),
@@ -144,7 +171,8 @@ impl eframe::App for WrapApp {
                                             MooreNeighborhood,
                                             LifeGameRule,
                                             SquareGrid<LifeGameState>,
-                                        >::default()),
+                                        >::default(
+                                        )),
                                     ));
                                 }
                                 ui.label(egui::RichText::new("Conway's Game of Life.").size(20.0));
@@ -156,10 +184,13 @@ impl eframe::App for WrapApp {
                             ui.set_width(card_width);
                             ui.set_height(card_height);
                             ui.vertical_centered(|ui| {
-                                if ui.add(egui::ImageButton::new(
-                                    self.thumbnail_highlife.texture_id(ctx),
-                                    self.thumbnail_highlife.size_vec2(),
-                                )).clicked() {
+                                if ui
+                                    .add(egui::ImageButton::new(
+                                        self.thumbnail_highlife.texture_id(ctx),
+                                        self.thumbnail_highlife.size_vec2(),
+                                    ))
+                                    .clicked()
+                                {
                                     self.focus = Some(self.apps.len());
                                     self.apps.push((
                                         "HighLife".to_string(),
@@ -168,7 +199,8 @@ impl eframe::App for WrapApp {
                                             MooreNeighborhood,
                                             HighLifeRule,
                                             SquareGrid<LifeGameState>,
-                                        >::default()),
+                                        >::default(
+                                        )),
                                     ));
                                 }
                                 ui.label(egui::RichText::new("HighLife(B36/S23)").size(20.0));
@@ -180,24 +212,28 @@ impl eframe::App for WrapApp {
                             ui.set_width(card_width);
                             ui.set_height(card_height);
                             ui.vertical_centered(|ui| {
-                                if ui.add(egui::ImageButton::new(
-                                    self.thumbnail_generalized_lifegame.texture_id(ctx),
-                                    self.thumbnail_generalized_lifegame.size_vec2(),
-                                )).clicked() {
-                                    if GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule) {
-                                        self.focus = Some(self.apps.len());
-                                        self.apps.push((
-                                            self.life_game_rule.clone(),
-                                            Box::new(App::<
-                                                8,
-                                                MooreNeighborhood,
-                                                GeneralizedLifeGameRule,
-                                                SquareGrid<LifeGameState>,
-                                            >::new(
-                                                GeneralizedLifeGameRule::from_rule(&self.life_game_rule),
-                                            )),
-                                        ));
-                                    }
+                                if ui
+                                    .add(egui::ImageButton::new(
+                                        self.thumbnail_generalized_lifegame.texture_id(ctx),
+                                        self.thumbnail_generalized_lifegame.size_vec2(),
+                                    ))
+                                    .clicked()
+                                    && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
+                                {
+                                    self.focus = Some(self.apps.len());
+                                    self.apps.push((
+                                        self.life_game_rule.clone(),
+                                        Box::new(App::<
+                                            8,
+                                            MooreNeighborhood,
+                                            GeneralizedLifeGameRule,
+                                            SquareGrid<LifeGameState>,
+                                        >::new(
+                                            GeneralizedLifeGameRule::from_rule(
+                                                &self.life_game_rule,
+                                            ),
+                                        )),
+                                    ));
                                 }
                                 ui.label(egui::RichText::new("Generalized Lifegame").size(20.0));
                                 ui.horizontal_wrapped(|ui| {
@@ -212,29 +248,34 @@ impl eframe::App for WrapApp {
                             ui.set_width(card_width);
                             ui.set_height(card_height);
                             ui.vertical_centered(|ui| {
-                                if ui.add(egui::ImageButton::new(
-                                    self.thumbnail_hexlife.texture_id(ctx),
-                                    self.thumbnail_hexlife.size_vec2(),
-                                )).clicked() {
-                                    if GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule) {
-                                        self.focus = Some(self.apps.len());
-                                        self.apps.push((
-                                            self.life_game_rule.clone(),
-                                            Box::new(App::<
-                                                6,
-                                                HexGridNeighborhood,
-                                                GeneralizedLifeGameRule,
-                                                HexGrid<LifeGameState>,
-                                            >::new(
-                                                GeneralizedLifeGameRule::from_rule(&self.life_game_rule),
-                                            )),
-                                        ));
-                                    }
+                                if ui
+                                    .add(egui::ImageButton::new(
+                                        self.thumbnail_hexlife.texture_id(ctx),
+                                        self.thumbnail_hexlife.size_vec2(),
+                                    ))
+                                    .clicked()
+                                    && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
+                                {
+                                    self.focus = Some(self.apps.len());
+                                    self.apps.push((
+                                        self.life_game_rule.clone(),
+                                        Box::new(App::<
+                                            6,
+                                            HexGridNeighborhood,
+                                            GeneralizedLifeGameRule,
+                                            HexGrid<LifeGameState>,
+                                        >::new(
+                                            GeneralizedLifeGameRule::from_rule(
+                                                &self.life_game_rule,
+                                            ),
+                                        )),
+                                    ));
                                 }
                                 ui.label(egui::RichText::new("HexLife").size(20.0));
                                 ui.horizontal_wrapped(|ui| {
                                     ui.label("rule (e.g. 23/3)");
-                                    let _ = ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
+                                    let _ = ui
+                                        .add(egui::TextEdit::singleline(&mut self.life_game_rule));
                                 });
                             });
                         });
@@ -243,10 +284,13 @@ impl eframe::App for WrapApp {
                             ui.set_width(card_width);
                             ui.set_height(card_height);
                             ui.vertical_centered(|ui| {
-                                if ui.add(egui::ImageButton::new(
-                                    self.thumbnail_wireworld.texture_id(ctx),
-                                    self.thumbnail_wireworld.size_vec2(),
-                                )).clicked() {
+                                if ui
+                                    .add(egui::ImageButton::new(
+                                        self.thumbnail_wireworld.texture_id(ctx),
+                                        self.thumbnail_wireworld.size_vec2(),
+                                    ))
+                                    .clicked()
+                                {
                                     self.focus = Some(self.apps.len());
                                     self.apps.push((
                                         "WireWorld".to_string(),
@@ -255,7 +299,8 @@ impl eframe::App for WrapApp {
                                             MooreNeighborhood,
                                             WireWorldRule,
                                             SquareGrid<WireWorldState>,
-                                        >::default()),
+                                        >::default(
+                                        )),
                                     ));
                                 }
                                 ui.label(egui::RichText::new("WireWorld").size(20.0));
@@ -266,10 +311,13 @@ impl eframe::App for WrapApp {
                             ui.set_width(card_width);
                             ui.set_height(card_height);
                             ui.vertical_centered(|ui| {
-                                if ui.add(egui::ImageButton::new(
-                                    self.thumbnail_gray_scott.texture_id(ctx),
-                                    self.thumbnail_gray_scott.size_vec2(),
-                                )).clicked() {
+                                if ui
+                                    .add(egui::ImageButton::new(
+                                        self.thumbnail_gray_scott.texture_id(ctx),
+                                        self.thumbnail_gray_scott.size_vec2(),
+                                    ))
+                                    .clicked()
+                                {
                                     self.focus = Some(self.apps.len());
                                     self.apps.push((
                                         "Gray-Scott".to_string(),
@@ -278,7 +326,8 @@ impl eframe::App for WrapApp {
                                             VonNeumannNeighborhood,
                                             GrayScottRule,
                                             SquareGrid<GrayScottState>,
-                                        >::default()),
+                                        >::default(
+                                        )),
                                     ));
                                 }
                                 ui.label(egui::RichText::new("Gray-Scott").size(20.0));
