@@ -194,7 +194,9 @@ where
             let min_grid = Self::min_gridsize();
             let max_grid = Self::max_gridsize();
             ui.horizontal(|ui| {
-                ui.add(egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"));
+                ui.add(
+                    egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"),
+                );
                 ui.checkbox(&mut self.fix_grid_size, "Fix Grid Size");
             });
             ui.checkbox(&mut self.fix_board_size, "Fix Board Size");

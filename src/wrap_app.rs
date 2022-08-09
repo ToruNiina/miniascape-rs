@@ -109,21 +109,20 @@ impl WrapApp {
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                            self.thumbnail_highlife.texture_id(ctx),
-                            self.thumbnail_highlife.size_vec2(),
+                        self.thumbnail_highlife.texture_id(ctx),
+                        self.thumbnail_highlife.size_vec2(),
                     ))
-                        .clicked()
+                    .clicked()
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
-                            "HighLife".to_string(),
-                            Box::new(App::<
-                                8,
-                                MooreNeighborhood,
-                                HighLifeRule,
-                                SquareGrid<LifeGameState>,
-                                >::default(
-                                )),
+                        "HighLife".to_string(),
+                        Box::new(App::<
+                            8,
+                            MooreNeighborhood,
+                            HighLifeRule,
+                            SquareGrid<LifeGameState>,
+                        >::default()),
                     ));
                 }
                 ui.label(egui::RichText::new("HighLife(23/36)").size(20.0));
@@ -137,25 +136,23 @@ impl WrapApp {
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                            self.thumbnail_generalized_lifegame.texture_id(ctx),
-                            self.thumbnail_generalized_lifegame.size_vec2(),
+                        self.thumbnail_generalized_lifegame.texture_id(ctx),
+                        self.thumbnail_generalized_lifegame.size_vec2(),
                     ))
-                        .clicked()
-                        && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
+                    .clicked()
+                    && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
-                            self.life_game_rule.clone(),
-                            Box::new(App::<
-                                8,
-                                MooreNeighborhood,
-                                GeneralizedLifeGameRule,
-                                SquareGrid<LifeGameState>,
-                                >::new(
-                                    GeneralizedLifeGameRule::from_rule(
-                                        &self.life_game_rule,
-                                    ),
-                                )),
+                        self.life_game_rule.clone(),
+                        Box::new(App::<
+                            8,
+                            MooreNeighborhood,
+                            GeneralizedLifeGameRule,
+                            SquareGrid<LifeGameState>,
+                        >::new(
+                            GeneralizedLifeGameRule::from_rule(&self.life_game_rule)
+                        )),
                     ));
                 }
                 ui.label(egui::RichText::new("Generalized Lifegame").size(20.0));
@@ -173,33 +170,30 @@ impl WrapApp {
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                            self.thumbnail_hexlife.texture_id(ctx),
-                            self.thumbnail_hexlife.size_vec2(),
+                        self.thumbnail_hexlife.texture_id(ctx),
+                        self.thumbnail_hexlife.size_vec2(),
                     ))
-                        .clicked()
-                        && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
+                    .clicked()
+                    && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
-                            self.life_game_rule.clone(),
-                            Box::new(App::<
-                                6,
-                                HexGridNeighborhood,
-                                GeneralizedLifeGameRule,
-                                HexGrid<LifeGameState>,
-                                >::new(
-                                    GeneralizedLifeGameRule::from_rule(
-                                        &self.life_game_rule,
-                                    ),
-                                )),
+                        self.life_game_rule.clone(),
+                        Box::new(App::<
+                            6,
+                            HexGridNeighborhood,
+                            GeneralizedLifeGameRule,
+                            HexGrid<LifeGameState>,
+                        >::new(
+                            GeneralizedLifeGameRule::from_rule(&self.life_game_rule)
+                        )),
                     ));
                 }
                 ui.label(egui::RichText::new("HexLife").size(20.0));
                 ui.horizontal_wrapped(|ui| {
                     ui.label("rule `{survive}/{birth}` (e.g. 23/3)");
-                    let _ = ui
-                        .add(egui::TextEdit::singleline(&mut self.life_game_rule));
-                    });
+                    let _ = ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
+                });
             });
         });
     }
@@ -210,21 +204,20 @@ impl WrapApp {
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                            self.thumbnail_wireworld.texture_id(ctx),
-                            self.thumbnail_wireworld.size_vec2(),
+                        self.thumbnail_wireworld.texture_id(ctx),
+                        self.thumbnail_wireworld.size_vec2(),
                     ))
-                        .clicked()
+                    .clicked()
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
-                            "WireWorld".to_string(),
-                            Box::new(App::<
-                                8,
-                                MooreNeighborhood,
-                                WireWorldRule,
-                                SquareGrid<WireWorldState>,
-                                >::default(
-                                )),
+                        "WireWorld".to_string(),
+                        Box::new(App::<
+                            8,
+                            MooreNeighborhood,
+                            WireWorldRule,
+                            SquareGrid<WireWorldState>,
+                        >::default()),
                     ));
                 }
                 ui.label(egui::RichText::new("WireWorld").size(20.0));
@@ -238,21 +231,20 @@ impl WrapApp {
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                            self.thumbnail_gray_scott.texture_id(ctx),
-                            self.thumbnail_gray_scott.size_vec2(),
+                        self.thumbnail_gray_scott.texture_id(ctx),
+                        self.thumbnail_gray_scott.size_vec2(),
                     ))
-                        .clicked()
+                    .clicked()
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
-                            "Gray-Scott".to_string(),
-                            Box::new(App::<
-                                4,
-                                VonNeumannNeighborhood,
-                                GrayScottRule,
-                                SquareGrid<GrayScottState>,
-                                >::default(
-                                )),
+                        "Gray-Scott".to_string(),
+                        Box::new(App::<
+                            4,
+                            VonNeumannNeighborhood,
+                            GrayScottRule,
+                            SquareGrid<GrayScottState>,
+                        >::default()),
                     ));
                 }
                 ui.label(egui::RichText::new("Gray-Scott").size(20.0));
