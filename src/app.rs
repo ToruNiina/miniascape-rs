@@ -208,7 +208,20 @@ where
             self.rule.ui(ui);
         });
 
+
+        if let Some(multi_touch) = ctx.multi_touch() {
+            if self.grabbed {
+                self.origin -= multi_touch.translation_delta;
+            }
+            if multi_touch.num_touches == 2 {
+                self.grabbed = true;
+            } else {
+                self.grabbed = false;
+            }
+        }
+
         {
+            // we need to drop pointer after checking the value to release ctx.
             let pointer = &ctx.input().pointer;
             if self.grabbed {
                 self.origin -= pointer.delta();
@@ -219,6 +232,7 @@ where
                 self.grabbed = false;
             }
         }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.running {
                 ui.ctx().request_repaint();
@@ -239,8 +253,22 @@ where
             let regsize = region.max - region.min;
 
             // ----------------------------------------------------------------
-            // zoom in/out by scroll
+            // zoom in/out
+
+            if let Some(multi_touch) = ctx.multi_touch() {
+                let new_grid_width = (self.grid_width * multi_touch.zoom_delta)
+                    .clamp(Self::min_gridsize(), Self::max_gridsize())
+                    .ceil();
+
+                let magnification = new_grid_width / self.grid_width;
+                let center = self.origin.to_vec2() + (regsize * 0.5);
+
+                self.origin = (center * magnification - regsize * 0.5).to_pos2();
+                self.grid_width = new_grid_width;
+            }
+
             {
+                // we need to drop scroll after checking it to release ctx
                 let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
                 if scroll != 0.0 {
                     let new_grid_width = (self.grid_width * 1.1_f32.powf(scroll))
