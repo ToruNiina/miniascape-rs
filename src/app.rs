@@ -14,6 +14,8 @@ where
     board: B,
     fix_board_size: bool,
     fix_grid_size: bool,
+    is_inspect_mode: bool,
+    is_grab_mode: bool,
     running: bool,
     inspector: Option<(usize, usize)>,
     inspector_indicator: bool,
@@ -36,6 +38,8 @@ where
             board: B::new(8, 8),
             fix_board_size: false,
             fix_grid_size: false,
+            is_inspect_mode: false,
+            is_grab_mode: false,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -67,6 +71,8 @@ where
             board: Board::new(8, 8),
             fix_board_size: false,
             fix_grid_size: false,
+            is_inspect_mode: false,
+            is_grab_mode: false,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -200,6 +206,8 @@ where
                 ui.checkbox(&mut self.fix_grid_size, "Fix Grid Size");
             });
             ui.checkbox(&mut self.fix_board_size, "Fix Board Size");
+            ui.checkbox(&mut self.is_grab_mode, "Grab Board");
+            ui.checkbox(&mut self.is_inspect_mode, "Open Inspector by click");
 
             ui.separator();
             ui.label("status:");
@@ -220,7 +228,7 @@ where
             if self.grabbed {
                 self.origin -= multi_touch.translation_delta;
             }
-            if multi_touch.num_touches == 2 {
+            if multi_touch.num_touches == 2 || self.is_grab_mode {
                 self.grabbed = true;
             } else {
                 self.grabbed = false;
@@ -231,7 +239,7 @@ where
             if self.grabbed {
                 self.origin -= pointer.delta();
             }
-            if pointer.middle_down() {
+            if pointer.middle_down() || (self.is_grab_mode && pointer.any_down()) {
                 self.grabbed = true;
             } else {
                 self.grabbed = false;
@@ -335,12 +343,22 @@ where
             let clicked = self.clicked(ctx, region.min);
 
             // stop running and inspect cell state by right click
-            if let Clicked::Secondary(ix, iy) = clicked {
+
+            if let Clicked::NotClicked = clicked {
+                self.cell_modifying = None;
+            } else if self.is_inspect_mode {
+                self.running = false;
+                self.cell_modifying = None;
+                self.inspector = if let Clicked::Primary(ix, iy) = clicked {
+                    Some((ix, iy))
+                } else if let Clicked::Secondary(ix, iy) = clicked {
+                    Some((ix, iy))
+                } else {
+                    None
+                };
+            } else if let Clicked::Secondary(ix, iy) = clicked {
                 self.running = false;
                 self.inspector = Some((ix, iy));
-                self.cell_modifying = None;
-            }
-            if let Clicked::NotClicked = clicked {
                 self.cell_modifying = None;
             }
 
