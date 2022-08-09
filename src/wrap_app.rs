@@ -126,7 +126,7 @@ impl WrapApp {
                                 )),
                     ));
                 }
-                ui.label(egui::RichText::new("HighLife(B36/S23)").size(20.0));
+                ui.label(egui::RichText::new("HighLife(23/36)").size(20.0));
             });
         });
     }
@@ -160,7 +160,7 @@ impl WrapApp {
                 }
                 ui.label(egui::RichText::new("Generalized Lifegame").size(20.0));
                 ui.horizontal_wrapped(|ui| {
-                    ui.label("rule (e.g. 23/3)");
+                    ui.label("rule `{survive}/{birth}` (e.g. 23/3)");
                     ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
                 });
             });
@@ -196,7 +196,7 @@ impl WrapApp {
                 }
                 ui.label(egui::RichText::new("HexLife").size(20.0));
                 ui.horizontal_wrapped(|ui| {
-                    ui.label("rule (e.g. 23/3)");
+                    ui.label("rule `{survive}/{birth}` (e.g. 23/3)");
                     let _ = ui
                         .add(egui::TextEdit::singleline(&mut self.life_game_rule));
                     });

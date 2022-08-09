@@ -344,7 +344,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {
-        ui.label("specify rule like: `23/3`");
+        ui.label("rule {survive}/{birth} (e.g. `23/3`)");
         ui.horizontal_wrapped(|ui| {
             if ui.add(egui::TextEdit::singleline(&mut self.rule)).changed() {
                 self.show_err_msg_about_rule = false;
