@@ -13,6 +13,7 @@ where
     rule: R,
     board: B,
     fix_board_size: bool,
+    fix_grid_size: bool,
     running: bool,
     inspector: Option<(usize, usize)>,
     inspector_indicator: bool,
@@ -34,6 +35,7 @@ where
             rule: Default::default(),
             board: B::new(8, 8),
             fix_board_size: false,
+            fix_grid_size: false,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -64,6 +66,7 @@ where
             rule,
             board: Board::new(8, 8),
             fix_board_size: false,
+            fix_grid_size: false,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -190,7 +193,10 @@ where
 
             let min_grid = Self::min_gridsize();
             let max_grid = Self::max_gridsize();
-            ui.add(egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"));
+            ui.horizontal(|ui| {
+                ui.add(egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"));
+                ui.checkbox(&mut self.fix_grid_size, "Fix Grid Size");
+            });
             ui.checkbox(&mut self.fix_board_size, "Fix Board Size");
 
             ui.separator();
@@ -208,7 +214,6 @@ where
             self.rule.ui(ui);
         });
 
-
         if let Some(multi_touch) = ctx.multi_touch() {
             if self.grabbed {
                 self.origin -= multi_touch.translation_delta;
@@ -218,9 +223,7 @@ where
             } else {
                 self.grabbed = false;
             }
-        }
-
-        {
+        } else {
             // we need to drop pointer after checking the value to release ctx.
             let pointer = &ctx.input().pointer;
             if self.grabbed {
@@ -255,31 +258,33 @@ where
             // ----------------------------------------------------------------
             // zoom in/out
 
-            if let Some(multi_touch) = ctx.multi_touch() {
-                let new_grid_width = (self.grid_width * multi_touch.zoom_delta)
-                    .clamp(Self::min_gridsize(), Self::max_gridsize())
-                    .ceil();
+            if !self.fix_grid_size {
+                if let Some(multi_touch) = ctx.multi_touch() {
+                    if multi_touch.zoom_delta < 0.99 || 1.01 < multi_touch.zoom_delta {
+                        let new_grid_width = (self.grid_width * multi_touch.zoom_delta)
+                            .clamp(Self::min_gridsize(), Self::max_gridsize())
+                            .ceil();
 
-                let magnification = new_grid_width / self.grid_width;
-                let center = self.origin.to_vec2() + (regsize * 0.5);
+                        let magnification = new_grid_width / self.grid_width;
+                        let center = self.origin.to_vec2() + (regsize * 0.5);
 
-                self.origin = (center * magnification - regsize * 0.5).to_pos2();
-                self.grid_width = new_grid_width;
-            }
+                        self.origin = (center * magnification - regsize * 0.5).to_pos2();
+                        self.grid_width = new_grid_width;
+                    }
+                } else {
+                    // we need to drop scroll after checking it to release ctx
+                    let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
+                    if scroll != 0.0 {
+                        let new_grid_width = (self.grid_width * 1.1_f32.powf(scroll))
+                            .clamp(Self::min_gridsize(), Self::max_gridsize())
+                            .ceil();
 
-            {
-                // we need to drop scroll after checking it to release ctx
-                let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
-                if scroll != 0.0 {
-                    let new_grid_width = (self.grid_width * 1.1_f32.powf(scroll))
-                        .clamp(Self::min_gridsize(), Self::max_gridsize())
-                        .ceil();
+                        let magnification = new_grid_width / self.grid_width;
+                        let center = self.origin.to_vec2() + (regsize * 0.5);
 
-                    let magnification = new_grid_width / self.grid_width;
-                    let center = self.origin.to_vec2() + (regsize * 0.5);
-
-                    self.origin = (center * magnification - regsize * 0.5).to_pos2();
-                    self.grid_width = new_grid_width;
+                        self.origin = (center * magnification - regsize * 0.5).to_pos2();
+                        self.grid_width = new_grid_width;
+                    }
                 }
             }
 
