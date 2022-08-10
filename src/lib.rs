@@ -2,6 +2,7 @@
 
 mod app;
 mod board;
+mod dynamic_rule;
 mod gray_scott;
 mod lifegame;
 mod rule;

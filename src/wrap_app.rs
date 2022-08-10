@@ -2,6 +2,7 @@ use crate::app::App;
 use crate::board::{HexGrid, SquareGrid};
 use crate::rule::{HexGridNeighborhood, MooreNeighborhood, VonNeumannNeighborhood};
 
+use crate::dynamic_rule::{DynamicRule, DynamicState};
 use crate::gray_scott::{GrayScottRule, GrayScottState};
 use crate::lifegame::{GeneralizedLifeGameRule, HighLifeRule, LifeGameRule, LifeGameState};
 use crate::wireworld::{WireWorldRule, WireWorldState};
@@ -251,6 +252,34 @@ impl WrapApp {
             });
         });
     }
+    fn draw_dynamic_card(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+        egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_width(self.card_width);
+            ui.set_height(self.card_height);
+            ui.vertical_centered(|ui| {
+                if ui
+                    .add(egui::ImageButton::new(
+                            // TODO
+                        self.thumbnail_lifegame.texture_id(ctx),
+                        self.thumbnail_lifegame.size_vec2(),
+                    ))
+                    .clicked()
+                {
+                    self.focus = Some(self.apps.len());
+                    self.apps.push((
+                        "User Defined".to_string(),
+                        Box::new(App::<
+                            8,
+                            MooreNeighborhood,
+                            DynamicRule,
+                            SquareGrid<DynamicState>,
+                        >::default()),
+                    ));
+                }
+                ui.label(egui::RichText::new("User-Defined").size(20.0));
+            });
+        });
+    }
 
     fn draw_card(&mut self, idx: usize, ctx: &egui::Context, ui: &mut egui::Ui) {
         match idx {
@@ -260,6 +289,7 @@ impl WrapApp {
             3 => self.draw_hexlife_card(ctx, ui),
             4 => self.draw_wireworld_card(ctx, ui),
             5 => self.draw_grayscott_card(ctx, ui),
+            6 => self.draw_dynamic_card(ctx, ui),
             _ => (),
         }
     }
@@ -347,10 +377,10 @@ impl eframe::App for WrapApp {
 
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     let mut idx = 0;
-                    while idx < 6 {
+                    while idx < 7 {
                         ui.horizontal(|ui| {
                             for _ in 0..n_card_x {
-                                if 6 <= idx {
+                                if 7 <= idx {
                                     break;
                                 }
                                 self.draw_card(idx, ctx, ui);

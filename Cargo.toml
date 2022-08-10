@@ -28,6 +28,16 @@ getrandom = { version = "0.2", features = ["js"] }
 array-init = "2.0"
 arrayvec = "0.7"
 image = { version = "0.24", default-features = false, features = ["png"] }
+rhai.version = "1.8"
+rhai.features = [
+    "wasm-bindgen",
+    "only_i32",    # use only one integer type
+    "f32_float",   # minimize size of Dynamic
+    "no_closure",  # no variable sharing
+    "no_position", # remove info from parse error
+    "unchecked",   # make script unsafe
+]
+rhai-rand = "0.1"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
