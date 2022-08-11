@@ -10,20 +10,20 @@ where
     R: Rule<N, Ne>,
     B: Board<N, Ne, R>,
 {
-    rule: R,
-    board: B,
-    fix_board_size: bool,
-    fix_grid_size: bool,
-    is_inspect_mode: bool,
-    is_grab_mode: bool,
-    running: bool,
-    inspector: Option<(usize, usize)>,
-    inspector_indicator: bool,
-    grid_width: f32,
-    origin: egui::Pos2,
-    grabbed: bool,
-    cell_modifying: Option<R::CellState>,
-    rng: rand::rngs::StdRng,
+    pub(crate) rule: R,
+    pub(crate) board: B,
+    pub(crate) fix_board_size: bool,
+    pub(crate) fix_grid_size: bool,
+    pub(crate) is_inspect_mode: bool,
+    pub(crate) is_grab_mode: bool,
+    pub(crate) running: bool,
+    pub(crate) inspector: Option<(usize, usize)>,
+    pub(crate) inspector_indicator: bool,
+    pub(crate) grid_width: f32,
+    pub(crate) origin: egui::Pos2,
+    pub(crate) grabbed: bool,
+    pub(crate) cell_modifying: Option<R::CellState>,
+    pub(crate) rng: rand::rngs::StdRng,
 }
 
 impl<const N: usize, Ne, R, B> Default for App<N, Ne, R, B>
@@ -35,7 +35,7 @@ where
     fn default() -> Self {
         Self {
             rule: Default::default(),
-            board: B::new(8, 8),
+            board: B::new(4, 3),
             fix_board_size: false,
             fix_grid_size: false,
             is_inspect_mode: false,
