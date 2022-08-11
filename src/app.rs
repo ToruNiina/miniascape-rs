@@ -24,6 +24,7 @@ where
     pub(crate) grabbed: bool,
     pub(crate) cell_modifying: Option<R::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
+    pub(crate) err: Option<String>,
 }
 
 impl<const N: usize, Ne, R, B> Default for App<N, Ne, R, B>
@@ -48,6 +49,7 @@ where
             grabbed: false,
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
+            err: None,
         }
     }
 }
@@ -81,6 +83,7 @@ where
             grabbed: false,
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
+            err: None,
         }
     }
     pub fn min_gridsize() -> f32 {
@@ -137,9 +140,7 @@ where
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
             if let Err(e) = self.board.update(&self.rule) {
-                egui::Window::new("Error Report").show(ctx, |ui| {
-                    ui.label(format!("{:?}", e));
-                });
+                self.err = Some(format!("{:?}", e));
             }
         }
 
@@ -189,24 +190,18 @@ where
 
                 if ui.button("Step").clicked() {
                     if let Err(e) = self.board.update(&self.rule) {
-                        egui::Window::new("Error Report").show(ctx, |ui| {
-                            ui.label(format!("{:?}", e));
-                        });
+                        self.err = Some(format!("{:?}", e));
                     }
                     ui.ctx().request_repaint();
                 }
                 if ui.button("Reset").clicked() {
                     if let Err(e) = self.board.clear(&self.rule) {
-                        egui::Window::new("Error Report").show(ctx, |ui| {
-                            ui.label(format!("{:?}", e));
-                        });
+                        self.err = Some(format!("{:?}", e));
                     }
                 }
                 if ui.button("Randomize").clicked() {
                     if let Err(e) = self.board.randomize(&self.rule, &mut self.rng) {
-                        egui::Window::new("Error Report").show(ctx, |ui| {
-                            ui.label(format!("{:?}", e));
-                        });
+                        self.err = Some(format!("{:?}", e));
                     }
                 }
             });
@@ -352,9 +347,7 @@ where
             // draw board to the central panel
 
             if let Err(e) = self.board.paint(&painter, self.origin, delta, &self.rule) {
-                egui::Window::new("Error Report").show(ctx, |ui| {
-                    ui.label(format!("{:?}", e));
-                });
+                self.err = Some(format!("{:?}", e));
             }
 
             // ----------------------------------------------------------------
@@ -428,5 +421,15 @@ where
             // detect debug build
             egui::warn_if_debug_build(ui);
         });
+
+        if let Some(err) = &self.err {
+            let mut open = true;
+            egui::Window::new("Error Report").open(&mut open).show(ctx, |ui| {
+                ui.label(err);
+            });
+            if !open {
+                self.err = None;
+            }
+        }
     }
 }
