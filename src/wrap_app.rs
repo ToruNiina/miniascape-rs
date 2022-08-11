@@ -265,6 +265,9 @@ impl WrapApp {
                     ))
                     .clicked()
                 {
+                    // TODO enable to select
+                    // - hex grid / square grid
+                    // - moore / von neumann neighborhood
                     self.focus = Some(self.apps.len());
                     let app = App::<8, MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
                         fix_board_size: true,
