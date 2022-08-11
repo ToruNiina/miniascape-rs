@@ -111,7 +111,7 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         self.n
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         ui.label(format!("dt = {}", self.dt));
         ui.label(format!("dx = {}", self.dx));
 

@@ -237,7 +237,7 @@ where
 
             ui.separator(); // -------------------------------------------------
 
-            self.rule.ui(ui);
+            self.rule.ui(ui, ctx);
         });
 
         if let Some(multi_touch) = ctx.multi_touch() {

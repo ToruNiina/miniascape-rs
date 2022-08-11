@@ -42,7 +42,7 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
         1
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui);
+    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
 }
 
 pub trait Neighbors<const N: usize>: Default {
