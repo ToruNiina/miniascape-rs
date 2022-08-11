@@ -5,6 +5,9 @@ use rhai::packages::Package;
 use rhai_rand::RandomPackage;
 use serde::{Deserialize, Serialize};
 
+use anyhow::Context as _;
+use thiserror::Error;
+
 #[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub struct DynamicState {
     value: rhai::INT, // currently just int, but later we use Dynamic
@@ -95,10 +98,10 @@ impl Default for DynamicRule {
 
         let color_fn_str = "fn color(self) {\
                 return if self == 0 {\
-                    [0.0, 0.0, 0.0] // R, G, B in [0, 1]
-                } else {
-                    [0.0, 1.0, 0.0]
-                };
+                    [0.0, 0.0, 0.0]\
+                } else {\
+                    [0.0, 1.0, 0.0]\
+                };\
             }"
         .to_string();
         let color_fn = engine
@@ -122,6 +125,25 @@ impl Default for DynamicRule {
     }
 }
 
+
+#[derive(Error, Debug)]
+pub enum DynamicRuleError {
+    #[error("EvalAltResult \"{0}\"\ncaused by the following code: \n{1}")]
+    EvalError(String, String),
+
+    #[error("Dynamic::into_{1}() failed, actual type is \"{0}\"\ncaused by the following code: \n{2}")]
+    CastError(String, String, String),
+}
+
+// Box<rhai::EvalAltResult> does not satisfy trait bound of anyhow context
+fn eval_error(item: Box<rhai::EvalAltResult>, code: String) -> DynamicRuleError {
+    DynamicRuleError::EvalError(format!("{}", item), code)
+}
+fn cast_error(item: &str, typename: String, code: String) -> DynamicRuleError {
+    DynamicRuleError::CastError(item.to_string(), typename, code)
+}
+
+
 impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for DynamicRule {
     type CellState = DynamicState;
 
@@ -142,11 +164,17 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 None,
                 [Dynamic::from_int(st.value)],
             )
-            .expect("It should not fail");
-        let rgb = result.into_array().expect("color should return [f32, f32, f32]");
-        let r = (rgb[0].as_float().unwrap() * 256.0).clamp(0.0, 255.0) as u8;
-        let g = (rgb[1].as_float().unwrap() * 256.0).clamp(0.0, 255.0) as u8;
-        let b = (rgb[2].as_float().unwrap() * 256.0).clamp(0.0, 255.0) as u8;
+            .map_err(|x| eval_error(x, self.color_fn_str.clone()))
+            .context("Failed to evaluate color")?;
+
+        let rgb = result
+            .into_array()
+            .map_err(|x| cast_error(x, "array".to_string(), self.color_fn_str.clone()))
+            .context("Failed to convert `fn color` result into an array")?;
+
+        let r = (rgb[0].as_float().map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone())).context("Failed to convert `fn color` result element")? * 256.0).clamp(0.0, 255.0) as u8;
+        let g = (rgb[1].as_float().map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone())).context("Failed to convert `fn color` result element")? * 256.0).clamp(0.0, 255.0) as u8;
+        let b = (rgb[2].as_float().map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone())).context("Failed to convert `fn color` result element")? * 256.0).clamp(0.0, 255.0) as u8;
         Ok(egui::Color32::from_rgb(r, g, b))
     }
 
@@ -163,7 +191,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 None,
                 [],
             )
-            .expect("It should not fail");
+            .map_err(|x| eval_error(x, self.clear_fn_str.clone()))
+            .context("Failed to evaluate clear")?;
+
         Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
@@ -180,7 +210,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 None,
                 [],
             )
-            .expect("It should not fail");
+            .map_err(|x| eval_error(x, self.randomize_fn_str.clone()))
+            .context("Failed to evaluate randomize")?;
+
         Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
@@ -197,7 +229,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 None,
                 [Dynamic::from_int(st.value)],
             )
-            .expect("It should not fail");
+            .map_err(|x| eval_error(x, self.next_fn_str.clone()))
+            .context("Failed to evaluate next")?;
+
         Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
@@ -221,7 +255,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                     Dynamic::from_array(neighbor.map(|x| Dynamic::from_int(x.value)).collect())
                 ],
             )
-            .expect("It should not fail");
+            .map_err(|x| eval_error(x, self.update_fn_str.clone()))
+            .context("Failed to evaluate update")?;
+
         Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 

@@ -58,6 +58,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.61"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "508b352bb5c066aac251f6daf6b36eccd03e8a88e8081cd44959ea277a3af9a8"
+
+[[package]]
 name = "arboard"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -873,6 +879,7 @@ dependencies = [
 name = "miniascape"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "array-init",
  "arrayvec",
  "console_error_panic_hook",
@@ -887,6 +894,7 @@ dependencies = [
  "rhai-rand",
  "serde",
  "serde-big-array",
+ "thiserror",
  "tracing-subscriber",
  "tracing-wasm",
 ]

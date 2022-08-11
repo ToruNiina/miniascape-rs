@@ -38,6 +38,8 @@ rhai.features = [
     "unchecked",   # make script unsafe
 ]
 rhai-rand = "0.1"
+anyhow = "1.0"
+thiserror = "1.0"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
