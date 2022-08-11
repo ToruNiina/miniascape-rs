@@ -120,7 +120,7 @@ impl Default for DynamicRule {
             next_fn,
             color_fn_str,
             color_fn,
-            background: egui::Color32::from_rgb(0, 0, 0),
+            background: egui::Color32::from_rgb(0, 128, 0),
         }
     }
 }
