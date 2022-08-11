@@ -34,7 +34,7 @@ rhai.features = [
     "only_i32",    # use only one integer type
     "f32_float",   # minimize size of Dynamic
     "no_closure",  # no variable sharing
-    "no_position", # remove info from parse error
+#     "no_position", # remove info from parse error
     "unchecked",   # make script unsafe
 ]
 rhai-rand = "0.1"
