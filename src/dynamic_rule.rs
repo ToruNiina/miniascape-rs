@@ -51,6 +51,17 @@ impl Default for DynamicRule {
         let random = RandomPackage::new();
         engine.register_global_module(random.as_shared_module());
 
+        let randomize_fn_str = "fn randomize() {\
+                return if rand_float() < 0.3 { 1 } else { 0 };\
+            }"
+        .to_string();
+        let randomize_fn = engine
+            .compile(&randomize_fn_str)
+            .expect("default randomize script should compile successfully");
+
+        // rand module becomes unstable when optimization level == full
+        engine.set_optimization_level(rhai::OptimizationLevel::Full);
+
         let update_fn_str = "fn update(self, neighbors) {\
                 let alive = neighbors.reduce(|sum, v|\
                     if v == 1 {sum + v} else {sum}, 0);\
@@ -73,13 +84,6 @@ impl Default for DynamicRule {
             .compile(&clear_fn_str)
             .expect("default clear script should compile successfully");
 
-        let randomize_fn_str = "fn randomize() {\
-                return if rand_bool() { 1 } else { 0 };\
-            }"
-        .to_string();
-        let randomize_fn = engine
-            .compile(&randomize_fn_str)
-            .expect("default randomize script should compile successfully");
 
         let next_fn_str = "fn next(self) {\
                 return if self == 0 { 1 } else { 0 };\
