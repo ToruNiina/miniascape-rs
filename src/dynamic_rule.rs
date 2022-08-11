@@ -1,22 +1,16 @@
 use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
-use rhai::{Dynamic, Engine, Scope, AST};
 use rhai::packages::Package;
+use rhai::{Dynamic, Engine, Scope, AST};
 use rhai_rand::RandomPackage;
 use serde::{Deserialize, Serialize};
 
 use anyhow::Context as _;
 use thiserror::Error;
 
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub struct DynamicState {
     value: rhai::INT, // currently just int, but later we use Dynamic
-}
-
-impl Default for DynamicState {
-    fn default() -> Self {
-        Self { value: 0 }
-    }
 }
 
 impl State for DynamicState {
@@ -68,7 +62,8 @@ impl Default for DynamicRule {
 fn randomize() {
     return if rand_float() < 0.3 { 1 } else { 0 };
 }
-"#.to_string();
+"#
+        .to_string();
         let randomize_fn = engine
             .compile(&randomize_fn_str)
             .expect("default randomize script should compile successfully");
@@ -87,7 +82,8 @@ fn update(self, neighbors) {
     } else {
         return if alive == 2 || alive == 3 { 1 } else { 0 };
     }
-}"#.to_string();
+}"#
+        .to_string();
         let update_fn = engine
             .compile(&update_fn_str)
             .expect("default update script should compile successfully");
@@ -104,7 +100,8 @@ fn clear() {
         let next_fn_str = r#"
 fn next(self) {
     return if self == 0 { 1 } else { 0 };
-}"#.to_string();
+}"#
+        .to_string();
         let next_fn = engine
             .compile(&next_fn_str)
             .expect("default next script should compile successfully");
@@ -116,7 +113,8 @@ fn color(self) {
     } else {
         [0.0, 1.0, 0.0]
     };
-}"#.to_string();
+}"#
+        .to_string();
         let color_fn = engine
             .compile(&color_fn_str)
             .expect("default color script should compile successfully");
@@ -154,13 +152,14 @@ fn color(self) {
     }
 }
 
-
 #[derive(Error, Debug)]
 pub enum DynamicRuleError {
     #[error("EvalAltResult \"{0}\"\ncaused by the following code: \n{1}")]
     EvalError(String, String),
 
-    #[error("Dynamic::into_{1}() failed, actual type is \"{0}\"\ncaused by the following code: \n{2}")]
+    #[error(
+        "Dynamic::into_{1}() failed, actual type is \"{0}\"\ncaused by the following code: \n{2}"
+    )]
     CastError(String, String, String),
 }
 
@@ -171,7 +170,6 @@ fn eval_error(item: Box<rhai::EvalAltResult>, code: String) -> DynamicRuleError 
 fn cast_error(item: &str, typename: String, code: String) -> DynamicRuleError {
     DynamicRuleError::CastError(item.to_string(), typename, code)
 }
-
 
 impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for DynamicRule {
     type CellState = DynamicState;
@@ -201,9 +199,24 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             .map_err(|x| cast_error(x, "array".to_string(), self.color_fn_str.clone()))
             .context("Failed to convert `fn color` result into an array")?;
 
-        let r = (rgb[0].as_float().map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone())).context("Failed to convert `fn color` result element")? * 256.0).clamp(0.0, 255.0) as u8;
-        let g = (rgb[1].as_float().map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone())).context("Failed to convert `fn color` result element")? * 256.0).clamp(0.0, 255.0) as u8;
-        let b = (rgb[2].as_float().map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone())).context("Failed to convert `fn color` result element")? * 256.0).clamp(0.0, 255.0) as u8;
+        let r = (rgb[0]
+            .as_float()
+            .map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone()))
+            .context("Failed to convert `fn color` result element")?
+            * 256.0)
+            .clamp(0.0, 255.0) as u8;
+        let g = (rgb[1]
+            .as_float()
+            .map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone()))
+            .context("Failed to convert `fn color` result element")?
+            * 256.0)
+            .clamp(0.0, 255.0) as u8;
+        let b = (rgb[2]
+            .as_float()
+            .map_err(|x| cast_error(x, "float".to_string(), self.color_fn_str.clone()))
+            .context("Failed to convert `fn color` result element")?
+            * 256.0)
+            .clamp(0.0, 255.0) as u8;
         Ok(egui::Color32::from_rgb(r, g, b))
     }
 
@@ -281,7 +294,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 None,
                 [
                     Dynamic::from_int(center.value),
-                    Dynamic::from_array(neighbor.map(|x| Dynamic::from_int(x.value)).collect())
+                    Dynamic::from_array(neighbor.map(|x| Dynamic::from_int(x.value)).collect()),
                 ],
             )
             .map_err(|x| eval_error(x, self.update_fn_str.clone()))
@@ -305,10 +318,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             &mut self.open_update_fn_compilation_result,
             |fn_str| {
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine
-                    .compile(fn_str)
-                    .context("failed to compile `fn update()`")
-            });
+                self.engine.compile(fn_str).context("failed to compile `fn update()`")
+            },
+        );
         ui.separator();
 
         Self::ui_code_editor(
@@ -322,10 +334,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             &mut self.open_clear_fn_compilation_result,
             |fn_str| {
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine
-                    .compile(fn_str)
-                    .context("failed to compile `fn clear()`")
-            });
+                self.engine.compile(fn_str).context("failed to compile `fn clear()`")
+            },
+        );
         ui.separator();
 
         Self::ui_code_editor(
@@ -340,10 +351,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             |fn_str| {
                 // rand module becomes unstable when optimization level == full
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
-                self.engine
-                    .compile(fn_str)
-                    .context("failed to compile `fn randomize()`")
-            });
+                self.engine.compile(fn_str).context("failed to compile `fn randomize()`")
+            },
+        );
         ui.separator();
 
         Self::ui_code_editor(
@@ -357,10 +367,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             &mut self.open_next_fn_compilation_result,
             |fn_str| {
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine
-                    .compile(fn_str)
-                    .context("failed to compile `fn next()`")
-            });
+                self.engine.compile(fn_str).context("failed to compile `fn next()`")
+            },
+        );
         ui.separator();
 
         Self::ui_code_editor(
@@ -375,10 +384,9 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             &mut self.open_color_fn_compilation_result,
             |fn_str| {
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine
-                    .compile(fn_str)
-                    .context("failed to compile `fn color()`")
-            });
+                self.engine.compile(fn_str).context("failed to compile `fn color()`")
+            },
+        );
         ui.separator();
 
         ui.label("Background Color");
@@ -391,7 +399,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
 }
 
 impl DynamicRule {
-
+    #[allow(clippy::too_many_arguments)]
     fn ui_code_editor(
         button_name: &str,
         description: &str,
@@ -410,23 +418,21 @@ impl DynamicRule {
 
         if *open_fn {
             let mut open = true;
-            egui::Window::new("Code Editor")
-                .open(&mut open)
-                .show(ctx, |ui| {
-                    if ui.button("compile").clicked() {
-                        let ast = compile(fn_str);
-                        if ast.is_ok() {
-                            *fn_ast = ast.expect("DynamicRule::ui_code_editor: already checked");
-                            *result = None;
-                        } else {
-                            *result = ast.err();
-                        }
+            egui::Window::new("Code Editor").open(&mut open).show(ctx, |ui| {
+                if ui.button("compile").clicked() {
+                    let ast = compile(fn_str);
+                    if let Ok(compiled) = ast {
+                        *fn_ast = compiled;
+                        *result = None;
+                    } else {
+                        *result = ast.err();
                     }
-                    if let Some(err) = result {
-                        ui.label(format!("{:?}", err));
-                    }
-                    ui.text_edit_multiline(fn_str);
-                });
+                }
+                if let Some(err) = result {
+                    ui.label(format!("{:?}", err));
+                }
+                ui.text_edit_multiline(fn_str);
+            });
             if !open {
                 *open_fn = false;
             }

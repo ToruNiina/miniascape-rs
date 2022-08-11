@@ -213,7 +213,11 @@ impl<T: State> Grid<T> {
         }
         Ok(())
     }
-    pub fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    pub fn randomize<const N: usize, Ne, R, Rn>(
+        &mut self,
+        rule: &R,
+        rng: &mut Rn,
+    ) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
         Ne: Neighbors<N>,
@@ -225,7 +229,10 @@ impl<T: State> Grid<T> {
         Ok(())
     }
 
-    pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(
+        &mut self,
+        rule: &R,
+    ) -> anyhow::Result<()>
     where
         R: Rule<N, Neighborhood, CellState = T>,
     {
@@ -294,7 +301,13 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
 
     fn update(&mut self, rule: &R) -> anyhow::Result<()>;
 
-    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R) -> anyhow::Result<()>;
+    fn paint(
+        &self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        rule: &R,
+    ) -> anyhow::Result<()>;
 }
 
 pub struct SquareGrid<T: State> {
@@ -394,9 +407,13 @@ where
         self.grid.update(rule)
     }
 
-    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R)
-        -> anyhow::Result<()>
-    {
+    fn paint(
+        &self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        rule: &R,
+    ) -> anyhow::Result<()> {
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
@@ -546,9 +563,13 @@ where
         }
     }
 
-    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R)
-        -> anyhow::Result<()>
-    {
+    fn paint(
+        &self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        rule: &R,
+    ) -> anyhow::Result<()> {
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 

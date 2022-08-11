@@ -259,25 +259,18 @@ impl WrapApp {
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                            // TODO
+                        // TODO
                         self.thumbnail_lifegame.texture_id(ctx),
                         self.thumbnail_lifegame.size_vec2(),
                     ))
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    let mut app = App::<
-                            8,
-                            MooreNeighborhood,
-                            DynamicRule,
-                            SquareGrid<DynamicState>,
-                        >::default();
-                    app.fix_board_size = true;
-
-                    self.apps.push((
-                        "User Defined".to_string(),
-                        Box::new(app),
-                    ));
+                    let app = App::<8, MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>>{
+                            fix_board_size: true,
+                            ..Default::default()
+                        };
+                    self.apps.push(("User Defined".to_string(), Box::new(app)));
                 }
                 ui.label(egui::RichText::new("User-Defined").size(20.0));
             });

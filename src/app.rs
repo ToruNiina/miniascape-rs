@@ -410,7 +410,9 @@ where
                     if let Some(next) = &self.cell_modifying {
                         *self.board.cell_at_mut(ix, iy) = *next;
                     } else {
-                        let next = self.rule.next(*self.board.cell_at(ix, iy))
+                        let next = self
+                            .rule
+                            .next(*self.board.cell_at(ix, iy))
                             .expect("TODO: show error message window");
                         *self.board.cell_at_mut(ix, iy) = next;
                         self.cell_modifying = Some(next);

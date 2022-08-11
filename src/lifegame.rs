@@ -49,11 +49,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
     }
 
     fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
-        Ok(if *st == LifeGameState::Dead {
-            self.dead_color
-        } else {
-            self.alive_color
-        })
+        Ok(if *st == LifeGameState::Dead { self.dead_color } else { self.alive_color })
     }
 
     fn default_state(&self) -> anyhow::Result<Self::CellState> {
@@ -62,11 +58,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
 
     fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState> {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
-        Ok(if distr.sample(rng) {
-            LifeGameState::Alive
-        } else {
-            LifeGameState::Dead
-        })
+        Ok(if distr.sample(rng) { LifeGameState::Alive } else { LifeGameState::Dead })
     }
 
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
@@ -144,11 +136,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
     }
 
     fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
-        Ok(if *st == LifeGameState::Dead {
-            self.dead_color
-        } else {
-            self.alive_color
-        })
+        Ok(if *st == LifeGameState::Dead { self.dead_color } else { self.alive_color })
     }
 
     fn default_state(&self) -> anyhow::Result<Self::CellState> {
@@ -157,11 +145,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
 
     fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState> {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
-        Ok(if distr.sample(rng) {
-            LifeGameState::Alive
-        } else {
-            LifeGameState::Dead
-        })
+        Ok(if distr.sample(rng) { LifeGameState::Alive } else { LifeGameState::Dead })
     }
 
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
@@ -181,11 +165,16 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
         let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive { 1 } else { 0 }).sum();
 
         // 23/36
-        Ok(if n_alive == 3 || (center_is_alive && n_alive == 2) || (!center_is_alive && n_alive == 6) {
-            LifeGameState::Alive
-        } else {
-            LifeGameState::Dead
-        })
+        Ok(
+            if n_alive == 3
+                || (center_is_alive && n_alive == 2)
+                || (!center_is_alive && n_alive == 6)
+            {
+                LifeGameState::Alive
+            } else {
+                LifeGameState::Dead
+            },
+        )
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
@@ -304,11 +293,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
     }
 
     fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
-        Ok(if *st == LifeGameState::Dead {
-            self.dead_color
-        } else {
-            self.alive_color
-        })
+        Ok(if *st == LifeGameState::Dead { self.dead_color } else { self.alive_color })
     }
 
     fn default_state(&self) -> anyhow::Result<Self::CellState> {
@@ -317,11 +302,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
 
     fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState> {
         let distr = Bernoulli::new(0.3).expect("we know 0 < 0.3 < 1.");
-        Ok(if distr.sample(rng) {
-            LifeGameState::Alive
-        } else {
-            LifeGameState::Dead
-        })
+        Ok(if distr.sample(rng) { LifeGameState::Alive } else { LifeGameState::Dead })
     }
 
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
@@ -343,11 +324,13 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
         let meet_survive_rule = self.survive.iter().any(|n| *n == n_alive);
         let meet_birth_rule = self.birth.iter().any(|n| *n == n_alive);
 
-        Ok(if (center_is_alive && meet_survive_rule) || (!center_is_alive && meet_birth_rule) {
-            LifeGameState::Alive
-        } else {
-            LifeGameState::Dead
-        })
+        Ok(
+            if (center_is_alive && meet_survive_rule) || (!center_is_alive && meet_birth_rule) {
+                LifeGameState::Alive
+            } else {
+                LifeGameState::Dead
+            },
+        )
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
