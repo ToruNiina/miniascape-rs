@@ -3,19 +3,20 @@ use rand::Rng;
 use rhai::packages::Package;
 use rhai::{Dynamic, Engine, Scope, AST};
 use rhai_rand::RandomPackage;
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 
 use anyhow::Context as _;
 use thiserror::Error;
 
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct DynamicState {
-    value: rhai::INT, // currently just int, but later we use Dynamic
+    value: rhai::Dynamic
 }
 
 impl State for DynamicState {
     fn inspect(&mut self, ui: &mut egui::Ui) {
-        ui.add(egui::Slider::new(&mut self.value, rhai::INT::MIN..=rhai::INT::MAX).text("value"));
+        // TODO pass a string buffer from app, and evaluate ast to insert any value
+        ui.label("Dynamic value");
     }
 }
 
@@ -60,7 +61,7 @@ impl Default for DynamicRule {
 
         let randomize_fn_str = r#"
 fn randomize() {
-    return if rand_float() < 0.3 { 1 } else { 0 };
+    return if rand_float() < 0.3 { true } else { false };
 }
 "#
         .to_string();
@@ -74,13 +75,13 @@ fn randomize() {
         let update_fn_str = r#"
 fn update(self, neighbors) {
     let alive = neighbors.reduce(|sum, v| {
-            if v == 1 {sum + v} else {sum}
+            if v {sum + 1} else {sum}
         }, 0);
 
-    if self == 0 {
-        return if alive == 3 { 1 } else { 0 };
+    if !self {
+        return if alive == 3 { true } else { false };
     } else {
-        return if alive == 2 || alive == 3 { 1 } else { 0 };
+        return if alive == 2 || alive == 3 { true } else { false };
     }
 }"#
         .to_string();
@@ -90,7 +91,7 @@ fn update(self, neighbors) {
 
         let clear_fn_str = r#"
 fn clear() {
-    return 0;
+    return false;
 }"#
         .to_string();
         let clear_fn = engine
@@ -99,7 +100,7 @@ fn clear() {
 
         let next_fn_str = r#"
 fn next(self) {
-    return if self == 0 { 1 } else { 0 };
+    return !self;
 }"#
         .to_string();
         let next_fn = engine
@@ -108,10 +109,10 @@ fn next(self) {
 
         let color_fn_str = r#"
 fn color(self) {
-    return if self == 0 {
-        [0.0, 0.0, 0.0]
-    } else {
+    return if self {
         [0.0, 1.0, 0.0]
+    } else {
+        [0.0, 0.0, 0.0]
     };
 }"#
         .to_string();
@@ -189,7 +190,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 false, // rollback scope?
                 "color",
                 None,
-                [Dynamic::from_int(st.value)],
+                [st.value.clone()],
             )
             .map_err(|x| eval_error(x, self.color_fn_str.clone()))
             .context("Failed to evaluate color")?;
@@ -222,7 +223,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
 
     fn default_state(&self) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
-        let result = self
+        let value = self
             .engine
             .call_fn_raw(
                 &mut scope,
@@ -236,12 +237,12 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             .map_err(|x| eval_error(x, self.clear_fn_str.clone()))
             .context("Failed to evaluate clear")?;
 
-        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
+        Ok(Self::CellState { value })
     }
 
     fn randomize<R: Rng>(&self, _rng: &mut R) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
-        let result = self
+        let value = self
             .engine
             .call_fn_raw(
                 &mut scope,
@@ -255,12 +256,12 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
             .map_err(|x| eval_error(x, self.randomize_fn_str.clone()))
             .context("Failed to evaluate randomize")?;
 
-        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
+        Ok(Self::CellState { value })
     }
 
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
-        let result = self
+        let value = self
             .engine
             .call_fn_raw(
                 &mut scope,
@@ -269,12 +270,12 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 false, // rollback scope?
                 "next",
                 None,
-                [Dynamic::from_int(st.value)],
+                [st.value],
             )
             .map_err(|x| eval_error(x, self.next_fn_str.clone()))
             .context("Failed to evaluate next")?;
 
-        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
+        Ok(Self::CellState { value })
     }
 
     fn update(
@@ -283,7 +284,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
         neighbor: impl Iterator<Item = Self::CellState>,
     ) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
-        let result = self
+        let value = self
             .engine
             .call_fn_raw(
                 &mut scope,
@@ -293,17 +294,22 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 "update",
                 None,
                 [
-                    Dynamic::from_int(center.value),
-                    Dynamic::from_array(neighbor.map(|x| Dynamic::from_int(x.value)).collect()),
+                    center.value,
+                    Dynamic::from_array(neighbor.map(|x| x.value).collect()),
                 ],
             )
             .map_err(|x| eval_error(x, self.update_fn_str.clone()))
             .context("Failed to evaluate update")?;
 
-        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
+        Ok(Self::CellState { value })
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.horizontal_wrapped(|ui| {
+            ui.label("It uses");
+            ui.hyperlink_to("rhai", "https://rhai.rs/");
+        });
+
         ui.separator();
 
         Self::ui_code_editor(
