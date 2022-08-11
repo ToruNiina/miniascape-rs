@@ -7,7 +7,7 @@ use rand::Rng;
 /// The update rule is implemented in `Rule` trait.
 pub trait State: Clone + Default + std::fmt::Debug {
     /// Generate UI to inspect and modify the cell state.
-    fn inspect(&mut self, ui: &mut egui::Ui);
+    fn inspect(&mut self, ui: &mut egui::Ui, buf: &mut String);
 }
 
 /// Rule of the cellular automaton.

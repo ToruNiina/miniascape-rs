@@ -19,6 +19,7 @@ where
     pub(crate) running: bool,
     pub(crate) inspector: Option<(usize, usize)>,
     pub(crate) inspector_indicator: bool,
+    pub(crate) inspector_code_buf: String,
     pub(crate) grid_width: f32,
     pub(crate) origin: egui::Pos2,
     pub(crate) grabbed: bool,
@@ -47,6 +48,7 @@ where
             running: false,
             inspector: None,
             inspector_indicator: true,
+            inspector_code_buf: String::new(),
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
@@ -83,6 +85,7 @@ where
             running: false,
             inspector: None,
             inspector_indicator: true,
+            inspector_code_buf: String::new(),
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             grabbed: false,
@@ -389,7 +392,7 @@ where
                 let mut open = true;
                 egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
                     ui.checkbox(&mut self.inspector_indicator, "Indicator");
-                    self.board.cell_at_mut(ix, iy).inspect(ui);
+                    self.board.cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
                 });
                 if !open {
                     self.inspector = None;

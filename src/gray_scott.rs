@@ -16,7 +16,7 @@ impl std::default::Default for GrayScottState {
 }
 
 impl State for GrayScottState {
-    fn inspect(&mut self, ui: &mut egui::Ui) {
+    fn inspect(&mut self, ui: &mut egui::Ui, _buf: &mut String) {
         ui.add(egui::Slider::new(&mut self.u, 0.0..=1.0).text("u"));
         ui.add(egui::Slider::new(&mut self.v, 0.0..=1.0).text("v"));
     }

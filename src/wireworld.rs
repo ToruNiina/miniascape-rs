@@ -17,7 +17,7 @@ impl std::default::Default for WireWorldState {
 }
 
 impl State for WireWorldState {
-    fn inspect(&mut self, ui: &mut egui::Ui) {
+    fn inspect(&mut self, ui: &mut egui::Ui, _buf: &mut String) {
         ui.radio_value(self, WireWorldState::Void, "Void");
         ui.radio_value(self, WireWorldState::Head, "Head");
         ui.radio_value(self, WireWorldState::Tail, "Tail");

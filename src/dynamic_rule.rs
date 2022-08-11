@@ -14,9 +14,31 @@ pub struct DynamicState {
 }
 
 impl State for DynamicState {
-    fn inspect(&mut self, ui: &mut egui::Ui) {
-        // TODO pass a string buffer from app, and evaluate ast to insert any value
+    fn inspect(&mut self, ui: &mut egui::Ui, buf: &mut String) {
         ui.label("Dynamic value");
+
+        let buf_is_multiline = buf.chars().filter(|x| *x == '\n').count() != 0;
+
+        ui.horizontal_wrapped(|ui| {
+            ui.label("expr = ");
+            if buf_is_multiline {
+                ui.text_edit_multiline(buf);
+            } else {
+                ui.text_edit_singleline(buf);
+            }
+        });
+        if ui.button("eval").clicked() {
+            let mut engine = Engine::new();
+            let random = RandomPackage::new();
+            engine.register_global_module(random.as_shared_module());
+
+            let result = engine.eval::<rhai::Dynamic>(buf);
+            if let Ok(val) = result {
+                self.value = val;
+            } else {
+                *buf = format!("//error: {:?}\n{}", result.unwrap_err(), buf)
+            }
+        }
     }
 }
 
@@ -308,6 +330,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
         ui.horizontal_wrapped(|ui| {
             ui.label("It uses");
             ui.hyperlink_to("rhai", "https://rhai.rs/");
+            ui.label("as a scripting language.");
         });
 
         ui.separator();
