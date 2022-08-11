@@ -5,7 +5,7 @@ use rand::Rng;
 /// Represents the current state of a cell. To initialize the board, it requires
 /// `Clone`. To clear the board, it requires `Default`.
 /// The update rule is implemented in `Rule` trait.
-pub trait State: Clone + Default {
+pub trait State: Clone + Default + std::fmt::Debug {
     /// Generate UI to inspect and modify the cell state.
     fn inspect(&mut self, ui: &mut egui::Ui);
 }

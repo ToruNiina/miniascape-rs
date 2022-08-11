@@ -4,7 +4,7 @@ use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize, std::fmt::Debug)]
 pub enum LifeGameState {
     Dead,
     Alive,

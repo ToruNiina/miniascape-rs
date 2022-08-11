@@ -2,7 +2,7 @@ use crate::rule::{MooreNeighborhood, Rule, State};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize, std::fmt::Debug)]
 pub enum WireWorldState {
     Void,
     Head,

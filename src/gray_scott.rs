@@ -3,7 +3,7 @@ use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, Deserialize, Serialize, std::fmt::Debug)]
 pub struct GrayScottState {
     u: f32,
     v: f32,
