@@ -217,7 +217,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
 // ----------------------------------------------------------------------------
 
 pub struct GeneralizedLifeGameRule {
-    alive: ArrayVec<u32, 9>, // number of neighboring cells is in [0, 8]
+    survive: ArrayVec<u32, 9>, // number of neighboring cells is in [0, 8]
     birth: ArrayVec<u32, 9>,
 
     rule: String,
@@ -230,9 +230,16 @@ pub struct GeneralizedLifeGameRule {
 
 impl Default for GeneralizedLifeGameRule {
     fn default() -> Self {
+        let mut survive = ArrayVec::new();
+        survive.push(2_u32);
+        survive.push(3_u32);
+
+        let mut birth = ArrayVec::new();
+        birth.push(3_u32);
+
         Self {
-            alive: (&[2_u32, 3_u32] as &[_]).try_into().unwrap(),
-            birth: (&[3_u32] as &[_]).try_into().unwrap(),
+            survive,
+            birth,
             rule: "23/3".to_string(),
             show_err_msg_about_rule: false,
             background: egui::Color32::from_rgb(0, 128, 0),
@@ -243,14 +250,14 @@ impl Default for GeneralizedLifeGameRule {
 }
 
 impl GeneralizedLifeGameRule {
-    pub fn new(alive: Vec<u32>, birth: Vec<u32>) -> Self {
+    pub fn new(survive: Vec<u32>, birth: Vec<u32>) -> Self {
         let rule = format!(
             "{}/{}",
-            alive.iter().fold("".to_string(), |acc, x| acc + x.to_string().as_str()),
+            survive.iter().fold("".to_string(), |acc, x| acc + x.to_string().as_str()),
             birth.iter().fold("".to_string(), |acc, x| acc + x.to_string().as_str())
         );
         Self {
-            alive: ArrayVec::from_iter(alive.into_iter()),
+            survive: ArrayVec::from_iter(survive.into_iter()),
             birth: ArrayVec::from_iter(birth.into_iter()),
             rule,
             show_err_msg_about_rule: false,
@@ -272,20 +279,20 @@ impl GeneralizedLifeGameRule {
         }
 
         // convert `23/3` into [2, 3] and [3]
-        let alive_birth: Vec<&str> = rule.split('/').collect();
+        let s_b: Vec<&str> = rule.split('/').collect();
 
-        let alive = alive_birth[0].chars().map(|c| c.to_digit(10).unwrap()).collect();
-        let birth = alive_birth[1].chars().map(|c| c.to_digit(10).unwrap()).collect();
+        let survive = s_b[0].chars().map(|c| c.to_digit(10).unwrap()).collect();
+        let birth = s_b[1].chars().map(|c| c.to_digit(10).unwrap()).collect();
 
-        Some((alive, birth))
+        Some((survive, birth))
     }
 
     pub fn from_rule(rule: &str) -> Self {
         assert!(Self::is_valid_rule(rule));
 
-        let (alive, birth) = Self::parse_rule(rule).unwrap();
+        let (survive, birth) = Self::parse_rule(rule).unwrap();
 
-        GeneralizedLifeGameRule::new(alive, birth)
+        GeneralizedLifeGameRule::new(survive, birth)
     }
 }
 
@@ -333,10 +340,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
         let center_is_alive = center == LifeGameState::Alive;
         let n_alive: u32 = neighbor.map(|c| if c == LifeGameState::Alive { 1 } else { 0 }).sum();
 
-        let meet_alive_rule = self.alive.iter().any(|n| *n == n_alive);
+        let meet_survive_rule = self.survive.iter().any(|n| *n == n_alive);
         let meet_birth_rule = self.birth.iter().any(|n| *n == n_alive);
 
-        if (center_is_alive && meet_alive_rule) || (!center_is_alive && meet_birth_rule) {
+        if (center_is_alive && meet_survive_rule) || (!center_is_alive && meet_birth_rule) {
             LifeGameState::Alive
         } else {
             LifeGameState::Dead
@@ -351,8 +358,8 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
             }
 
             if ui.button("Apply").clicked() {
-                if let Some((alive, birth)) = Self::parse_rule(&self.rule) {
-                    self.alive = ArrayVec::from_iter(alive.into_iter());
+                if let Some((survive, birth)) = Self::parse_rule(&self.rule) {
+                    self.survive = ArrayVec::from_iter(survive.into_iter());
                     self.birth = ArrayVec::from_iter(birth.into_iter());
                 } else {
                     self.show_err_msg_about_rule = true;
