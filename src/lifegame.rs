@@ -246,8 +246,8 @@ impl GeneralizedLifeGameRule {
     pub fn new(alive: Vec<u32>, birth: Vec<u32>) -> Self {
         let rule = format!(
             "{}/{}",
-            alive.iter().fold("".to_string(), |acc, x| acc + &x.to_string()),
-            birth.iter().fold("".to_string(), |acc, x| acc + &x.to_string())
+            alive.iter().fold("".to_string(), |acc, x| acc + x.to_string().as_str()),
+            birth.iter().fold("".to_string(), |acc, x| acc + x.to_string().as_str())
         );
         Self {
             alive: ArrayVec::from_iter(alive.into_iter()),
