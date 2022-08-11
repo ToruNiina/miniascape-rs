@@ -408,13 +408,13 @@ where
                 // if inspector is closed, then we can click a cell
                 if let Clicked::Primary(ix, iy) = clicked {
                     if let Some(next) = &self.cell_modifying {
-                        *self.board.cell_at_mut(ix, iy) = *next;
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
                     } else {
                         let next = self
                             .rule
-                            .next(*self.board.cell_at(ix, iy))
+                            .next(self.board.cell_at(ix, iy).clone())
                             .expect("TODO: show error message window");
-                        *self.board.cell_at_mut(ix, iy) = next;
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
                         self.cell_modifying = Some(next);
                     }
                 }

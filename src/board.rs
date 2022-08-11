@@ -253,8 +253,8 @@ impl<T: State> Grid<T> {
                             );
 
                             *self.bufcell_at_mut(x, y) = rule.update(
-                                *self.cell_at(x, y),
-                                idxs.map(|(x, y)| *self.cell_at(x, y)).into_iter(),
+                                self.cell_at(x, y).clone(),
+                                idxs.map(|(x, y)| self.cell_at(x, y).clone()).into_iter(),
                             )?;
                         }
                     }
