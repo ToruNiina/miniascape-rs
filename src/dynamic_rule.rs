@@ -30,18 +30,28 @@ pub struct DynamicRule {
 
     update_fn_str: String,
     update_fn: AST,
+    open_update_fn: bool,
+    open_update_fn_compilation_result: Option<anyhow::Error>,
 
     clear_fn_str: String,
     clear_fn: AST,
+    open_clear_fn: bool,
+    open_clear_fn_compilation_result: Option<anyhow::Error>,
 
     randomize_fn_str: String,
     randomize_fn: AST,
+    open_randomize_fn: bool,
+    open_randomize_fn_compilation_result: Option<anyhow::Error>,
 
     next_fn_str: String,
     next_fn: AST,
+    open_next_fn: bool,
+    open_next_fn_compilation_result: Option<anyhow::Error>,
 
     color_fn_str: String,
     color_fn: AST,
+    open_color_fn: bool,
+    open_color_fn_compilation_result: Option<anyhow::Error>,
 
     background: egui::Color32,
 }
@@ -54,10 +64,11 @@ impl Default for DynamicRule {
         let random = RandomPackage::new();
         engine.register_global_module(random.as_shared_module());
 
-        let randomize_fn_str = "fn randomize() {\
-                return if rand_float() < 0.3 { 1 } else { 0 };\
-            }"
-        .to_string();
+        let randomize_fn_str = r#"
+fn randomize() {
+    return if rand_float() < 0.3 { 1 } else { 0 };
+}
+"#.to_string();
         let randomize_fn = engine
             .compile(&randomize_fn_str)
             .expect("default randomize script should compile successfully");
@@ -65,61 +76,79 @@ impl Default for DynamicRule {
         // rand module becomes unstable when optimization level == full
         engine.set_optimization_level(rhai::OptimizationLevel::Full);
 
-        let update_fn_str = "fn update(self, neighbors) {\
-                let alive = neighbors.reduce(|sum, v|\
-                    if v == 1 {sum + v} else {sum}, 0);\
-                if self == 0 {\
-                    return if alive == 3 { 1 } else { 0 };\
-                } else {\
-                    return if alive == 2 || alive == 3 { 1 } else { 0 };\
-                }\
-            }"
-        .to_string();
+        let update_fn_str = r#"
+fn update(self, neighbors) {
+    let alive = neighbors.reduce(|sum, v| {
+            if v == 1 {sum + v} else {sum}
+        }, 0);
+
+    if self == 0 {
+        return if alive == 3 { 1 } else { 0 };
+    } else {
+        return if alive == 2 || alive == 3 { 1 } else { 0 };
+    }
+}"#.to_string();
         let update_fn = engine
             .compile(&update_fn_str)
             .expect("default update script should compile successfully");
 
-        let clear_fn_str = "fn clear() {\
-                return 0;\
-            }"
+        let clear_fn_str = r#"
+fn clear() {
+    return 0;
+}"#
         .to_string();
         let clear_fn = engine
             .compile(&clear_fn_str)
             .expect("default clear script should compile successfully");
 
-
-        let next_fn_str = "fn next(self) {\
-                return if self == 0 { 1 } else { 0 };\
-            }"
-        .to_string();
+        let next_fn_str = r#"
+fn next(self) {
+    return if self == 0 { 1 } else { 0 };
+}"#.to_string();
         let next_fn = engine
             .compile(&next_fn_str)
             .expect("default next script should compile successfully");
 
-        let color_fn_str = "fn color(self) {\
-                return if self == 0 {\
-                    [0.0, 0.0, 0.0]\
-                } else {\
-                    [0.0, 1.0, 0.0]\
-                };\
-            }"
-        .to_string();
+        let color_fn_str = r#"
+fn color(self) {
+    return if self == 0 {
+        [0.0, 0.0, 0.0]
+    } else {
+        [0.0, 1.0, 0.0]
+    };
+}"#.to_string();
         let color_fn = engine
             .compile(&color_fn_str)
             .expect("default color script should compile successfully");
 
         Self {
             engine,
+
             update_fn_str,
             update_fn,
+            open_update_fn: false,
+            open_update_fn_compilation_result: None,
+
             clear_fn_str,
             clear_fn,
+            open_clear_fn: false,
+            open_clear_fn_compilation_result: None,
+
             randomize_fn_str,
             randomize_fn,
+            open_randomize_fn: false,
+            open_randomize_fn_compilation_result: None,
+
             next_fn_str,
             next_fn,
+            open_next_fn: false,
+            open_next_fn_compilation_result: None,
+
             color_fn_str,
             color_fn,
+            open_color_fn: false,
+            open_color_fn_compilation_result: None,
+
             background: egui::Color32::from_rgb(0, 128, 0),
         }
     }
@@ -261,12 +290,146 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
         Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) {
+    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.separator();
+
+        Self::ui_code_editor(
+            "edit cell update rule",
+            "cell update rule takes the central cell and its neighbors and \
+            returns the next state of the central cell.",
+            ui,
+            ctx,
+            &mut self.update_fn_str,
+            &mut self.update_fn,
+            &mut self.open_update_fn,
+            &mut self.open_update_fn_compilation_result,
+            |fn_str| {
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                self.engine
+                    .compile(fn_str)
+                    .context("failed to compile `fn update()`")
+            });
+        ui.separator();
+
+        Self::ui_code_editor(
+            "edit clear rule",
+            "clear rule returns the default state to clear the board.",
+            ui,
+            ctx,
+            &mut self.clear_fn_str,
+            &mut self.clear_fn,
+            &mut self.open_clear_fn,
+            &mut self.open_clear_fn_compilation_result,
+            |fn_str| {
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                self.engine
+                    .compile(fn_str)
+                    .context("failed to compile `fn clear()`")
+            });
+        ui.separator();
+
+        Self::ui_code_editor(
+            "edit randomize rule",
+            "randomize rule randomizes the cell using rhai-rand module.",
+            ui,
+            ctx,
+            &mut self.randomize_fn_str,
+            &mut self.randomize_fn,
+            &mut self.open_randomize_fn,
+            &mut self.open_randomize_fn_compilation_result,
+            |fn_str| {
+                // rand module becomes unstable when optimization level == full
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
+                self.engine
+                    .compile(fn_str)
+                    .context("failed to compile `fn randomize()`")
+            });
+        ui.separator();
+
+        Self::ui_code_editor(
+            "edit next rule",
+            "next rule is to change the cell state when clicked.",
+            ui,
+            ctx,
+            &mut self.next_fn_str,
+            &mut self.next_fn,
+            &mut self.open_next_fn,
+            &mut self.open_next_fn_compilation_result,
+            |fn_str| {
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                self.engine
+                    .compile(fn_str)
+                    .context("failed to compile `fn next()`")
+            });
+        ui.separator();
+
+        Self::ui_code_editor(
+            "edit color rule",
+            "color rule defines the color depending on the cell state.\
+            the resulting value is an array of f32 in [0,1] range, in the order of [r, g, b].",
+            ui,
+            ctx,
+            &mut self.color_fn_str,
+            &mut self.color_fn,
+            &mut self.open_color_fn,
+            &mut self.open_color_fn_compilation_result,
+            |fn_str| {
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                self.engine
+                    .compile(fn_str)
+                    .context("failed to compile `fn color()`")
+            });
+        ui.separator();
+
         ui.label("Background Color");
         egui::widgets::color_picker::color_edit_button_srgba(
             ui,
             &mut self.background,
             egui::widgets::color_picker::Alpha::Opaque,
         );
+    }
+}
+
+impl DynamicRule {
+
+    fn ui_code_editor(
+        button_name: &str,
+        description: &str,
+        ui: &mut egui::Ui,
+        ctx: &egui::Context,
+        fn_str: &mut String,
+        fn_ast: &mut AST,
+        open_fn: &mut bool,
+        result: &mut Option<anyhow::Error>,
+        compile: impl FnOnce(&String) -> anyhow::Result<AST>,
+    ) {
+        ui.label(description);
+        if ui.button(button_name).clicked() {
+            *open_fn = true;
+        }
+
+        if *open_fn {
+            let mut open = true;
+            egui::Window::new("Code Editor")
+                .open(&mut open)
+                .show(ctx, |ui| {
+                    if ui.button("compile").clicked() {
+                        let ast = compile(fn_str);
+                        if ast.is_ok() {
+                            *fn_ast = ast.expect("DynamicRule::ui_code_editor: already checked");
+                            *result = None;
+                        } else {
+                            *result = ast.err();
+                        }
+                    }
+                    if let Some(err) = result {
+                        ui.label(format!("{:?}", err));
+                    }
+                    ui.text_edit_multiline(fn_str);
+                });
+            if !open {
+                *open_fn = false;
+            }
+        }
     }
 }
