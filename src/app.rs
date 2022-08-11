@@ -136,7 +136,11 @@ where
     #[allow(clippy::never_loop)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
-            self.board.update(&self.rule);
+            if let Err(e) = self.board.update(&self.rule) {
+                egui::Window::new("Error Report").show(ctx, |ui| {
+                    ui.label(format!("{:?}", e));
+                });
+            }
         }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
@@ -184,14 +188,26 @@ where
                 ui.toggle_value(&mut self.running, "Run");
 
                 if ui.button("Step").clicked() {
-                    self.board.update(&self.rule);
+                    if let Err(e) = self.board.update(&self.rule) {
+                        egui::Window::new("Error Report").show(ctx, |ui| {
+                            ui.label(format!("{:?}", e));
+                        });
+                    }
                     ui.ctx().request_repaint();
                 }
                 if ui.button("Reset").clicked() {
-                    self.board.clear(&self.rule);
+                    if let Err(e) = self.board.clear(&self.rule) {
+                        egui::Window::new("Error Report").show(ctx, |ui| {
+                            ui.label(format!("{:?}", e));
+                        });
+                    }
                 }
                 if ui.button("Randomize").clicked() {
-                    self.board.randomize(&self.rule, &mut self.rng);
+                    if let Err(e) = self.board.randomize(&self.rule, &mut self.rng) {
+                        egui::Window::new("Error Report").show(ctx, |ui| {
+                            ui.label(format!("{:?}", e));
+                        });
+                    }
                 }
             });
 
@@ -335,7 +351,11 @@ where
             // ----------------------------------------------------------------
             // draw board to the central panel
 
-            self.board.paint(&painter, self.origin, delta, &self.rule);
+            if let Err(e) = self.board.paint(&painter, self.origin, delta, &self.rule) {
+                egui::Window::new("Error Report").show(ctx, |ui| {
+                    ui.label(format!("{:?}", e));
+                });
+            }
 
             // ----------------------------------------------------------------
             // handle left/right click
