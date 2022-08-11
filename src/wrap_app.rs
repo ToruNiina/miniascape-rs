@@ -266,14 +266,17 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push((
-                        "User Defined".to_string(),
-                        Box::new(App::<
+                    let mut app = App::<
                             8,
                             MooreNeighborhood,
                             DynamicRule,
                             SquareGrid<DynamicState>,
-                        >::default()),
+                        >::default();
+                    app.fix_board_size = true;
+
+                    self.apps.push((
+                        "User Defined".to_string(),
+                        Box::new(app),
                     ));
                 }
                 ui.label(egui::RichText::new("User-Defined").size(20.0));
