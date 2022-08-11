@@ -43,32 +43,32 @@ impl WrapApp {
             life_game_rule: "23/3".to_string(),
             thumbnail_lifegame: RetainedImage::from_image_bytes(
                 "thumbnail_lifegame.png",
-                include_bytes!("thumbnail_lifegame.png"),
+                include_bytes!("images/thumbnail_lifegame.png"),
             )
             .unwrap(),
             thumbnail_generalized_lifegame: RetainedImage::from_image_bytes(
                 "thumbnail_generalized_lifegame.png",
-                include_bytes!("thumbnail_generalized_lifegame.png"),
+                include_bytes!("images/thumbnail_generalized_lifegame.png"),
             )
             .unwrap(),
             thumbnail_hexlife: RetainedImage::from_image_bytes(
                 "thumbnail_hexlife.png",
-                include_bytes!("thumbnail_hexlife.png"),
+                include_bytes!("images/thumbnail_hexlife.png"),
             )
             .unwrap(),
             thumbnail_highlife: RetainedImage::from_image_bytes(
                 "thumbnail_highlife.png",
-                include_bytes!("thumbnail_highlife.png"),
+                include_bytes!("images/thumbnail_highlife.png"),
             )
             .unwrap(),
             thumbnail_wireworld: RetainedImage::from_image_bytes(
                 "thumbnail_wireworld.png",
-                include_bytes!("thumbnail_wireworld.png"),
+                include_bytes!("images/thumbnail_wireworld.png"),
             )
             .unwrap(),
             thumbnail_gray_scott: RetainedImage::from_image_bytes(
                 "thumbnail_gray_scott.png",
-                include_bytes!("thumbnail_gray_scott.png"),
+                include_bytes!("images/thumbnail_gray_scott.png"),
             )
             .unwrap(),
             card_height: 260.0,
