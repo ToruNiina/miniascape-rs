@@ -30,24 +30,26 @@ impl<T: State> Chunk<T> {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &mut self.cells[y * CHUNK_LEN + x]
     }
-    fn clear<const N: usize, Ne, R>(&mut self, rule: &R)
+    fn clear<const N: usize, Ne, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
         Ne: Neighbors<N>,
     {
         for c in self.cells.iter_mut() {
-            *c = rule.default_state();
+            *c = rule.default_state()?;
         }
+        Ok(())
     }
-    fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn)
+    fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
         Ne: Neighbors<N>,
         Rn: Rng,
     {
         for c in self.cells.iter_mut() {
-            *c = rule.randomize(rng);
+            *c = rule.randomize(rng)?;
         }
+        Ok(())
     }
 }
 
@@ -201,27 +203,29 @@ impl<T: State> Grid<T> {
         self.num_chunks_y += na;
     }
 
-    pub fn clear<const N: usize, Ne, R>(&mut self, rule: &R)
+    pub fn clear<const N: usize, Ne, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
         Ne: Neighbors<N>,
     {
         for ch in self.chunks.iter_mut() {
-            ch.clear(rule);
+            ch.clear(rule)?;
         }
+        Ok(())
     }
-    pub fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn)
+    pub fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
         Ne: Neighbors<N>,
         Rn: Rng,
     {
         for ch in self.chunks.iter_mut() {
-            ch.randomize(rule, rng);
+            ch.randomize(rule, rng)?;
         }
+        Ok(())
     }
 
-    pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(&mut self, rule: &R)
+    pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
         R: Rule<N, Neighborhood, CellState = T>,
     {
@@ -244,13 +248,14 @@ impl<T: State> Grid<T> {
                             *self.bufcell_at_mut(x, y) = rule.update(
                                 *self.cell_at(x, y),
                                 idxs.map(|(x, y)| *self.cell_at(x, y)).into_iter(),
-                            );
+                            )?;
                         }
                     }
                 }
             }
             std::mem::swap(&mut self.chunks, &mut self.buffer);
         }
+        Ok(())
     }
 }
 
@@ -274,8 +279,8 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     fn expand_x(&mut self, n: isize);
     fn expand_y(&mut self, n: isize);
 
-    fn clear(&mut self, rule: &R);
-    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn);
+    fn clear(&mut self, rule: &R) -> anyhow::Result<()>;
+    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>;
 
     fn location(
         &self,
@@ -287,9 +292,9 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     ) -> egui::Pos2;
     fn clicked(&self, x: f32, y: f32, cell_width: f32) -> Option<(usize, usize)>;
 
-    fn update(&mut self, rule: &R);
+    fn update(&mut self, rule: &R) -> anyhow::Result<()>;
 
-    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R);
+    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R) -> anyhow::Result<()>;
 }
 
 pub struct SquareGrid<T: State> {
@@ -349,10 +354,10 @@ where
         self.grid.expand_y(n)
     }
 
-    fn clear(&mut self, rule: &R) {
+    fn clear(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.clear(rule)
     }
-    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) {
+    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()> {
         self.grid.randomize(rule, rng)
     }
 
@@ -385,11 +390,13 @@ where
         }
     }
 
-    fn update(&mut self, rule: &R) {
+    fn update(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.update(rule)
     }
 
-    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R) {
+    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R)
+        -> anyhow::Result<()>
+    {
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
@@ -425,10 +432,11 @@ where
                         max: egui::Pos2 { x: x1, y: y1 },
                     },
                     egui::Rounding::none(),
-                    rule.color(self.grid.cell_at(i, j)),
+                    rule.color(self.grid.cell_at(i, j))?,
                 ));
             }
         }
+        Ok(())
     }
 }
 
@@ -489,14 +497,14 @@ where
         self.grid.expand_y(n)
     }
 
-    fn clear(&mut self, rule: &R) {
+    fn clear(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.clear(rule)
     }
-    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) {
+    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()> {
         self.grid.randomize(rule, rng)
     }
 
-    fn update(&mut self, rule: &R) {
+    fn update(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.update(rule)
     }
 
@@ -538,7 +546,9 @@ where
         }
     }
 
-    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R) {
+    fn paint(&self, painter: &egui::Painter, origin: egui::Pos2, cell_width: f32, rule: &R)
+        -> anyhow::Result<()>
+    {
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
@@ -574,9 +584,10 @@ where
                 painter.add(epaint::CircleShape::filled(
                     egui::Pos2 { x, y },
                     r,
-                    rule.color(self.grid.cell_at(i, j)),
+                    rule.color(self.grid.cell_at(i, j))?,
                 ));
             }
         }
+        Ok(())
     }
 }

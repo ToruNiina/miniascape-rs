@@ -66,7 +66,7 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         self.background
     }
 
-    fn color(&self, st: &Self::CellState) -> egui::Color32 {
+    fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
         let (u_r, u_g, u_b) = (self.u_color.r(), self.u_color.g(), self.u_color.b());
         let (v_r, v_g, v_b) = (self.v_color.r(), self.v_color.g(), self.v_color.b());
 
@@ -74,36 +74,27 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         let g = (st.u * u_g as f32 + st.v * v_g as f32).clamp(0.0, 255.0) as u8;
         let b = (st.u * u_b as f32 + st.v * v_b as f32).clamp(0.0, 255.0) as u8;
 
-        egui::Color32::from_rgb(r, g, b)
+        Ok(egui::Color32::from_rgb(r, g, b))
     }
 
-    fn default_state(&self) -> Self::CellState {
-        GrayScottState { u: 0.0, v: 0.0 }
+    fn default_state(&self) -> anyhow::Result<Self::CellState> {
+        Ok(GrayScottState { u: 0.0, v: 0.0 })
     }
 
-    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
+    fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState> {
         let distr = Uniform::new_inclusive(0.0, 1.0);
-        Self::CellState { u: distr.sample(rng), v: distr.sample(rng) }
+        Ok(Self::CellState { u: distr.sample(rng), v: distr.sample(rng) })
     }
 
-    fn next(&self, st: Self::CellState) -> Self::CellState {
-        Self::CellState { u: (st.u + 0.01).min(1.0), v: st.v }
+    fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
+        Ok(Self::CellState { u: (st.u + 0.01).min(1.0), v: st.v })
     }
 
     fn update(
         &self,
         center: Self::CellState,
         neighbor: impl Iterator<Item = Self::CellState>,
-    ) -> Self::CellState {
-        // TODO require von neumann neighborhood
-        // currently it assumes that neighbor is in the following order:
-        // (x, y) = [
-        //   (-, -), (0, -), (+, -)
-        //   (-, 0),         (+, 0)
-        //   (-, +), (0, +), (+, +)
-        // ]
-        // 1, 3, 4, 6
-
+    ) -> anyhow::Result<Self::CellState> {
         let u0 = center.u;
         let v0 = center.v;
         let (lu, lv) = neighbor.fold((-4.0 * u0, -4.0 * v0), |acc, c| (acc.0 + c.u, acc.1 + c.v));
@@ -113,7 +104,7 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         let u = u0 + dt * (d_u * lu * invdx2 + u0 * u0 * v0 - (f + k) * u0);
         let v = v0 + dt * (d_v * lv * invdx2 - u0 * u0 * v0 + (1.0 - v0) * f);
 
-        Self::CellState { u, v }
+        Ok(Self::CellState { u, v })
     }
 
     fn iteration_per_step(&self) -> u32 {

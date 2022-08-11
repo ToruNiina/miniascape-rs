@@ -129,7 +129,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
         self.background
     }
 
-    fn color(&self, st: &Self::CellState) -> egui::Color32 {
+    fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
         let mut scope = Scope::new();
         let result = self
             .engine
@@ -147,10 +147,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
         let r = (rgb[0].as_float().unwrap() * 256.0).clamp(0.0, 255.0) as u8;
         let g = (rgb[1].as_float().unwrap() * 256.0).clamp(0.0, 255.0) as u8;
         let b = (rgb[2].as_float().unwrap() * 256.0).clamp(0.0, 255.0) as u8;
-        egui::Color32::from_rgb(r, g, b)
+        Ok(egui::Color32::from_rgb(r, g, b))
     }
 
-    fn default_state(&self) -> Self::CellState {
+    fn default_state(&self) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
         let result = self
             .engine
@@ -164,10 +164,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 [],
             )
             .expect("It should not fail");
-        Self::CellState { value: result.cast::<rhai::INT>() }
+        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
-    fn randomize<R: Rng>(&self, _rng: &mut R) -> Self::CellState {
+    fn randomize<R: Rng>(&self, _rng: &mut R) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
         let result = self
             .engine
@@ -181,10 +181,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 [],
             )
             .expect("It should not fail");
-        Self::CellState { value: result.cast::<rhai::INT>() }
+        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
-    fn next(&self, st: Self::CellState) -> Self::CellState {
+    fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
         let result = self
             .engine
@@ -198,14 +198,14 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 [Dynamic::from_int(st.value)],
             )
             .expect("It should not fail");
-        Self::CellState { value: result.cast::<rhai::INT>() }
+        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
     fn update(
         &self,
         center: Self::CellState,
         neighbor: impl Iterator<Item = Self::CellState>,
-    ) -> Self::CellState {
+    ) -> anyhow::Result<Self::CellState> {
         let mut scope = Scope::new();
         let result = self
             .engine
@@ -222,7 +222,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 ],
             )
             .expect("It should not fail");
-        Self::CellState { value: result.cast::<rhai::INT>() }
+        Ok(Self::CellState { value: result.cast::<rhai::INT>() })
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {

@@ -52,44 +52,44 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
         self.grid_color
     }
 
-    fn color(&self, st: &Self::CellState) -> egui::Color32 {
-        match *st {
+    fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
+        Ok(match *st {
             WireWorldState::Void => self.void_color,
             WireWorldState::Head => self.head_color,
             WireWorldState::Tail => self.tail_color,
             WireWorldState::Wire => self.wire_color,
-        }
+        })
     }
 
-    fn default_state(&self) -> Self::CellState {
-        WireWorldState::Void
+    fn default_state(&self) -> anyhow::Result<Self::CellState> {
+        Ok(WireWorldState::Void)
     }
 
-    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState {
-        match rng.gen_range(0..4) {
+    fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState> {
+        Ok(match rng.gen_range(0..4) {
             0 => WireWorldState::Void,
             1 => WireWorldState::Head,
             2 => WireWorldState::Tail,
             3 => WireWorldState::Wire,
             _ => unreachable!(),
-        }
+        })
     }
 
-    fn next(&self, st: Self::CellState) -> Self::CellState {
-        match st {
+    fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
+        Ok(match st {
             WireWorldState::Void => WireWorldState::Wire,
             WireWorldState::Wire => WireWorldState::Head,
             WireWorldState::Head => WireWorldState::Tail,
             WireWorldState::Tail => WireWorldState::Void,
-        }
+        })
     }
 
     fn update(
         &self,
         center: Self::CellState,
         neighbor: impl Iterator<Item = Self::CellState>,
-    ) -> Self::CellState {
-        match center {
+    ) -> anyhow::Result<Self::CellState> {
+        Ok(match center {
             WireWorldState::Void => WireWorldState::Void,
             WireWorldState::Head => WireWorldState::Tail,
             WireWorldState::Tail => WireWorldState::Wire,
@@ -102,7 +102,7 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
                     WireWorldState::Wire
                 }
             }
-        }
+        })
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) {

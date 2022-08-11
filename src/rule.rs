@@ -19,14 +19,14 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     fn background(&self) -> egui::Color32;
 
     /// Color of a cell.
-    fn color(&self, st: &Self::CellState) -> egui::Color32;
+    fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32>;
 
-    fn default_state(&self) -> Self::CellState;
+    fn default_state(&self) -> anyhow::Result<Self::CellState>;
 
-    fn randomize<R: Rng>(&self, rng: &mut R) -> Self::CellState;
+    fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState>;
 
     /// The next state. It will be used to change cell state from GUI
-    fn next(&self, st: Self::CellState) -> Self::CellState;
+    fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState>;
 
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N] {
         Neighborhood::neighbors(x, y, w, h)
@@ -36,7 +36,7 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
         &self,
         center: Self::CellState,
         neighbors: impl Iterator<Item = Self::CellState>,
-    ) -> Self::CellState;
+    ) -> anyhow::Result<Self::CellState>;
 
     fn iteration_per_step(&self) -> u32 {
         1
