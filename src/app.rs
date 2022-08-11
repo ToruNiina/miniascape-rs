@@ -34,9 +34,12 @@ where
     B: Board<N, Ne, R>,
 {
     fn default() -> Self {
+        let rule = R::default();
+        let mut board = B::new(4, 3);
+        board.clear(&rule).expect("default construction must not fail");
         Self {
-            rule: Default::default(),
-            board: B::new(4, 3),
+            rule,
+            board,
             fix_board_size: false,
             fix_grid_size: false,
             is_inspect_mode: false,
@@ -68,9 +71,11 @@ where
     B: Board<N, Ne, R>,
 {
     pub fn new(rule: R) -> Self {
+        let mut board = B::new(4, 3);
+        board.clear(&rule).expect("default construction must not fail");
         Self {
             rule,
-            board: Board::new(8, 8),
+            board,
             fix_board_size: false,
             fix_grid_size: false,
             is_inspect_mode: false,
@@ -315,31 +320,36 @@ where
             if !self.fix_board_size {
                 let chunk_pxls = self.board.chunk_len() as f32 * delta;
 
-                if self.origin.x < 0.0 {
-                    let d = (self.origin.x / chunk_pxls).floor();
-                    self.board.expand_x(d as isize);
-                    self.origin.x -= chunk_pxls * d;
-                    assert!(0.0 <= self.origin.x);
-                }
+                let default_state = self.rule.default_state();
+                if let Ok(init) = default_state {
+                    if self.origin.x < 0.0 {
+                        let d = (self.origin.x / chunk_pxls).floor();
+                        self.board.expand_x(d as isize, init.clone());
+                        self.origin.x -= chunk_pxls * d;
+                        assert!(0.0 <= self.origin.x);
+                    }
+                    if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
+                        let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
+                        assert!(0.0 <= dx);
+                        let d = (dx / chunk_pxls).ceil();
+                        self.board.expand_x(d as isize, init.clone());
+                    }
 
-                if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
-                    let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
-                    assert!(0.0 <= dx);
-                    let d = (dx / chunk_pxls).ceil();
-                    self.board.expand_x(d as isize);
-                }
-
-                if self.origin.y < 0.0 {
-                    let d = (self.origin.y / chunk_pxls).floor();
-                    self.board.expand_y(d as isize);
-                    self.origin.y -= chunk_pxls * d;
-                    assert!(0.0 <= self.origin.y);
-                }
-                if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
-                    let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
-                    assert!(0.0 <= dy);
-                    let d = (dy / chunk_pxls).ceil();
-                    self.board.expand_y(d as isize);
+                    if self.origin.y < 0.0 {
+                        let d = (self.origin.y / chunk_pxls).floor();
+                        self.board.expand_y(d as isize, init.clone());
+                        self.origin.y -= chunk_pxls * d;
+                        assert!(0.0 <= self.origin.y);
+                    }
+                    if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
+                        let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
+                        assert!(0.0 <= dy);
+                        let d = (dy / chunk_pxls).ceil();
+                        self.board.expand_y(d as isize, init.clone());
+                    }
+                } else {
+                    let e = default_state.expect_err("already checked");
+                    self.err = Some(format!("{:?}", e));
                 }
             }
 

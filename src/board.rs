@@ -22,6 +22,11 @@ impl<T: State> std::default::Default for Chunk<T> {
 }
 
 impl<T: State> Chunk<T> {
+
+    fn init(i: T) -> Self {
+        Self { cells: array_init::array_init(|_| i.clone()) }
+    }
+
     fn cell_at(&self, x: usize, y: usize) -> &T {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &self.cells[y * CHUNK_LEN + x]
@@ -160,14 +165,14 @@ impl<T: State> Grid<T> {
         self.buffer[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
 
-    pub fn expand_x(&mut self, n: isize) {
+    pub fn expand_x(&mut self, n: isize, init: T) {
         if n == 0 {
             return;
         }
 
         let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
-        new_chunks.resize((self.num_chunks_x + na) * self.num_chunks_y, Default::default());
+        new_chunks.resize((self.num_chunks_x + na) * self.num_chunks_y, Chunk::init(init.clone()));
 
         let x_ofs = if 0 <= n { 0 } else { na };
         for j in 0..self.num_chunks_y {
@@ -178,17 +183,17 @@ impl<T: State> Grid<T> {
         }
         self.chunks = new_chunks;
         self.buffer
-            .resize((self.num_chunks_x + na) * self.num_chunks_y, Default::default());
+            .resize((self.num_chunks_x + na) * self.num_chunks_y, Chunk::init(init.clone()));
         self.num_chunks_x += na;
     }
-    pub fn expand_y(&mut self, n: isize) {
+    pub fn expand_y(&mut self, n: isize, init: T) {
         if n == 0 {
             return;
         }
 
         let na = n.unsigned_abs();
         let mut new_chunks = Vec::new();
-        new_chunks.resize(self.num_chunks_x * (self.num_chunks_y + na), Default::default());
+        new_chunks.resize(self.num_chunks_x * (self.num_chunks_y + na), Chunk::init(init.clone()));
 
         let y_ofs = if 0 <= n { 0 } else { na };
         for j in 0..self.num_chunks_y {
@@ -199,7 +204,7 @@ impl<T: State> Grid<T> {
         }
         self.chunks = new_chunks;
         self.buffer
-            .resize(self.num_chunks_x * (self.num_chunks_y + na), Default::default());
+            .resize(self.num_chunks_x * (self.num_chunks_y + na), Chunk::init(init.clone()));
         self.num_chunks_y += na;
     }
 
@@ -283,8 +288,8 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
 
     fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut R::CellState;
 
-    fn expand_x(&mut self, n: isize);
-    fn expand_y(&mut self, n: isize);
+    fn expand_x(&mut self, n: isize, init: R::CellState);
+    fn expand_y(&mut self, n: isize, init: R::CellState);
 
     fn clear(&mut self, rule: &R) -> anyhow::Result<()>;
     fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>;
@@ -360,11 +365,11 @@ where
         self.grid.bufcell_at_mut(x, y)
     }
 
-    fn expand_x(&mut self, n: isize) {
-        self.grid.expand_x(n)
+    fn expand_x(&mut self, n: isize, init: T) {
+        self.grid.expand_x(n, init)
     }
-    fn expand_y(&mut self, n: isize) {
-        self.grid.expand_y(n)
+    fn expand_y(&mut self, n: isize, init: T) {
+        self.grid.expand_y(n, init)
     }
 
     fn clear(&mut self, rule: &R) -> anyhow::Result<()> {
@@ -507,11 +512,11 @@ where
         self.grid.bufcell_at_mut(x, y)
     }
 
-    fn expand_x(&mut self, n: isize) {
-        self.grid.expand_x(n)
+    fn expand_x(&mut self, n: isize, init: T) {
+        self.grid.expand_x(n, init)
     }
-    fn expand_y(&mut self, n: isize) {
-        self.grid.expand_y(n)
+    fn expand_y(&mut self, n: isize, init: T) {
+        self.grid.expand_y(n, init)
     }
 
     fn clear(&mut self, rule: &R) -> anyhow::Result<()> {
