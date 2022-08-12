@@ -96,14 +96,24 @@ fn randomize() {
 
         let update_fn_str = r#"
 fn update(self, neighbors) {
-    let alive = neighbors.reduce(|sum, v| {
+    let alive = neighbors
+        .reduce(|sum, v| {
             if v {sum + 1} else {sum}
         }, 0);
 
     if !self {
-        return if alive == 3 { true } else { false };
+        return if alive == 3 {
+            true
+        } else {
+            false
+        };
     } else {
-        return if alive == 2 || alive == 3 { true } else { false };
+        return if alive == 2 ||
+                  alive == 3 {
+            true
+        } else {
+            false
+        };
     }
 }"#
         .to_string();
@@ -152,22 +162,22 @@ fn color(self) {
 
             clear_fn_str,
             clear_fn,
-            open_clear_fn: false,
+            open_clear_fn: true,
             open_clear_fn_compilation_result: None,
 
             randomize_fn_str,
             randomize_fn,
-            open_randomize_fn: false,
+            open_randomize_fn: true,
             open_randomize_fn_compilation_result: None,
 
             next_fn_str,
             next_fn,
-            open_next_fn: false,
+            open_next_fn: true,
             open_next_fn_compilation_result: None,
 
             color_fn_str,
             color_fn,
-            open_color_fn: false,
+            open_color_fn: true,
             open_color_fn_compilation_result: None,
 
             background: egui::Color32::from_rgb(0, 128, 0),
