@@ -15,7 +15,7 @@ pub struct DynamicState {
 
 impl State for DynamicState {
     fn inspect(&mut self, ui: &mut egui::Ui, buf: &mut String) {
-        ui.label("Dynamic value");
+        ui.label(format!("Dynamic value: {:?}", self.value));
 
         let buf_is_multiline = buf.chars().filter(|x| *x == '\n').count() != 0;
 
