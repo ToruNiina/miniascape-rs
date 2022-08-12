@@ -332,13 +332,13 @@ impl WrapApp {
 
     fn draw_card(&mut self, idx: usize, ctx: &egui::Context, ui: &mut egui::Ui) {
         match idx {
-            0 => self.draw_lifegame_card(ctx, ui),
-            1 => self.draw_highlife_card(ctx, ui),
-            2 => self.draw_generalized_lifegame_card(ctx, ui),
-            3 => self.draw_hexlife_card(ctx, ui),
-            4 => self.draw_wireworld_card(ctx, ui),
-            5 => self.draw_grayscott_card(ctx, ui),
-            6 => self.draw_dynamic_card(ctx, ui),
+            0 => self.draw_dynamic_card(ctx, ui),
+            1 => self.draw_lifegame_card(ctx, ui),
+            2 => self.draw_highlife_card(ctx, ui),
+            3 => self.draw_generalized_lifegame_card(ctx, ui),
+            4 => self.draw_hexlife_card(ctx, ui),
+            5 => self.draw_wireworld_card(ctx, ui),
+            6 => self.draw_grayscott_card(ctx, ui),
             _ => (),
         }
     }
