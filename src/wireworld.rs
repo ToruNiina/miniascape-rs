@@ -106,8 +106,7 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
-        ui.hyperlink_to("Wireworld - Wikipedia",
-            "https://en.wikipedia.org/wiki/Wireworld");
+        ui.hyperlink_to("Wireworld - Wikipedia", "https://en.wikipedia.org/wiki/Wireworld");
         ui.separator();
 
         ui.label("Grid Color");

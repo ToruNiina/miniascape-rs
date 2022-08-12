@@ -116,8 +116,10 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
-        ui.hyperlink_to("Reaction-Diffusion system - Wikipedia",
-            "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system");
+        ui.hyperlink_to(
+            "Reaction-Diffusion system - Wikipedia",
+            "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system",
+        );
         ui.separator();
 
         ui.label(format!("dt = {}", self.dt));

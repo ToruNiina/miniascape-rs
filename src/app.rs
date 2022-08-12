@@ -315,10 +315,12 @@ where
                 } else {
                     let input = ctx.input();
                     // check the cursor is on the center panel
-                    let cursor_pos = input.pointer.hover_pos().unwrap_or(egui::Pos2{x: -1.0, y:-1.0});
-                    let cursor_is_in_center_panel =
-                        region.min.x <= cursor_pos.x && cursor_pos.x <= region.max.x &&
-                        region.min.y <= cursor_pos.y && cursor_pos.y <= region.max.y;
+                    let cursor_pos =
+                        input.pointer.hover_pos().unwrap_or(egui::Pos2 { x: -1.0, y: -1.0 });
+                    let cursor_is_in_center_panel = region.min.x <= cursor_pos.x
+                        && cursor_pos.x <= region.max.x
+                        && region.min.y <= cursor_pos.y
+                        && cursor_pos.y <= region.max.y;
 
                     // we need to drop scroll after checking it to release ctx
                     let scroll = input.scroll_delta.y * Self::scroll_factor();
@@ -367,7 +369,7 @@ where
                         let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
                         assert!(0.0 <= dy);
                         let d = (dy / chunk_pxls).ceil();
-                        self.board.expand_y(d as isize, init.clone());
+                        self.board.expand_y(d as isize, init);
                     }
                 } else {
                     let e = default_state.expect_err("already checked");

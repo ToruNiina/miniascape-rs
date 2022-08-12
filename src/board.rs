@@ -60,7 +60,6 @@ impl<T: State> std::default::Default for Chunk<T> {
 }
 
 impl<T: State> Chunk<T> {
-
     /// We need to take initial value because the default value depends on rule.
     fn init(i: T) -> Self {
         Self { cells: array_init::array_init(|_| i.clone()) }
@@ -227,7 +226,7 @@ impl<T: State> Grid<T> {
         }
         self.chunks = new_chunks;
         self.buffer
-            .resize((self.num_chunks_x + na) * self.num_chunks_y, Chunk::init(init.clone()));
+            .resize((self.num_chunks_x + na) * self.num_chunks_y, Chunk::init(init));
         self.num_chunks_x += na;
     }
     pub fn expand_y(&mut self, n: isize, init: T) {
@@ -248,7 +247,7 @@ impl<T: State> Grid<T> {
         }
         self.chunks = new_chunks;
         self.buffer
-            .resize(self.num_chunks_x * (self.num_chunks_y + na), Chunk::init(init.clone()));
+            .resize(self.num_chunks_x * (self.num_chunks_y + na), Chunk::init(init));
         self.num_chunks_y += na;
     }
 

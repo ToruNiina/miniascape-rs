@@ -10,7 +10,7 @@ use thiserror::Error;
 
 #[derive(Clone, Default, Debug)]
 pub struct DynamicState {
-    value: rhai::Dynamic
+    value: rhai::Dynamic,
 }
 
 impl State for DynamicState {
@@ -315,10 +315,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 false, // rollback scope?
                 "update",
                 None,
-                [
-                    center.value,
-                    Dynamic::from_array(neighbor.map(|x| x.value).collect()),
-                ],
+                [center.value, Dynamic::from_array(neighbor.map(|x| x.value).collect())],
             )
             .map_err(|x| eval_error(x, self.update_fn_str.clone()))
             .context("Failed to evaluate update")?;
@@ -335,7 +332,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
 
         ui.separator();
 
-        egui::ScrollArea::vertical().show(ui, |ui|{
+        egui::ScrollArea::vertical().show(ui, |ui| {
             Self::ui_code_editor(
                 "toggle cell update rule",
                 "cell update rule takes the central cell and its neighbors and \
