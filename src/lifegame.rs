@@ -85,6 +85,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        ui.hyperlink_to("Conway's Game of Life - Wikipedia",
+            "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life");
+        ui.separator();
+
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
             ui,
@@ -178,6 +182,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        ui.hyperlink_to("Highlife (cellular automaton) - Wikipedia",
+            "https://en.wikipedia.org/wiki/Highlife_(cellular_automaton)");
+        ui.separator();
+
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
             ui,
@@ -334,6 +342,10 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        ui.hyperlink_to("Life-like cellular automaton - Wikipedia",
+            "https://en.wikipedia.org/wiki/Life-like_cellular_automaton");
+        ui.separator();
+
         ui.label("rule {survive}/{birth} (e.g. `23/3`)");
         ui.horizontal_wrapped(|ui| {
             if ui.add(egui::TextEdit::singleline(&mut self.rule)).changed() {

@@ -1,15 +1,53 @@
+/// # Board
+///
+/// Board contains a set of cells as a square lattice.
+/// Board is a set of Chunks and Chunk is a set of Cells.
+/// Since cell state type varies depending on its rule, both of them are generic.
+///
+/// Currently, miniascape supports Square and Hexagonal lattice.
+///
+/// Since we can re-interpret hexagonal lattice as a square lattice in the
+/// following way, we use the same `Board` and `Chunk` implementation in both
+/// `SquareGrid` and `HexGrid`.
+///
+/// ```ignore
+/// //   .-- x
+/// //   |
+/// //   y   .'.   .'.   .'.   .'.   .'.   .'.   .'.
+/// //     .'   `.'   `.'   `.'   `.'   `.'   `.'   `.
+/// // 0   | 0,0 | 1,0 | 2,0 | 3,0 | 4,0 |     |N-1,0|
+/// //     '.   .'.   .'.   .'.   .'.   .'.   .'.   .'.
+/// //       `.'   `.'   `.'   `.'   `.'   `.'   `.'   `.
+/// // 1      | 0,1 | 1,1 | 2,1 | 3,1 |     |     |N-1,1|
+/// //       .'.   .'.   .'.   .'.   .'.   .'.   .'.   .'
+/// //     .'   `.'   `.'   `.'   `.'   `.'   `.'   `.'
+/// // 2   | 0,2 | 1,2 | 2,2 | 3,2 | 4,2 |     |N-1,2|
+/// //     '.   .'.   .'.   .'.   .'.   .'.   .'.   .'.
+/// //       `.'   `.'   `.'   `.'   `.'   `.'   `.'   `.
+/// // 3      | 0,3 | 1,3 | 2,3 | 3,3 |     |     |     |
+/// //       .'.   .'.   .'.   .'.   .'.   .'.   .'.   .'
+/// //     .'   `.'   `.'   `.'   `.'   `.'   `.'   `.'
+/// // 4   | 0,4 |     |     |     |     |     |     |
+/// //     '.   .'.   .'.   .'.   .'.   .'.   .'.   .'.
+/// //       `.'   `.'   `.'   `.'   `.'   `.'   `.'   `.
+/// // 5      | 0,5 |     |     |     |     |     |     |
+/// //       .'.   .'.   .'.   .'.   .'.   .'.   .'.   .'
+/// //     .'   `.'   `.'   `.'   `.'   `.'   `.'   `.'
+/// // 6   |     |     |     |     |     |     |     |
+/// //     '.   .'.   .'.   .'.   .'.   .'.   .'.   .'.
+/// //       `.'   `.'   `.'   `.'   `.'   `.'   `.'   `.
+/// // 7      |N-1,0|     |     |     |     |     |N-1,N-1|
+/// //        '.   .'.   .'.   .'.   .'.   .'.   .'.   .'
+/// //          `.'   `.'   `.'   `.'   `.'   `.'   `.'
+/// //
+/// ```
 use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
-
-// ----------------------------------------------------------------------------
-//   ___ _             _
-//  / __| |_ _  _ _ _ | |__
-// | (__| ' \ || | ' \| / /
-//  \___|_||_\_,_|_||_|_\_\
 
 const CHUNK_LEN: usize = 16;
 const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
+/// A square-shaped Chunk of cells.
 #[derive(Clone)]
 pub struct Chunk<T: State> {
     cells: [T; CHUNK_SIZE],
@@ -23,18 +61,22 @@ impl<T: State> std::default::Default for Chunk<T> {
 
 impl<T: State> Chunk<T> {
 
+    /// We need to take initial value because the default value depends on rule.
     fn init(i: T) -> Self {
         Self { cells: array_init::array_init(|_| i.clone()) }
     }
 
+    /// access to a cell with (x, y) coordinate.
     fn cell_at(&self, x: usize, y: usize) -> &T {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &self.cells[y * CHUNK_LEN + x]
     }
+    /// mut access to a cell with (x, y) coordinate.
     fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut T {
         assert!(x < CHUNK_LEN && y < CHUNK_LEN, "x = {}, y = {}", x, y);
         &mut self.cells[y * CHUNK_LEN + x]
     }
+    /// set the state of all the cells in this chunk as default.
     fn clear<const N: usize, Ne, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
@@ -45,6 +87,7 @@ impl<T: State> Chunk<T> {
         }
         Ok(())
     }
+    /// randomize the state of all the cells in this chunk.
     fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
         R: Rule<N, Ne, CellState = T>,
@@ -58,8 +101,7 @@ impl<T: State> Chunk<T> {
     }
 }
 
-// ----------------------------------------------------------------------------
-
+/// A square lattice of chunks.
 #[derive(Default)]
 pub struct Grid<T: State> {
     pub(crate) num_chunks_x: usize,
@@ -78,9 +120,11 @@ impl<T: State> Grid<T> {
         }
     }
 
+    /// The number of Cells, not chunks.
     pub fn width(&self) -> usize {
         self.num_chunks_x * CHUNK_LEN
     }
+    /// The number of Cells, not chunks.
     pub fn height(&self) -> usize {
         self.num_chunks_y * CHUNK_LEN
     }
@@ -271,6 +315,12 @@ impl<T: State> Grid<T> {
     }
 }
 
+/// We have (currently) two different boards, `SquareGrid` and `HexGrid`.
+/// To use both with the same Rule, we need to make interface the same.
+///
+/// Most of the functions are actually implemented in `Grid`.
+/// Visualization and UI functions are the only difference.
+///
 pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     fn new(x_chunks: usize, y_chunks: usize) -> Self;
     fn width(&self) -> usize;
@@ -294,6 +344,8 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     fn clear(&mut self, rule: &R) -> anyhow::Result<()>;
     fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>;
 
+    /// it takes a cell coordinate `(x, y)` and returns the center position of
+    /// the corresponding cell.
     fn location(
         &self,
         x: usize,
@@ -302,10 +354,13 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
         region_min: egui::Pos2,
         cell_width: f32,
     ) -> egui::Pos2;
+
+    /// takes a clicked position, returns the corresponding cell coordinate.
     fn clicked(&self, x: f32, y: f32, cell_width: f32) -> Option<(usize, usize)>;
 
     fn update(&mut self, rule: &R) -> anyhow::Result<()>;
 
+    /// visualize the board.
     fn paint(
         &self,
         painter: &egui::Painter,
@@ -315,6 +370,7 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
     ) -> anyhow::Result<()>;
 }
 
+/// Square grid wraps a `Grid` and implement vis/UI functions.
 pub struct SquareGrid<T: State> {
     grid: Grid<T>,
 }
@@ -462,6 +518,7 @@ where
     }
 }
 
+/// Hex grid wraps a `Grid` and implement vis/UI functions.
 pub struct HexGrid<T: State> {
     grid: Grid<T>,
 }

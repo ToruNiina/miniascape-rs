@@ -20,6 +20,9 @@ enum SquareNeighborKind {
     Neumann,
 }
 
+/// An application that manages sub-applications that corresponds to one cell automaton.
+///
+/// This is the primary app of `miniascape`.
 pub struct WrapApp {
     apps: Vec<(String, Box<dyn eframe::App>)>,
     focus: Option<usize>,
@@ -348,7 +351,6 @@ impl eframe::App for WrapApp {
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("tabs").show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {

@@ -22,7 +22,11 @@ impl State for GrayScottState {
     }
 }
 
+/// Gray-Scott model.
 ///
+/// It simulates reaction-diffusion model by solving PDE in a very straightforward way.
+///
+/// The model is:
 /// du/dt = Du * nabla^2 u + u^2*v - (f + k) u
 /// dv/dt = Dv * nabla^2 v - u^2*v + f(1 - v)
 ///
@@ -112,6 +116,10 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        ui.hyperlink_to("Reaction-Diffusion system - Wikipedia",
+            "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system");
+        ui.separator();
+
         ui.label(format!("dt = {}", self.dt));
         ui.label(format!("dx = {}", self.dx));
 

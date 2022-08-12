@@ -2,15 +2,26 @@ use rand::Rng;
 
 /// State of a cell.
 ///
-/// Represents the current state of a cell. To initialize the board, it requires
-/// `Clone`. To clear the board, it requires `Default`.
-/// The update rule is implemented in `Rule` trait.
+/// Represents the current state of a cell.
+///
+/// To initialize the board, it requires `Clone` and `Default`.
+/// But before any operation, the state will be cleared by using `Rule::default_state`.
+///
+/// Most of the operations are provided in `Rule` trait.
+///
 pub trait State: Clone + Default + std::fmt::Debug {
     /// Generate UI to inspect and modify the cell state.
     fn inspect(&mut self, ui: &mut egui::Ui, buf: &mut String);
 }
 
 /// Rule of the cellular automaton.
+///
+/// It contains rule of update/clear/randomize, visualization, and UI related functions.
+///
+/// Since `miniascape` supports `DynamicRule` that takes rhai script as the update rule,
+/// most of the functions *can fail*. For example, it fails if the rhai script contains
+/// a syntax error.
+///
 pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     /// Corresponding cell state.
     type CellState: State;
@@ -21,23 +32,31 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     /// Color of a cell.
     fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32>;
 
+    /// the default cell state. When a board is cleared, all the cells have this value.
     fn default_state(&self) -> anyhow::Result<Self::CellState>;
 
+    /// randomize cell state.
     fn randomize<R: Rng>(&self, rng: &mut R) -> anyhow::Result<Self::CellState>;
 
-    /// The next state. It will be used to change cell state from GUI
+    /// The next state. It will be used to change the state of a cell from GUI
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState>;
 
+    /// Returns coordinates of neighboring cells.
+    /// It takes not only the center cell coordinate but also the width and height
+    /// of the current board to support boundary conditions.
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N] {
         Neighborhood::neighbors(x, y, w, h)
     }
 
+    /// Update the center cell using the neighboring cells.
     fn update(
         &self,
         center: Self::CellState,
         neighbors: impl Iterator<Item = Self::CellState>,
     ) -> anyhow::Result<Self::CellState>;
 
+    /// The number of updates in one step. Normally 1.
+    /// This *step* means update of a window.
     fn iteration_per_step(&self) -> u32 {
         1
     }
@@ -45,14 +64,21 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
 }
 
+/// Index of neighboring cells.
 pub trait Neighbors<const N: usize>: Default {
+    /// To avoid heap allocation, we use an array and const-generic.
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N];
 }
 
+/// Von-Neumann Neighborhood. Up, Down, Left, Right cells are the neighbors.
 #[derive(Default)]
 pub struct VonNeumannNeighborhood {}
+
+/// Moore Neighborhood. 8 neighboring cells in a square grid are the neighbors.
 #[derive(Default)]
 pub struct MooreNeighborhood {}
+
+/// Neighborhood on a hexagonal grid.
 #[derive(Default)]
 pub struct HexGridNeighborhood {}
 

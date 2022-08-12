@@ -3,7 +3,13 @@ use crate::rule::{Neighbors, Rule, State};
 
 use rand::SeedableRng;
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
+// TODO: We derive Deserialize/Serialize so we can persist app state on shutdown.
+
+/// An application to manage a cell automaton.
+///
+/// Several application can run at the same time but only the focused app will
+/// be updated its state and others will be paused.
+///
 pub struct App<const N: usize, Ne, R, B>
 where
     Ne: Neighbors<N>,
@@ -59,7 +65,10 @@ where
     }
 }
 
-/// to avoid context lock by ctx.input()
+/// Represents which cell is clicked.
+///
+/// To avoid context lock by `ctx.input()` (and to make the code shorter),
+/// `clicked()` function that returns `Clicked` is implemented.
 pub enum Clicked {
     Primary(usize, usize),
     Secondary(usize, usize),
@@ -104,6 +113,10 @@ where
         1.0 / 128.0
     }
 
+    /// Detect which cell is clicked.
+    ///
+    /// If no button is pressed or pressed position is out of board, it returns `NotClicked`.
+    /// Otherwise, it returns which cell is clicked.
     pub fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
         let pointer = &ctx.input().pointer;
         if !pointer.primary_down() && !pointer.secondary_down() {
@@ -142,9 +155,6 @@ where
         //         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
-    /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    #[allow(clippy::never_loop)]
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
             if let Err(e) = self.board.update(&self.rule) {
