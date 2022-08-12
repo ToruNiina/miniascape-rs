@@ -252,7 +252,9 @@ where
 
             ui.separator(); // -------------------------------------------------
 
-            self.rule.ui(ui, ctx);
+            if let Err(e) = self.rule.ui(ui, ctx) {
+                self.err = Some(format!("{:?}", e));
+            }
         });
 
         if let Some(multi_touch) = ctx.multi_touch() {

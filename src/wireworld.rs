@@ -105,7 +105,7 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
         })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
         ui.hyperlink_to("Wireworld - Wikipedia", "https://en.wikipedia.org/wiki/Wireworld");
         ui.separator();
 
@@ -147,5 +147,6 @@ impl Rule<8, MooreNeighborhood> for WireWorldRule {
             &mut self.tail_color,
             egui::widgets::color_picker::Alpha::Opaque,
         );
+        Ok(())
     }
 }

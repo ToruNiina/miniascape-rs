@@ -115,7 +115,7 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
         self.n
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
         ui.hyperlink_to(
             "Reaction-Diffusion system - Wikipedia",
             "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system",
@@ -159,5 +159,6 @@ impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
             &mut self.v_color,
             egui::widgets::color_picker::Alpha::Opaque,
         );
+        Ok(())
     }
 }

@@ -61,7 +61,7 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
         1
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
+    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) -> anyhow::Result<()>;
 }
 
 /// Index of neighboring cells.

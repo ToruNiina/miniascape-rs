@@ -45,6 +45,8 @@ impl State for DynamicState {
 pub struct DynamicRule {
     engine: Engine,
 
+    dropped_files: Vec<egui::DroppedFile>,
+
     update_fn_str: String,
     update_fn: AST,
     open_update_fn: bool,
@@ -154,6 +156,7 @@ fn color(self) {
 
         Self {
             engine,
+            dropped_files: Default::default(),
 
             update_fn_str,
             update_fn,
@@ -194,6 +197,9 @@ pub enum DynamicRuleError {
         "Dynamic::into_{1}() failed, actual type is \"{0}\"\ncaused by the following code: \n{2}"
     )]
     CastError(String, String, String),
+
+    #[error("Dropped File Error: {0} about file \"{1}\"")]
+    FileError(String, String),
 }
 
 // Box<rhai::EvalAltResult> does not satisfy trait bound of anyhow context
@@ -333,7 +339,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
         Ok(Self::CellState { value })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) -> anyhow::Result<()> {
         egui::ScrollArea::vertical().show(ui, |ui| {
             ui.label("Background Color");
             egui::widgets::color_picker::color_edit_button_srgba(
@@ -434,6 +440,42 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 },
             );
         });
+
+        if !ctx.input().raw.dropped_files.is_empty() {
+            self.dropped_files = ctx.input().raw.dropped_files.clone();
+        }
+
+        // load file content and compile the code
+        if !self.dropped_files.is_empty() {
+            let file = self.dropped_files.first().expect("already checked");
+            if let Some(bytes) = &file.bytes {
+                let content = std::str::from_utf8(&bytes)
+                    .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
+                    .to_owned();
+
+                self.update_fn_str = content.clone();
+                self.clear_fn_str = content.clone();
+                self.randomize_fn_str = content.clone();
+                self.next_fn_str = content.clone();
+                self.color_fn_str = content.clone();
+
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
+                self.randomize_fn = self.engine.compile(&content)
+                    .context(format!("failed to compile file content -> {}", file.name))?;
+
+                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                let ast = self.engine.compile(content)
+                    .context(format!("failed to compile file content -> {}", file.name))?;
+
+                self.update_fn = ast.clone();
+                self.clear_fn = ast.clone();
+                self.next_fn = ast.clone();
+                self.color_fn = ast;
+            } else {
+                return Err(DynamicRuleError::FileError("couldn't read file content".to_string(), file.name.clone()).into());
+            }
+        }
+        Ok(())
     }
 }
 

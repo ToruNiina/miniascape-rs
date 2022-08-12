@@ -84,7 +84,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
         })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
         ui.hyperlink_to(
             "Conway's Game of Life - Wikipedia",
             "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life",
@@ -113,6 +113,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeG
             &mut self.dead_color,
             egui::widgets::color_picker::Alpha::Opaque,
         );
+        Ok(())
     }
 }
 
@@ -183,7 +184,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
         )
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
         ui.hyperlink_to(
             "Highlife (cellular automaton) - Wikipedia",
             "https://en.wikipedia.org/wiki/Highlife_(cellular_automaton)",
@@ -212,6 +213,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighL
             &mut self.dead_color,
             egui::widgets::color_picker::Alpha::Opaque,
         );
+        Ok(())
     }
 }
 
@@ -345,7 +347,7 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
         )
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
         ui.hyperlink_to(
             "Life-like cellular automaton - Wikipedia",
             "https://en.wikipedia.org/wiki/Life-like_cellular_automaton",
@@ -394,5 +396,6 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Gener
             &mut self.dead_color,
             egui::widgets::color_picker::Alpha::Opaque,
         );
+        Ok(())
     }
 }
