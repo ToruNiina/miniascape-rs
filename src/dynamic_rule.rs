@@ -468,7 +468,7 @@ impl DynamicRule {
             if let Some(err) = result {
                 ui.label(format!("{:?}", err));
             }
-            ui.add(egui::TextEdit::multiline(fn_str).code_editor());
+            ui.add(egui::TextEdit::multiline(fn_str).code_editor().desired_width(f32::INFINITY));
         }
     }
 }
