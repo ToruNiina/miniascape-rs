@@ -471,6 +471,8 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 self.clear_fn = ast.clone();
                 self.next_fn = ast.clone();
                 self.color_fn = ast;
+
+                self.dropped_files.clear();
             } else {
                 return Err(DynamicRuleError::FileError("couldn't read file content".to_string(), file.name.clone()).into());
             }
