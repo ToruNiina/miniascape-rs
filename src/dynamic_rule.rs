@@ -460,11 +460,15 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                 self.color_fn_str = content.clone();
 
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
-                self.randomize_fn = self.engine.compile(&content)
+                self.randomize_fn = self
+                    .engine
+                    .compile(&content)
                     .context(format!("failed to compile file content -> {}", file.name))?;
 
                 self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                let ast = self.engine.compile(content)
+                let ast = self
+                    .engine
+                    .compile(content)
                     .context(format!("failed to compile file content -> {}", file.name))?;
 
                 self.update_fn = ast.clone();
@@ -474,7 +478,11 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
 
                 self.dropped_files.clear();
             } else {
-                return Err(DynamicRuleError::FileError("couldn't read file content".to_string(), file.name.clone()).into());
+                return Err(DynamicRuleError::FileError(
+                    "couldn't read file content".to_string(),
+                    file.name.clone(),
+                )
+                .into());
             }
         }
         Ok(())
