@@ -334,15 +334,24 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        ui.horizontal_wrapped(|ui| {
-            ui.label("It uses");
-            ui.hyperlink_to("rhai", "https://rhai.rs/");
-            ui.label("as a scripting language.");
-        });
-
-        ui.separator();
-
         egui::ScrollArea::vertical().show(ui, |ui| {
+            ui.label("Background Color");
+            egui::widgets::color_picker::color_edit_button_srgba(
+                ui,
+                &mut self.background,
+                egui::widgets::color_picker::Alpha::Opaque,
+            );
+
+            ui.separator();
+
+            ui.horizontal_wrapped(|ui| {
+                ui.label("It uses");
+                ui.hyperlink_to("rhai", "https://rhai.rs/");
+                ui.label("as a scripting language.");
+            });
+
+            ui.separator();
+
             Self::ui_code_editor(
                 "toggle cell update rule",
                 "cell update rule takes the central cell and its neighbors and \
@@ -423,14 +432,6 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
                     self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
                     self.engine.compile(fn_str).context("failed to compile `fn color()`")
                 },
-            );
-            ui.separator();
-
-            ui.label("Background Color");
-            egui::widgets::color_picker::color_edit_button_srgba(
-                ui,
-                &mut self.background,
-                egui::widgets::color_picker::Alpha::Opaque,
             );
         });
     }
