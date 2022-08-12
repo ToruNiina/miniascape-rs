@@ -147,7 +147,7 @@ fn color(self) {
 
             update_fn_str,
             update_fn,
-            open_update_fn: false,
+            open_update_fn: true,
             open_update_fn_compilation_result: None,
 
             clear_fn_str,
@@ -335,95 +335,97 @@ impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for Dynam
 
         ui.separator();
 
-        Self::ui_code_editor(
-            "edit cell update rule",
-            "cell update rule takes the central cell and its neighbors and \
-            returns the next state of the central cell.",
-            ui,
-            ctx,
-            &mut self.update_fn_str,
-            &mut self.update_fn,
-            &mut self.open_update_fn,
-            &mut self.open_update_fn_compilation_result,
-            |fn_str| {
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine.compile(fn_str).context("failed to compile `fn update()`")
-            },
-        );
-        ui.separator();
+        egui::ScrollArea::vertical().show(ui, |ui|{
+            Self::ui_code_editor(
+                "toggle cell update rule",
+                "cell update rule takes the central cell and its neighbors and \
+                returns the next state of the central cell.",
+                ui,
+                ctx,
+                &mut self.update_fn_str,
+                &mut self.update_fn,
+                &mut self.open_update_fn,
+                &mut self.open_update_fn_compilation_result,
+                |fn_str| {
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                    self.engine.compile(fn_str).context("failed to compile `fn update()`")
+                },
+            );
+            ui.separator();
 
-        Self::ui_code_editor(
-            "edit clear rule",
-            "clear rule returns the default state to clear the board.",
-            ui,
-            ctx,
-            &mut self.clear_fn_str,
-            &mut self.clear_fn,
-            &mut self.open_clear_fn,
-            &mut self.open_clear_fn_compilation_result,
-            |fn_str| {
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine.compile(fn_str).context("failed to compile `fn clear()`")
-            },
-        );
-        ui.separator();
+            Self::ui_code_editor(
+                "toggle clear rule",
+                "clear rule returns the default state to clear the board.",
+                ui,
+                ctx,
+                &mut self.clear_fn_str,
+                &mut self.clear_fn,
+                &mut self.open_clear_fn,
+                &mut self.open_clear_fn_compilation_result,
+                |fn_str| {
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                    self.engine.compile(fn_str).context("failed to compile `fn clear()`")
+                },
+            );
+            ui.separator();
 
-        Self::ui_code_editor(
-            "edit randomize rule",
-            "randomize rule randomizes the cell using rhai-rand module.",
-            ui,
-            ctx,
-            &mut self.randomize_fn_str,
-            &mut self.randomize_fn,
-            &mut self.open_randomize_fn,
-            &mut self.open_randomize_fn_compilation_result,
-            |fn_str| {
-                // rand module becomes unstable when optimization level == full
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
-                self.engine.compile(fn_str).context("failed to compile `fn randomize()`")
-            },
-        );
-        ui.separator();
+            Self::ui_code_editor(
+                "toggle randomize rule",
+                "randomize rule randomizes the cell using rhai-rand module.",
+                ui,
+                ctx,
+                &mut self.randomize_fn_str,
+                &mut self.randomize_fn,
+                &mut self.open_randomize_fn,
+                &mut self.open_randomize_fn_compilation_result,
+                |fn_str| {
+                    // rand module becomes unstable when optimization level == full
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
+                    self.engine.compile(fn_str).context("failed to compile `fn randomize()`")
+                },
+            );
+            ui.separator();
 
-        Self::ui_code_editor(
-            "edit next rule",
-            "next rule is to change the cell state when clicked.",
-            ui,
-            ctx,
-            &mut self.next_fn_str,
-            &mut self.next_fn,
-            &mut self.open_next_fn,
-            &mut self.open_next_fn_compilation_result,
-            |fn_str| {
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine.compile(fn_str).context("failed to compile `fn next()`")
-            },
-        );
-        ui.separator();
+            Self::ui_code_editor(
+                "toggle next rule",
+                "next rule is to change the cell state when clicked.",
+                ui,
+                ctx,
+                &mut self.next_fn_str,
+                &mut self.next_fn,
+                &mut self.open_next_fn,
+                &mut self.open_next_fn_compilation_result,
+                |fn_str| {
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                    self.engine.compile(fn_str).context("failed to compile `fn next()`")
+                },
+            );
+            ui.separator();
 
-        Self::ui_code_editor(
-            "edit color rule",
-            "color rule defines the color depending on the cell state.\
-            the resulting value is an array of f32 in [0,1] range, in the order of [r, g, b].",
-            ui,
-            ctx,
-            &mut self.color_fn_str,
-            &mut self.color_fn,
-            &mut self.open_color_fn,
-            &mut self.open_color_fn_compilation_result,
-            |fn_str| {
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                self.engine.compile(fn_str).context("failed to compile `fn color()`")
-            },
-        );
-        ui.separator();
+            Self::ui_code_editor(
+                "toggle color rule",
+                "color rule defines the color depending on the cell state.\
+                the resulting value is an array of f32 in [0,1] range, in the order of [r, g, b].",
+                ui,
+                ctx,
+                &mut self.color_fn_str,
+                &mut self.color_fn,
+                &mut self.open_color_fn,
+                &mut self.open_color_fn_compilation_result,
+                |fn_str| {
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                    self.engine.compile(fn_str).context("failed to compile `fn color()`")
+                },
+            );
+            ui.separator();
 
-        ui.label("Background Color");
-        egui::widgets::color_picker::color_edit_button_srgba(
-            ui,
-            &mut self.background,
-            egui::widgets::color_picker::Alpha::Opaque,
-        );
+            ui.label("Background Color");
+            egui::widgets::color_picker::color_edit_button_srgba(
+                ui,
+                &mut self.background,
+                egui::widgets::color_picker::Alpha::Opaque,
+            );
+        });
     }
 }
 
@@ -433,7 +435,7 @@ impl DynamicRule {
         button_name: &str,
         description: &str,
         ui: &mut egui::Ui,
-        ctx: &egui::Context,
+        _ctx: &egui::Context,
         fn_str: &mut String,
         fn_ast: &mut AST,
         open_fn: &mut bool,
@@ -442,29 +444,23 @@ impl DynamicRule {
     ) {
         ui.label(description);
         if ui.button(button_name).clicked() {
-            *open_fn = true;
+            *open_fn = !*open_fn;
         }
 
         if *open_fn {
-            let mut open = true;
-            egui::Window::new("Code Editor").open(&mut open).show(ctx, |ui| {
-                if ui.button("compile").clicked() {
-                    let ast = compile(fn_str);
-                    if let Ok(compiled) = ast {
-                        *fn_ast = compiled;
-                        *result = None;
-                    } else {
-                        *result = ast.err();
-                    }
+            if ui.button("compile").clicked() {
+                let ast = compile(fn_str);
+                if let Ok(compiled) = ast {
+                    *fn_ast = compiled;
+                    *result = None;
+                } else {
+                    *result = ast.err();
                 }
-                if let Some(err) = result {
-                    ui.label(format!("{:?}", err));
-                }
-                ui.text_edit_multiline(fn_str);
-            });
-            if !open {
-                *open_fn = false;
             }
+            if let Some(err) = result {
+                ui.label(format!("{:?}", err));
+            }
+            ui.add(egui::TextEdit::multiline(fn_str).code_editor());
         }
     }
 }

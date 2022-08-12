@@ -163,43 +163,45 @@ where
         }
 
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            egui_extras::TableBuilder::new(ui)
-                .column(egui_extras::Size::initial(100.0))
-                .column(egui_extras::Size::remainder())
-                .header(24.0, |mut header| {
-                    header.col(|ui| {
-                        ui.heading("operation");
+            ui.push_id(0, |ui| {
+                egui_extras::TableBuilder::new(ui)
+                    .column(egui_extras::Size::initial(100.0))
+                    .column(egui_extras::Size::remainder())
+                    .header(24.0, |mut header| {
+                        header.col(|ui| {
+                            ui.heading("operation");
+                        });
+                        header.col(|ui| {
+                            ui.heading("effect");
+                        });
+                    })
+                    .body(|mut body| {
+                        body.row(32.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("left click & drag");
+                            });
+                            row.col(|ui| {
+                                ui.label("change state of a cell clicked");
+                            });
+                        });
+                        body.row(32.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("wheel click & drag");
+                            });
+                            row.col(|ui| {
+                                ui.label("grab the board and move it");
+                            });
+                        });
+                        body.row(32.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("right click");
+                            });
+                            row.col(|ui| {
+                                ui.label("modify cell state");
+                            });
+                        });
                     });
-                    header.col(|ui| {
-                        ui.heading("effect");
-                    });
-                })
-                .body(|mut body| {
-                    body.row(32.0, |mut row| {
-                        row.col(|ui| {
-                            ui.label("left click & drag");
-                        });
-                        row.col(|ui| {
-                            ui.label("change state of a cell clicked");
-                        });
-                    });
-                    body.row(32.0, |mut row| {
-                        row.col(|ui| {
-                            ui.label("wheel click & drag");
-                        });
-                        row.col(|ui| {
-                            ui.label("grab the board and move it");
-                        });
-                    });
-                    body.row(32.0, |mut row| {
-                        row.col(|ui| {
-                            ui.label("right click");
-                        });
-                        row.col(|ui| {
-                            ui.label("modify cell state");
-                        });
-                    });
-                });
+            });
 
             ui.separator(); // -------------------------------------------------
 
