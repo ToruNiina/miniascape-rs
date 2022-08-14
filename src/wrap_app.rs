@@ -110,7 +110,6 @@ impl WrapApp {
                     self.apps.push((
                         "LifeGame".to_string(),
                         Box::new(App::<
-                            8,
                             MooreNeighborhood,
                             LifeGameRule,
                             SquareGrid<LifeGameState>,
@@ -137,7 +136,6 @@ impl WrapApp {
                     self.apps.push((
                         "HighLife".to_string(),
                         Box::new(App::<
-                            8,
                             MooreNeighborhood,
                             HighLifeRule,
                             SquareGrid<LifeGameState>,
@@ -165,7 +163,6 @@ impl WrapApp {
                     self.apps.push((
                         self.life_game_rule.clone(),
                         Box::new(App::<
-                            8,
                             MooreNeighborhood,
                             GeneralizedLifeGameRule,
                             SquareGrid<LifeGameState>,
@@ -199,7 +196,6 @@ impl WrapApp {
                     self.apps.push((
                         self.life_game_rule.clone(),
                         Box::new(App::<
-                            6,
                             HexGridNeighborhood,
                             GeneralizedLifeGameRule,
                             HexGrid<LifeGameState>,
@@ -232,7 +228,6 @@ impl WrapApp {
                     self.apps.push((
                         "WireWorld".to_string(),
                         Box::new(App::<
-                            8,
                             MooreNeighborhood,
                             WireWorldRule,
                             SquareGrid<WireWorldState>,
@@ -259,7 +254,6 @@ impl WrapApp {
                     self.apps.push((
                         "Gray-Scott".to_string(),
                         Box::new(App::<
-                            4,
                             VonNeumannNeighborhood,
                             GrayScottRule,
                             SquareGrid<GrayScottState>,
@@ -290,20 +284,20 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     if self.grid_kind == GridKind::Square {
                         if self.square_neighbor_kind == SquareNeighborKind::Moore {
-                            let app = App::<8, MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
+                            let app = App::<MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
                                 fix_board_size: true,
                                 ..Default::default()
                             };
                             self.apps.push(("User Defined".to_string(), Box::new(app)));
                         } else {
-                            let app = App::<4, VonNeumannNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
+                            let app = App::<VonNeumannNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
                                 fix_board_size: true,
                                 ..Default::default()
                             };
                             self.apps.push(("User Defined".to_string(), Box::new(app)));
                         }
                     } else {
-                        let app = App::<6, HexGridNeighborhood, DynamicRule, HexGrid<DynamicState>> {
+                        let app = App::<HexGridNeighborhood, DynamicRule, HexGrid<DynamicState>> {
                             fix_board_size: true,
                             ..Default::default()
                         };

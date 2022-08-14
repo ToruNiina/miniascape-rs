@@ -10,11 +10,11 @@ use rand::SeedableRng;
 /// Several application can run at the same time but only the focused app will
 /// be updated its state and others will be paused.
 ///
-pub struct App<const N: usize, Ne, R, B>
+pub struct App<N, R, B>
 where
-    Ne: Neighbors<N>,
-    R: Rule<N, Ne>,
-    B: Board<N, Ne, R>,
+    N: Neighbors,
+    R: Rule<N>,
+    B: Board<N, R>,
 {
     pub(crate) rule: R,
     pub(crate) board: B,
@@ -34,11 +34,11 @@ where
     pub(crate) err: Option<String>,
 }
 
-impl<const N: usize, Ne, R, B> Default for App<N, Ne, R, B>
+impl<N, R, B> Default for App<N, R, B>
 where
-    Ne: Neighbors<N>,
-    R: Rule<N, Ne>,
-    B: Board<N, Ne, R>,
+    N: Neighbors,
+    R: Rule<N>,
+    B: Board<N, R>,
 {
     fn default() -> Self {
         let rule = R::default();
@@ -75,11 +75,11 @@ pub enum Clicked {
     NotClicked,
 }
 
-impl<const N: usize, Ne, R, B> App<N, Ne, R, B>
+impl<N, R, B> App<N, R, B>
 where
-    Ne: Neighbors<N>,
-    R: Rule<N, Ne>,
-    B: Board<N, Ne, R>,
+    N: Neighbors,
+    R: Rule<N>,
+    B: Board<N, R>,
 {
     pub fn new(rule: R) -> Self {
         let mut board = B::new(4, 3);
@@ -144,11 +144,11 @@ where
     }
 }
 
-impl<const N: usize, Ne, R, B> eframe::App for App<N, Ne, R, B>
+impl<N, R, B> eframe::App for App<N, R, B>
 where
-    Ne: Neighbors<N>,
-    R: Rule<N, Ne>,
-    B: Board<N, Ne, R>,
+    N: Neighbors,
+    R: Rule<N>,
+    B: Board<N, R>,
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {

@@ -41,7 +41,7 @@ impl Default for LifeGameRule {
     }
 }
 
-impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for LifeGameRule {
+impl<N: Neighbors> Rule<N> for LifeGameRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {
@@ -135,7 +135,7 @@ impl Default for HighLifeRule {
     }
 }
 
-impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for HighLifeRule {
+impl<N: Neighbors> Rule<N> for HighLifeRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {
@@ -299,7 +299,7 @@ impl GeneralizedLifeGameRule {
     }
 }
 
-impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for GeneralizedLifeGameRule {
+impl<N: Neighbors> Rule<N> for GeneralizedLifeGameRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {

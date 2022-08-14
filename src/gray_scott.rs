@@ -63,7 +63,7 @@ impl std::default::Default for GrayScottRule {
     }
 }
 
-impl Rule<4, VonNeumannNeighborhood> for GrayScottRule {
+impl Rule<VonNeumannNeighborhood> for GrayScottRule {
     type CellState = GrayScottState;
 
     fn background(&self) -> egui::Color32 {

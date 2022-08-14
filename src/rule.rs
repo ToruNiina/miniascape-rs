@@ -22,7 +22,7 @@ pub trait State: Clone + Default + std::fmt::Debug {
 /// most of the functions *can fail*. For example, it fails if the rhai script contains
 /// a syntax error.
 ///
-pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
+pub trait Rule<N: Neighbors>: Default {
     /// Corresponding cell state.
     type CellState: State;
 
@@ -44,8 +44,8 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
     /// Returns coordinates of neighboring cells.
     /// It takes not only the center cell coordinate but also the width and height
     /// of the current board to support boundary conditions.
-    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N] {
-        Neighborhood::neighbors(x, y, w, h)
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> N::Neighborhood {
+        N::neighbors(x, y, w, h)
     }
 
     /// Update the center cell using the neighboring cells.
@@ -65,9 +65,10 @@ pub trait Rule<const N: usize, Neighborhood: Neighbors<N>>: Default {
 }
 
 /// Index of neighboring cells.
-pub trait Neighbors<const N: usize>: Default {
+pub trait Neighbors: Default {
+    type Neighborhood: IntoIterator<Item = (usize, usize)>;
     /// To avoid heap allocation, we use an array and const-generic.
-    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); N];
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> Self::Neighborhood;
 }
 
 /// Von-Neumann Neighborhood. Up, Down, Left, Right cells are the neighbors.
@@ -82,8 +83,9 @@ pub struct MooreNeighborhood {}
 #[derive(Default)]
 pub struct HexGridNeighborhood {}
 
-impl Neighbors<4> for VonNeumannNeighborhood {
-    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); 4] {
+impl Neighbors for VonNeumannNeighborhood {
+    type Neighborhood = [(usize, usize); 4];
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> Self::Neighborhood {
         let xprev = (if x == 0 { w - 1 } else { x - 1 }) as usize;
         let xnext = (if x == w - 1 { 0 } else { x + 1 }) as usize;
         let yprev = (if y == 0 { h - 1 } else { y - 1 }) as usize;
@@ -93,9 +95,11 @@ impl Neighbors<4> for VonNeumannNeighborhood {
         [(x, yprev), (xnext, y), (xprev, y), (x, ynext)]
     }
 }
-impl Neighbors<8> for MooreNeighborhood {
+impl Neighbors for MooreNeighborhood {
+    type Neighborhood = [(usize, usize); 8];
+
     #[rustfmt::skip]
-    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); 8] {
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> Self::Neighborhood {
         let xprev = (if x == 0 { w - 1 } else { x - 1 }) as usize;
         let xnext = (if x == w - 1 { 0 } else { x + 1 }) as usize;
         let yprev = (if y == 0 { h - 1 } else { y - 1 }) as usize;
@@ -139,9 +143,10 @@ impl Neighbors<8> for MooreNeighborhood {
 //        '.   .'.   .'.   .'.   .'.   .'.   .'.   .'
 //          `.'   `.'   `.'   `.'   `.'   `.'   `.'
 //
-impl Neighbors<6> for HexGridNeighborhood {
+impl Neighbors for HexGridNeighborhood {
+    type Neighborhood = [(usize, usize); 6];
     #[rustfmt::skip]
-    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> [(usize, usize); 6] {
+    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> Self::Neighborhood {
         let xprev = (if x == 0 { w - 1 } else { x - 1 }) as usize;
         let xnext = (if x == w - 1 { 0 } else { x + 1 }) as usize;
         let yprev = (if y == 0 { h - 1 } else { y - 1 }) as usize;

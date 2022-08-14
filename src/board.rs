@@ -76,10 +76,10 @@ impl<T: State> Chunk<T> {
         &mut self.cells[y * CHUNK_LEN + x]
     }
     /// set the state of all the cells in this chunk as default.
-    fn clear<const N: usize, Ne, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    fn clear<N, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
-        R: Rule<N, Ne, CellState = T>,
-        Ne: Neighbors<N>,
+        R: Rule<N, CellState = T>,
+        N: Neighbors,
     {
         for c in self.cells.iter_mut() {
             *c = rule.default_state()?;
@@ -87,10 +87,10 @@ impl<T: State> Chunk<T> {
         Ok(())
     }
     /// randomize the state of all the cells in this chunk.
-    fn randomize<const N: usize, Ne, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    fn randomize<N, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
-        R: Rule<N, Ne, CellState = T>,
-        Ne: Neighbors<N>,
+        R: Rule<N, CellState = T>,
+        N: Neighbors,
         Rn: Rng,
     {
         for c in self.cells.iter_mut() {
@@ -251,24 +251,24 @@ impl<T: State> Grid<T> {
         self.num_chunks_y += na;
     }
 
-    pub fn clear<const N: usize, Ne, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    pub fn clear<N, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
-        R: Rule<N, Ne, CellState = T>,
-        Ne: Neighbors<N>,
+        R: Rule<N, CellState = T>,
+        N: Neighbors,
     {
         for ch in self.chunks.iter_mut() {
             ch.clear(rule)?;
         }
         Ok(())
     }
-    pub fn randomize<const N: usize, Ne, R, Rn>(
+    pub fn randomize<N, R, Rn>(
         &mut self,
         rule: &R,
         rng: &mut Rn,
     ) -> anyhow::Result<()>
     where
-        R: Rule<N, Ne, CellState = T>,
-        Ne: Neighbors<N>,
+        R: Rule<N, CellState = T>,
+        N: Neighbors,
         Rn: Rng,
     {
         for ch in self.chunks.iter_mut() {
@@ -277,12 +277,12 @@ impl<T: State> Grid<T> {
         Ok(())
     }
 
-    pub fn update<const N: usize, Neighborhood: Neighbors<N>, R>(
+    pub fn update<N: Neighbors, R>(
         &mut self,
         rule: &R,
     ) -> anyhow::Result<()>
     where
-        R: Rule<N, Neighborhood, CellState = T>,
+        R: Rule<N, CellState = T>,
     {
         for _ in 0..rule.iteration_per_step() {
             for cj in 0..self.n_chunks_y() {
@@ -302,7 +302,7 @@ impl<T: State> Grid<T> {
 
                             *self.bufcell_at_mut(x, y) = rule.update(
                                 self.cell_at(x, y).clone(),
-                                idxs.map(|(x, y)| self.cell_at(x, y).clone()).into_iter(),
+                                idxs.into_iter().map(|(x, y)| self.cell_at(x, y).clone()).into_iter(),
                             )?;
                         }
                     }
@@ -320,7 +320,7 @@ impl<T: State> Grid<T> {
 /// Most of the functions are actually implemented in `Grid`.
 /// Visualization and UI functions are the only difference.
 ///
-pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
+pub trait Board<N: Neighbors, R: Rule<N>> {
     fn new(x_chunks: usize, y_chunks: usize) -> Self;
     fn width(&self) -> usize;
     fn height(&self) -> usize;
@@ -373,11 +373,11 @@ pub trait Board<const N: usize, Ne: Neighbors<N>, R: Rule<N, Ne>> {
 pub struct SquareGrid<T: State> {
     grid: Grid<T>,
 }
-impl<T, const N: usize, Ne, R> Board<N, Ne, R> for SquareGrid<T>
+impl<T, N, R> Board<N, R> for SquareGrid<T>
 where
     T: State,
-    Ne: Neighbors<N>,
-    R: Rule<N, Ne, CellState = T>,
+    N: Neighbors,
+    R: Rule<N, CellState = T>,
 {
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
         Self { grid: Grid::new(x_chunks, y_chunks) }
@@ -521,11 +521,11 @@ where
 pub struct HexGrid<T: State> {
     grid: Grid<T>,
 }
-impl<T, const N: usize, Ne, R> Board<N, Ne, R> for HexGrid<T>
+impl<T, N, R> Board<N, R> for HexGrid<T>
 where
     T: State,
-    Ne: Neighbors<N>,
-    R: Rule<N, Ne, CellState = T>,
+    N: Neighbors,
+    R: Rule<N, CellState = T>,
 {
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
         Self { grid: Grid::new(x_chunks, y_chunks) }

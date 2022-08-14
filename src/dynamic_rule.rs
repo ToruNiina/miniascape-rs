@@ -210,7 +210,7 @@ fn cast_error(item: &str, typename: String, code: String) -> DynamicRuleError {
     DynamicRuleError::CastError(item.to_string(), typename, code)
 }
 
-impl<const N: usize, Neighborhood: Neighbors<N>> Rule<N, Neighborhood> for DynamicRule {
+impl<N: Neighbors> Rule<N> for DynamicRule {
     type CellState = DynamicState;
 
     fn background(&self) -> egui::Color32 {
