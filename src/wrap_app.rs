@@ -4,7 +4,7 @@ use crate::rule::{HexGridNeighborhood, MooreNeighborhood, VonNeumannNeighborhood
 
 use crate::dynamic_rule::{DynamicRule, DynamicState};
 use crate::gray_scott::{GrayScottRule, GrayScottState};
-use crate::lifegame::{GeneralizedLifeGameRule, HighLifeRule, LifeGameRule, LifeGameState};
+use crate::lifegame::{HighLifeRule, LifeGameRule, LifeGameState, LifeLikeGameRule};
 use crate::wireworld::{WireWorldRule, WireWorldState};
 
 use egui_extras::RetainedImage;
@@ -32,7 +32,7 @@ pub struct WrapApp {
     square_neighbor_kind: SquareNeighborKind,
 
     thumbnail_lifegame: RetainedImage,
-    thumbnail_generalized_lifegame: RetainedImage,
+    thumbnail_lifelike: RetainedImage,
     thumbnail_hexlife: RetainedImage,
     thumbnail_highlife: RetainedImage,
     thumbnail_wireworld: RetainedImage,
@@ -64,9 +64,9 @@ impl WrapApp {
                 include_bytes!("images/thumbnail_lifegame.png"),
             )
             .unwrap(),
-            thumbnail_generalized_lifegame: RetainedImage::from_image_bytes(
-                "thumbnail_generalized_lifegame.png",
-                include_bytes!("images/thumbnail_generalized_lifegame.png"),
+            thumbnail_lifelike: RetainedImage::from_image_bytes(
+                "thumbnail_lifelike.png",
+                include_bytes!("images/thumbnail_lifelike.png"),
             )
             .unwrap(),
             thumbnail_hexlife: RetainedImage::from_image_bytes(
@@ -146,32 +146,32 @@ impl WrapApp {
             });
         });
     }
-    fn draw_generalized_lifegame_card(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    fn draw_lifelike_card(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         egui::Frame::group(ui.style()).show(ui, |ui| {
             ui.set_width(self.card_width);
             ui.set_height(self.card_height);
             ui.vertical_centered(|ui| {
                 if ui
                     .add(egui::ImageButton::new(
-                        self.thumbnail_generalized_lifegame.texture_id(ctx),
-                        self.thumbnail_generalized_lifegame.size_vec2(),
+                        self.thumbnail_lifelike.texture_id(ctx),
+                        self.thumbnail_lifelike.size_vec2(),
                     ))
                     .clicked()
-                    && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
+                    && LifeLikeGameRule::is_valid_rule(&self.life_game_rule)
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         self.life_game_rule.clone(),
                         Box::new(App::<
                             MooreNeighborhood,
-                            GeneralizedLifeGameRule,
+                            LifeLikeGameRule,
                             SquareGrid<LifeGameState>,
                         >::new(
-                            GeneralizedLifeGameRule::from_rule(&self.life_game_rule)
+                            LifeLikeGameRule::from_rule(&self.life_game_rule)
                         )),
                     ));
                 }
-                ui.label(egui::RichText::new("Generalized Lifegame").size(20.0));
+                ui.label(egui::RichText::new("Life-Like").size(20.0));
                 ui.horizontal_wrapped(|ui| {
                     ui.label("rule `{survive}/{birth}` (e.g. 23/3)");
                     ui.add(egui::TextEdit::singleline(&mut self.life_game_rule));
@@ -190,17 +190,17 @@ impl WrapApp {
                         self.thumbnail_hexlife.size_vec2(),
                     ))
                     .clicked()
-                    && GeneralizedLifeGameRule::is_valid_rule(&self.life_game_rule)
+                    && LifeLikeGameRule::is_valid_rule(&self.life_game_rule)
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         self.life_game_rule.clone(),
                         Box::new(App::<
                             HexGridNeighborhood,
-                            GeneralizedLifeGameRule,
+                            LifeLikeGameRule,
                             HexGrid<LifeGameState>,
                         >::new(
-                            GeneralizedLifeGameRule::from_rule(&self.life_game_rule)
+                            LifeLikeGameRule::from_rule(&self.life_game_rule)
                         )),
                     ));
                 }
@@ -329,7 +329,7 @@ impl WrapApp {
             0 => self.draw_dynamic_card(ctx, ui),
             1 => self.draw_lifegame_card(ctx, ui),
             2 => self.draw_highlife_card(ctx, ui),
-            3 => self.draw_generalized_lifegame_card(ctx, ui),
+            3 => self.draw_lifelike_card(ctx, ui),
             4 => self.draw_hexlife_card(ctx, ui),
             5 => self.draw_wireworld_card(ctx, ui),
             6 => self.draw_grayscott_card(ctx, ui),

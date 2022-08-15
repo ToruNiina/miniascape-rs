@@ -104,7 +104,7 @@ where
         }
     }
     pub fn min_gridsize() -> f32 {
-        8.0
+        1.0
     }
     pub fn max_gridsize() -> f32 {
         128.0

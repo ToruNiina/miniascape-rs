@@ -219,7 +219,7 @@ impl<N: Neighbors> Rule<N> for HighLifeRule {
 
 // ----------------------------------------------------------------------------
 
-pub struct GeneralizedLifeGameRule {
+pub struct LifeLikeGameRule {
     survive: ArrayVec<u32, 9>, // number of neighboring cells is in [0, 8]
     birth: ArrayVec<u32, 9>,
 
@@ -231,7 +231,7 @@ pub struct GeneralizedLifeGameRule {
     dead_color: egui::Color32,
 }
 
-impl Default for GeneralizedLifeGameRule {
+impl Default for LifeLikeGameRule {
     fn default() -> Self {
         let mut survive = ArrayVec::new();
         survive.push(2_u32);
@@ -252,7 +252,7 @@ impl Default for GeneralizedLifeGameRule {
     }
 }
 
-impl GeneralizedLifeGameRule {
+impl LifeLikeGameRule {
     pub fn new(survive: Vec<u32>, birth: Vec<u32>) -> Self {
         let rule = format!(
             "{}/{}",
@@ -295,11 +295,11 @@ impl GeneralizedLifeGameRule {
 
         let (survive, birth) = Self::parse_rule(rule).unwrap();
 
-        GeneralizedLifeGameRule::new(survive, birth)
+        LifeLikeGameRule::new(survive, birth)
     }
 }
 
-impl<N: Neighbors> Rule<N> for GeneralizedLifeGameRule {
+impl<N: Neighbors> Rule<N> for LifeLikeGameRule {
     type CellState = LifeGameState;
 
     fn background(&self) -> egui::Color32 {
