@@ -29,8 +29,12 @@ pub struct WrapApp {
     focus: Option<usize>,
 
     life_game_rule: String,
-    grid_kind: GridKind,
-    square_neighbor_kind: SquareNeighborKind,
+
+    dynamic_grid_kind: GridKind,
+    dynamic_square_neighbor_kind: SquareNeighborKind,
+
+    rock_paper_scissors_grid_kind: GridKind,
+    rock_paper_scissors_square_neighbor_kind: SquareNeighborKind,
 
     thumbnail_lifegame: RetainedImage,
     thumbnail_lifelike: RetainedImage,
@@ -60,8 +64,10 @@ impl WrapApp {
             apps: Vec::new(),
             focus: None,
             life_game_rule: "23/3".to_string(),
-            grid_kind: GridKind::Square,
-            square_neighbor_kind: SquareNeighborKind::Moore,
+            dynamic_grid_kind: GridKind::Square,
+            dynamic_square_neighbor_kind: SquareNeighborKind::Moore,
+            rock_paper_scissors_grid_kind: GridKind::Square,
+            rock_paper_scissors_square_neighbor_kind: SquareNeighborKind::Moore,
             thumbnail_lifegame: RetainedImage::from_image_bytes(
                 "thumbnail_lifegame.png",
                 include_bytes!("images/thumbnail_lifegame.png"),
@@ -292,8 +298,8 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    if self.grid_kind == GridKind::Square {
-                        if self.square_neighbor_kind == SquareNeighborKind::Moore {
+                    if self.rock_paper_scissors_grid_kind == GridKind::Square {
+                        if self.rock_paper_scissors_square_neighbor_kind == SquareNeighborKind::Moore {
                             self.apps.push((
                                 "Rock Paper Scissors".to_string(),
                                 Box::new(App::<
@@ -324,6 +330,31 @@ impl WrapApp {
                     }
                 }
                 ui.label(egui::RichText::new("Rock-Paper-Scissors").size(20.0));
+
+                ui.push_id(2, |ui| {
+                    egui::ComboBox::from_label("Select Grid")
+                        .selected_text(format!("{:?}", self.rock_paper_scissors_grid_kind))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.rock_paper_scissors_grid_kind, GridKind::Square, "Square");
+                            ui.selectable_value(&mut self.rock_paper_scissors_grid_kind, GridKind::Hex, "Hexagonal");
+                        });
+                    if self.rock_paper_scissors_grid_kind == GridKind::Square {
+                        egui::ComboBox::from_label("Select Neighborhood")
+                            .selected_text(format!("{:?}", self.rock_paper_scissors_square_neighbor_kind))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    &mut self.rock_paper_scissors_square_neighbor_kind,
+                                    SquareNeighborKind::Moore,
+                                    "Moore neighborhood",
+                                );
+                                ui.selectable_value(
+                                    &mut self.rock_paper_scissors_square_neighbor_kind,
+                                    SquareNeighborKind::Neumann,
+                                    "Von Neumann Neighborhood",
+                                );
+                            });
+                    }
+                });
             });
         });
     }
@@ -333,7 +364,7 @@ impl WrapApp {
             ui.set_height(self.card_height);
 
             ui.vertical_centered(|ui| {
-                let thumbnail = if self.grid_kind == GridKind::Square {
+                let thumbnail = if self.dynamic_grid_kind == GridKind::Square {
                     &self.thumbnail_lifegame
                 } else {
                     &self.thumbnail_hexlife
@@ -344,8 +375,8 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    if self.grid_kind == GridKind::Square {
-                        if self.square_neighbor_kind == SquareNeighborKind::Moore {
+                    if self.dynamic_grid_kind == GridKind::Square {
+                        if self.dynamic_square_neighbor_kind == SquareNeighborKind::Moore {
                             let app =
                                 App::<MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
                                     fix_board_size: true,
@@ -373,28 +404,30 @@ impl WrapApp {
                 }
                 ui.label(egui::RichText::new("User-Defined").size(20.0));
 
-                egui::ComboBox::from_label("Select Grid")
-                    .selected_text(format!("{:?}", self.grid_kind))
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.grid_kind, GridKind::Square, "Square");
-                        ui.selectable_value(&mut self.grid_kind, GridKind::Hex, "Hexagonal");
-                    });
-                if self.grid_kind == GridKind::Square {
-                    egui::ComboBox::from_label("Select Neighborhood")
-                        .selected_text(format!("{:?}", self.square_neighbor_kind))
+                ui.push_id(1, |ui| {
+                    egui::ComboBox::from_label("Select Grid")
+                        .selected_text(format!("{:?}", self.dynamic_grid_kind))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.square_neighbor_kind,
-                                SquareNeighborKind::Moore,
-                                "Moore neighborhood",
-                            );
-                            ui.selectable_value(
-                                &mut self.square_neighbor_kind,
-                                SquareNeighborKind::Neumann,
-                                "Von Neumann Neighborhood",
-                            );
+                            ui.selectable_value(&mut self.dynamic_grid_kind, GridKind::Square, "Square");
+                            ui.selectable_value(&mut self.dynamic_grid_kind, GridKind::Hex, "Hexagonal");
                         });
-                }
+                    if self.dynamic_grid_kind == GridKind::Square {
+                        egui::ComboBox::from_label("Select Neighborhood")
+                            .selected_text(format!("{:?}", self.dynamic_square_neighbor_kind))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    &mut self.dynamic_square_neighbor_kind,
+                                    SquareNeighborKind::Moore,
+                                    "Moore neighborhood",
+                                );
+                                ui.selectable_value(
+                                    &mut self.dynamic_square_neighbor_kind,
+                                    SquareNeighborKind::Neumann,
+                                    "Von Neumann Neighborhood",
+                                );
+                            });
+                    }
+                });
             });
         });
     }
