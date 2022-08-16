@@ -5,6 +5,7 @@ mod board;
 mod dynamic_rule;
 mod gray_scott;
 mod lifegame;
+mod rock_paper_scissors;
 mod rule;
 mod wireworld;
 mod wrap_app;

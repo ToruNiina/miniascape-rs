@@ -5,6 +5,7 @@ use crate::rule::{HexGridNeighborhood, MooreNeighborhood, VonNeumannNeighborhood
 use crate::dynamic_rule::{DynamicRule, DynamicState};
 use crate::gray_scott::{GrayScottRule, GrayScottState};
 use crate::lifegame::{HighLifeRule, LifeGameRule, LifeGameState, LifeLikeGameRule};
+use crate::rock_paper_scissors::{RockPaperScissorsRule, RockPaperScissorsState};
 use crate::wireworld::{WireWorldRule, WireWorldState};
 
 use egui_extras::RetainedImage;
@@ -37,6 +38,8 @@ pub struct WrapApp {
     thumbnail_highlife: RetainedImage,
     thumbnail_wireworld: RetainedImage,
     thumbnail_gray_scott: RetainedImage,
+    thumbnail_rock_paper_scissors: RetainedImage,
+
     card_height: f32,
     card_width: f32,
 }
@@ -89,6 +92,12 @@ impl WrapApp {
                 include_bytes!("images/thumbnail_gray_scott.png"),
             )
             .unwrap(),
+            thumbnail_rock_paper_scissors: RetainedImage::from_image_bytes(
+                "thumbnail_rock_paper_scissors.png",
+                include_bytes!("images/thumbnail_rock_paper_scissors.png"),
+            )
+            .unwrap(),
+
             card_height: 280.0,
             card_width: 320.0,
         }
@@ -264,6 +273,54 @@ impl WrapApp {
             });
         });
     }
+    fn draw_rock_paper_scissors(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+        egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_width(self.card_width);
+            ui.set_height(self.card_height);
+            ui.vertical_centered(|ui| {
+                if ui
+                    .add(egui::ImageButton::new(
+                        self.thumbnail_rock_paper_scissors.texture_id(ctx),
+                        self.thumbnail_rock_paper_scissors.size_vec2(),
+                    ))
+                    .clicked()
+                {
+                    self.focus = Some(self.apps.len());
+                    if self.grid_kind == GridKind::Square {
+                        if self.square_neighbor_kind == SquareNeighborKind::Moore {
+                            self.apps.push((
+                                "Rock Paper Scissors".to_string(),
+                                Box::new(App::<
+                                    MooreNeighborhood,
+                                    RockPaperScissorsRule,
+                                    SquareGrid<RockPaperScissorsState>,
+                                >::default()),
+                            ));
+                        } else {
+                            self.apps.push((
+                                "Rock Paper Scissors".to_string(),
+                                Box::new(App::<
+                                    VonNeumannNeighborhood,
+                                    RockPaperScissorsRule,
+                                    SquareGrid<RockPaperScissorsState>,
+                                >::default()),
+                            ));
+                        }
+                    } else {
+                        self.apps.push((
+                            "Rock Paper Scissors".to_string(),
+                            Box::new(App::<
+                                HexGridNeighborhood,
+                                RockPaperScissorsRule,
+                                HexGrid<RockPaperScissorsState>,
+                            >::default()),
+                        ));
+                    }
+                }
+                ui.label(egui::RichText::new("Rock-Paper-Scissors").size(20.0));
+            });
+        });
+    }
     fn draw_dynamic_card(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         egui::Frame::group(ui.style()).show(ui, |ui| {
             ui.set_width(self.card_width);
@@ -333,6 +390,7 @@ impl WrapApp {
             4 => self.draw_hexlife_card(ctx, ui),
             5 => self.draw_wireworld_card(ctx, ui),
             6 => self.draw_grayscott_card(ctx, ui),
+            7 => self.draw_rock_paper_scissors(ctx, ui),
             _ => (),
         }
     }
@@ -421,10 +479,10 @@ impl eframe::App for WrapApp {
 
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     let mut idx = 0;
-                    while idx < 7 {
+                    while idx < 8 {
                         ui.horizontal(|ui| {
                             for _ in 0..n_card_x {
-                                if 7 <= idx {
+                                if 8 <= idx {
                                     break;
                                 }
                                 self.draw_card(idx, ctx, ui);
