@@ -273,8 +273,9 @@ impl<T: State> Grid<T> {
         Ok(())
     }
 
-    pub fn update<N: Neighbors, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    pub fn update<N, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
+        N: Neighbors,
         R: Rule<N, CellState = T>,
     {
         for _ in 0..rule.iteration_per_step() {

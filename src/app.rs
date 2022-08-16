@@ -10,12 +10,7 @@ use rand::SeedableRng;
 /// Several application can run at the same time but only the focused app will
 /// be updated its state and others will be paused.
 ///
-pub struct App<N, R, B>
-where
-    N: Neighbors,
-    R: Rule<N>,
-    B: Board<N, R>,
-{
+pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) rule: R,
     pub(crate) board: B,
     pub(crate) fix_board_size: bool,
@@ -34,12 +29,7 @@ where
     pub(crate) err: Option<String>,
 }
 
-impl<N, R, B> Default for App<N, R, B>
-where
-    N: Neighbors,
-    R: Rule<N>,
-    B: Board<N, R>,
-{
+impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
     fn default() -> Self {
         let rule = R::default();
         let mut board = B::new(4, 3);
@@ -75,12 +65,7 @@ pub enum Clicked {
     NotClicked,
 }
 
-impl<N, R, B> App<N, R, B>
-where
-    N: Neighbors,
-    R: Rule<N>,
-    B: Board<N, R>,
-{
+impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
     pub fn new(rule: R) -> Self {
         let mut board = B::new(4, 3);
         board.clear(&rule).expect("default construction must not fail");
@@ -144,12 +129,7 @@ where
     }
 }
 
-impl<N, R, B> eframe::App for App<N, R, B>
-where
-    N: Neighbors,
-    R: Rule<N>,
-    B: Board<N, R>,
-{
+impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
         //         eframe::set_value(storage, eframe::APP_KEY, self);
