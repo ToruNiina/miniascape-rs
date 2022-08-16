@@ -69,6 +69,8 @@ pub trait Neighbors: Default {
     type Neighborhood: IntoIterator<Item = (usize, usize)>;
     /// To avoid heap allocation, we use an array and const-generic.
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> Self::Neighborhood;
+
+    fn num_neighbors() -> usize;
 }
 
 /// Von-Neumann Neighborhood. Up, Down, Left, Right cells are the neighbors.
@@ -94,6 +96,10 @@ impl Neighbors for VonNeumannNeighborhood {
         let y = y as usize;
         [(x, yprev), (xnext, y), (xprev, y), (x, ynext)]
     }
+
+    fn num_neighbors() -> usize {
+        4
+    }
 }
 impl Neighbors for MooreNeighborhood {
     type Neighborhood = [(usize, usize); 8];
@@ -109,6 +115,10 @@ impl Neighbors for MooreNeighborhood {
         [(xprev, yprev), (x, yprev), (xnext, yprev),
          (xprev, y    ),             (xnext, y    ),
          (xprev, ynext), (x, ynext), (xnext, ynext)]
+    }
+
+    fn num_neighbors() -> usize {
+        8
     }
 }
 
@@ -163,5 +173,8 @@ impl Neighbors for HexGridNeighborhood {
              (xprev, y), (xnext, y),
              (x, ynext), (xnext, ynext)]
         }
+    }
+    fn num_neighbors() -> usize {
+        6
     }
 }
