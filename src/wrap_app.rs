@@ -299,7 +299,9 @@ impl WrapApp {
                 {
                     self.focus = Some(self.apps.len());
                     if self.rock_paper_scissors_grid_kind == GridKind::Square {
-                        if self.rock_paper_scissors_square_neighbor_kind == SquareNeighborKind::Moore {
+                        if self.rock_paper_scissors_square_neighbor_kind
+                            == SquareNeighborKind::Moore
+                        {
                             self.apps.push((
                                 "Rock Paper Scissors".to_string(),
                                 Box::new(App::<
@@ -335,12 +337,23 @@ impl WrapApp {
                     egui::ComboBox::from_label("Select Grid")
                         .selected_text(format!("{:?}", self.rock_paper_scissors_grid_kind))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rock_paper_scissors_grid_kind, GridKind::Square, "Square");
-                            ui.selectable_value(&mut self.rock_paper_scissors_grid_kind, GridKind::Hex, "Hexagonal");
+                            ui.selectable_value(
+                                &mut self.rock_paper_scissors_grid_kind,
+                                GridKind::Square,
+                                "Square",
+                            );
+                            ui.selectable_value(
+                                &mut self.rock_paper_scissors_grid_kind,
+                                GridKind::Hex,
+                                "Hexagonal",
+                            );
                         });
                     if self.rock_paper_scissors_grid_kind == GridKind::Square {
                         egui::ComboBox::from_label("Select Neighborhood")
-                            .selected_text(format!("{:?}", self.rock_paper_scissors_square_neighbor_kind))
+                            .selected_text(format!(
+                                "{:?}",
+                                self.rock_paper_scissors_square_neighbor_kind
+                            ))
                             .show_ui(ui, |ui| {
                                 ui.selectable_value(
                                     &mut self.rock_paper_scissors_square_neighbor_kind,
@@ -408,8 +421,16 @@ impl WrapApp {
                     egui::ComboBox::from_label("Select Grid")
                         .selected_text(format!("{:?}", self.dynamic_grid_kind))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.dynamic_grid_kind, GridKind::Square, "Square");
-                            ui.selectable_value(&mut self.dynamic_grid_kind, GridKind::Hex, "Hexagonal");
+                            ui.selectable_value(
+                                &mut self.dynamic_grid_kind,
+                                GridKind::Square,
+                                "Square",
+                            );
+                            ui.selectable_value(
+                                &mut self.dynamic_grid_kind,
+                                GridKind::Hex,
+                                "Hexagonal",
+                            );
                         });
                     if self.dynamic_grid_kind == GridKind::Square {
                         egui::ComboBox::from_label("Select Neighborhood")

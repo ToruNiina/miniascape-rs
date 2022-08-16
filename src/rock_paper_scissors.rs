@@ -126,7 +126,10 @@ impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
             egui::widgets::color_picker::Alpha::Opaque,
         );
 
-        ui.add(egui::Slider::new(&mut self.threshold, 0..=N::num_neighbors() as u32).text("win/lose threshold"));
+        ui.add(
+            egui::Slider::new(&mut self.threshold, 0..=N::num_neighbors() as u32)
+                .text("win/lose threshold"),
+        );
 
         Ok(())
     }
