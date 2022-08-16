@@ -17,8 +17,8 @@ impl std::default::Default for RockPaperScissorsState {
 
 impl State for RockPaperScissorsState {
     fn inspect(&mut self, ui: &mut egui::Ui, _buf: &mut String) {
-        ui.radio_value(self, RockPaperScissorsState::Rock,     "Rock");
-        ui.radio_value(self, RockPaperScissorsState::Paper,    "Paper");
+        ui.radio_value(self, RockPaperScissorsState::Rock, "Rock");
+        ui.radio_value(self, RockPaperScissorsState::Paper, "Paper");
         ui.radio_value(self, RockPaperScissorsState::Scissors, "Scissors");
     }
 }
@@ -28,15 +28,15 @@ pub struct RockPaperScissorsRule {
     rock_color: egui::Color32,
     paper_color: egui::Color32,
     scissors_color: egui::Color32,
-    threshold: u32
+    threshold: u32,
 }
 
 impl Default for RockPaperScissorsRule {
     fn default() -> Self {
         Self {
-            background:     egui::Color32::from_rgb(0, 128, 0),
-            rock_color:     egui::Color32::from_rgb(0, 0, 255),
-            paper_color:    egui::Color32::from_rgb(0, 255, 0),
+            background: egui::Color32::from_rgb(0, 128, 0),
+            rock_color: egui::Color32::from_rgb(0, 0, 255),
+            paper_color: egui::Color32::from_rgb(0, 255, 0),
             scissors_color: egui::Color32::from_rgb(255, 0, 0),
             threshold: 3,
         }
@@ -52,8 +52,8 @@ impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
 
     fn color(&self, st: &Self::CellState) -> anyhow::Result<egui::Color32> {
         match *st {
-            RockPaperScissorsState::Rock     => Ok(self.rock_color),
-            RockPaperScissorsState::Paper    => Ok(self.paper_color),
+            RockPaperScissorsState::Rock => Ok(self.rock_color),
+            RockPaperScissorsState::Paper => Ok(self.paper_color),
             RockPaperScissorsState::Scissors => Ok(self.scissors_color),
         }
     }
@@ -73,8 +73,8 @@ impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
 
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState> {
         match st {
-            RockPaperScissorsState::Rock     => Ok(RockPaperScissorsState::Paper),
-            RockPaperScissorsState::Paper    => Ok(RockPaperScissorsState::Scissors),
+            RockPaperScissorsState::Rock => Ok(RockPaperScissorsState::Paper),
+            RockPaperScissorsState::Paper => Ok(RockPaperScissorsState::Scissors),
             RockPaperScissorsState::Scissors => Ok(RockPaperScissorsState::Rock),
         }
     }
@@ -85,18 +85,17 @@ impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
         neighbor: impl Iterator<Item = Self::CellState>,
     ) -> anyhow::Result<Self::CellState> {
         let wins = match center {
-            RockPaperScissorsState::Rock     => RockPaperScissorsState::Paper,
-            RockPaperScissorsState::Paper    => RockPaperScissorsState::Scissors,
+            RockPaperScissorsState::Rock => RockPaperScissorsState::Paper,
+            RockPaperScissorsState::Paper => RockPaperScissorsState::Scissors,
             RockPaperScissorsState::Scissors => RockPaperScissorsState::Rock,
         };
 
         let n_wins: u32 = neighbor.map(|c| if c == wins { 1 } else { 0 }).sum();
 
-        Ok(if n_wins >= self.threshold { wins } else { center.clone() })
+        Ok(if n_wins >= self.threshold { wins } else { center })
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
-
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
             ui,
@@ -127,12 +126,8 @@ impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
             egui::widgets::color_picker::Alpha::Opaque,
         );
 
-        ui.add(
-            egui::Slider::new(&mut self.threshold, 0..=8).text("win/lose threshold"),
-        );
+        ui.add(egui::Slider::new(&mut self.threshold, 0..=8).text("win/lose threshold"));
 
         Ok(())
     }
 }
-
-

@@ -261,11 +261,7 @@ impl<T: State> Grid<T> {
         }
         Ok(())
     }
-    pub fn randomize<N, R, Rn>(
-        &mut self,
-        rule: &R,
-        rng: &mut Rn,
-    ) -> anyhow::Result<()>
+    pub fn randomize<N, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
         R: Rule<N, CellState = T>,
         N: Neighbors,
@@ -277,10 +273,7 @@ impl<T: State> Grid<T> {
         Ok(())
     }
 
-    pub fn update<N: Neighbors, R>(
-        &mut self,
-        rule: &R,
-    ) -> anyhow::Result<()>
+    pub fn update<N: Neighbors, R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
         R: Rule<N, CellState = T>,
     {
@@ -302,7 +295,9 @@ impl<T: State> Grid<T> {
 
                             *self.bufcell_at_mut(x, y) = rule.update(
                                 self.cell_at(x, y).clone(),
-                                idxs.into_iter().map(|(x, y)| self.cell_at(x, y).clone()).into_iter(),
+                                idxs.into_iter()
+                                    .map(|(x, y)| self.cell_at(x, y).clone())
+                                    .into_iter(),
                             )?;
                         }
                     }

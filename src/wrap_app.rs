@@ -116,14 +116,16 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push((
-                        "LifeGame".to_string(),
-                        Box::new(App::<
-                            MooreNeighborhood,
-                            LifeGameRule,
-                            SquareGrid<LifeGameState>,
-                        >::default()),
-                    ));
+                    self.apps.push(
+                        (
+                            "LifeGame".to_string(),
+                            Box::new(App::<
+                                MooreNeighborhood,
+                                LifeGameRule,
+                                SquareGrid<LifeGameState>,
+                            >::default()),
+                        ),
+                    );
                 }
                 ui.label(egui::RichText::new("Conway's Game of Life.").size(20.0));
             });
@@ -142,14 +144,16 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push((
-                        "HighLife".to_string(),
-                        Box::new(App::<
-                            MooreNeighborhood,
-                            HighLifeRule,
-                            SquareGrid<LifeGameState>,
-                        >::default()),
-                    ));
+                    self.apps.push(
+                        (
+                            "HighLife".to_string(),
+                            Box::new(App::<
+                                MooreNeighborhood,
+                                HighLifeRule,
+                                SquareGrid<LifeGameState>,
+                            >::default()),
+                        ),
+                    );
                 }
                 ui.label(egui::RichText::new("HighLife(23/36)").size(20.0));
             });
@@ -175,9 +179,9 @@ impl WrapApp {
                             MooreNeighborhood,
                             LifeLikeGameRule,
                             SquareGrid<LifeGameState>,
-                        >::new(
-                            LifeLikeGameRule::from_rule(&self.life_game_rule)
-                        )),
+                        >::new(LifeLikeGameRule::from_rule(
+                            &self.life_game_rule,
+                        ))),
                     ));
                 }
                 ui.label(egui::RichText::new("Life-Like").size(20.0));
@@ -208,9 +212,9 @@ impl WrapApp {
                             HexGridNeighborhood,
                             LifeLikeGameRule,
                             HexGrid<LifeGameState>,
-                        >::new(
-                            LifeLikeGameRule::from_rule(&self.life_game_rule)
-                        )),
+                        >::new(LifeLikeGameRule::from_rule(
+                            &self.life_game_rule,
+                        ))),
                     ));
                 }
                 ui.label(egui::RichText::new("HexLife").size(20.0));
@@ -234,14 +238,16 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push((
-                        "WireWorld".to_string(),
-                        Box::new(App::<
-                            MooreNeighborhood,
-                            WireWorldRule,
-                            SquareGrid<WireWorldState>,
-                        >::default()),
-                    ));
+                    self.apps.push(
+                        (
+                            "WireWorld".to_string(),
+                            Box::new(App::<
+                                MooreNeighborhood,
+                                WireWorldRule,
+                                SquareGrid<WireWorldState>,
+                            >::default()),
+                        ),
+                    );
                 }
                 ui.label(egui::RichText::new("WireWorld").size(20.0));
             });
@@ -333,21 +339,25 @@ impl WrapApp {
                     &self.thumbnail_hexlife
                 };
 
-                if ui.add(egui::ImageButton::new(
-                        thumbnail.texture_id(ctx),
-                        thumbnail.size_vec2(),
-                    )).clicked()
+                if ui
+                    .add(egui::ImageButton::new(thumbnail.texture_id(ctx), thumbnail.size_vec2()))
+                    .clicked()
                 {
                     self.focus = Some(self.apps.len());
                     if self.grid_kind == GridKind::Square {
                         if self.square_neighbor_kind == SquareNeighborKind::Moore {
-                            let app = App::<MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
-                                fix_board_size: true,
-                                ..Default::default()
-                            };
+                            let app =
+                                App::<MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
+                                    fix_board_size: true,
+                                    ..Default::default()
+                                };
                             self.apps.push(("User Defined".to_string(), Box::new(app)));
                         } else {
-                            let app = App::<VonNeumannNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
+                            let app = App::<
+                                VonNeumannNeighborhood,
+                                DynamicRule,
+                                SquareGrid<DynamicState>,
+                            > {
                                 fix_board_size: true,
                                 ..Default::default()
                             };
@@ -373,8 +383,16 @@ impl WrapApp {
                     egui::ComboBox::from_label("Select Neighborhood")
                         .selected_text(format!("{:?}", self.square_neighbor_kind))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.square_neighbor_kind, SquareNeighborKind::Moore, "Moore neighborhood");
-                            ui.selectable_value(&mut self.square_neighbor_kind, SquareNeighborKind::Neumann, "Von Neumann Neighborhood");
+                            ui.selectable_value(
+                                &mut self.square_neighbor_kind,
+                                SquareNeighborKind::Moore,
+                                "Moore neighborhood",
+                            );
+                            ui.selectable_value(
+                                &mut self.square_neighbor_kind,
+                                SquareNeighborKind::Neumann,
+                                "Von Neumann Neighborhood",
+                            );
                         });
                 }
             });

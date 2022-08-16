@@ -196,7 +196,7 @@ pub enum DynamicRuleError {
     #[error(
         "Dynamic::into_{1}() failed, actual type is \"{0}\"\ncaused by the following code: \n{2}"
     )]
-    CastError(String, String, String),
+    CastFail(String, String, String),
 
     #[error("Dropped File Error: {0} about file \"{1}\"")]
     FileError(String, String),
@@ -207,7 +207,7 @@ fn eval_error(item: Box<rhai::EvalAltResult>, code: String) -> DynamicRuleError 
     DynamicRuleError::EvalError(format!("{}", item), code)
 }
 fn cast_error(item: &str, typename: String, code: String) -> DynamicRuleError {
-    DynamicRuleError::CastError(item.to_string(), typename, code)
+    DynamicRuleError::CastFail(item.to_string(), typename, code)
 }
 
 impl<N: Neighbors> Rule<N> for DynamicRule {
@@ -449,7 +449,7 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
         if !self.dropped_files.is_empty() {
             let file = self.dropped_files.first().expect("already checked");
             if let Some(bytes) = &file.bytes {
-                let content = std::str::from_utf8(&bytes)
+                let content = std::str::from_utf8(bytes)
                     .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
                     .to_owned();
 
