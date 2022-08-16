@@ -34,7 +34,7 @@ pub struct RockPaperScissorsRule {
 impl Default for RockPaperScissorsRule {
     fn default() -> Self {
         Self {
-            background: egui::Color32::from_rgb(0, 128, 0),
+            background: egui::Color32::from_rgb(0, 0, 0),
             rock_color: egui::Color32::from_rgb(0, 0, 255),
             paper_color: egui::Color32::from_rgb(0, 255, 0),
             scissors_color: egui::Color32::from_rgb(255, 0, 0),
