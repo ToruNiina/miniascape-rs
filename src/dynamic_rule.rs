@@ -447,7 +447,8 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
 
         // load file content and compile the code
         if !self.dropped_files.is_empty() {
-            let file = self.dropped_files.first().expect("already checked");
+            let file = self.dropped_files[0].clone();
+            self.dropped_files.clear();
             if let Some(bytes) = &file.bytes {
                 let content = std::str::from_utf8(bytes)
                     .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
@@ -475,8 +476,6 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
                 self.clear_fn = ast.clone();
                 self.next_fn = ast.clone();
                 self.color_fn = ast;
-
-                self.dropped_files.clear();
             } else {
                 return Err(DynamicRuleError::FileError(
                     "couldn't read file content".to_string(),
