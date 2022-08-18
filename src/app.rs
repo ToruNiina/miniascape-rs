@@ -429,10 +429,16 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                     } else {
                         let next = self
                             .rule
-                            .next(self.board.cell_at(ix, iy).clone())
-                            .expect("TODO: show error message window");
-                        *self.board.cell_at_mut(ix, iy) = next.clone();
-                        self.cell_modifying = Some(next);
+                            .next(self.board.cell_at(ix, iy).clone());
+                        match next {
+                            Ok(val) => {
+                                *self.board.cell_at_mut(ix, iy) = val.clone();
+                                self.cell_modifying = Some(val);
+                            },
+                            Err(e) => {
+                                self.err = Some(format!("{:?}", e));
+                            }
+                        }
                     }
                 }
             }
