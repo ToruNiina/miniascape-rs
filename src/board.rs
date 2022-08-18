@@ -325,6 +325,11 @@ pub trait Board<N: Neighbors, R: Rule<N>> {
     fn n_chunks_y(&self) -> usize;
     fn has_chunk(&self, x: usize, y: usize) -> bool;
     fn chunk_len(&self) -> usize;
+    fn chunk_width_px(&self, cell_width: f32) -> f32;
+    fn chunk_height_px(&self, cell_height: f32) -> f32;
+    fn width_px(&self, cell_width: f32) -> f32;
+    fn height_px(&self, cell_height: f32) -> f32;
+
     fn chunk_at(&self, x: usize, y: usize) -> &Chunk<R::CellState>;
 
     fn has_cell(&self, x: usize, y: usize) -> bool;
@@ -398,6 +403,21 @@ where
     fn chunk_len(&self) -> usize {
         self.grid.chunk_len()
     }
+
+    fn chunk_width_px(&self, cell_width: f32) -> f32 {
+        CHUNK_LEN as f32 * cell_width
+    }
+    fn chunk_height_px(&self, cell_height: f32) -> f32 {
+        CHUNK_LEN as f32 * cell_height
+    }
+
+    fn width_px(&self, cell_width: f32) -> f32 {
+        self.grid.width() as f32 * cell_width
+    }
+    fn height_px(&self, cell_height: f32) -> f32 {
+        self.grid.height() as f32 * cell_height
+    }
+
     fn chunk_at(&self, x: usize, y: usize) -> &Chunk<T> {
         self.grid.chunk_at(x, y)
     }
@@ -546,6 +566,21 @@ where
     fn chunk_len(&self) -> usize {
         self.grid.chunk_len()
     }
+
+    fn chunk_width_px(&self, cell_width: f32) -> f32 {
+        CHUNK_LEN as f32 * cell_width
+    }
+    fn chunk_height_px(&self, cell_height: f32) -> f32 {
+        CHUNK_LEN as f32 * cell_height * 3.0_f32.sqrt() * 0.5
+    }
+
+    fn width_px(&self, cell_width: f32) -> f32 {
+        self.grid.width() as f32 * cell_width
+    }
+    fn height_px(&self, cell_height: f32) -> f32 {
+        self.grid.height() as f32 * cell_height * 3.0_f32.sqrt() * 0.5
+    }
+
     fn chunk_at(&self, x: usize, y: usize) -> &Chunk<T> {
         self.grid.chunk_at(x, y)
     }

@@ -324,33 +324,34 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             // expand board size if needed
 
             if !self.fix_board_size {
-                let chunk_pxls = self.board.chunk_len() as f32 * delta;
+                let chunk_pxls_x = self.board.chunk_width_px(delta);
+                let chunk_pxls_y = self.board.chunk_height_px(delta);
 
                 let default_state = self.rule.default_state();
                 if let Ok(init) = default_state {
                     if self.origin.x < 0.0 {
-                        let d = (self.origin.x / chunk_pxls).floor();
+                        let d = (self.origin.x / chunk_pxls_x).floor();
                         self.board.expand_x(d as isize, init.clone());
-                        self.origin.x -= chunk_pxls * d;
+                        self.origin.x -= chunk_pxls_x * d;
                         assert!(0.0 <= self.origin.x);
                     }
-                    if self.board.width() as f32 * delta <= self.origin.x + regsize.x {
-                        let dx = self.origin.x + regsize.x - self.board.width() as f32 * delta;
+                    if self.board.width_px(delta) <= self.origin.x + regsize.x {
+                        let dx = self.origin.x + regsize.x - self.board.width_px(delta);
                         assert!(0.0 <= dx);
-                        let d = (dx / chunk_pxls).ceil();
+                        let d = (dx / chunk_pxls_x).ceil();
                         self.board.expand_x(d as isize, init.clone());
                     }
 
                     if self.origin.y < 0.0 {
-                        let d = (self.origin.y / chunk_pxls).floor();
+                        let d = (self.origin.y / chunk_pxls_y).floor();
                         self.board.expand_y(d as isize, init.clone());
-                        self.origin.y -= chunk_pxls * d;
+                        self.origin.y -= chunk_pxls_y * d;
                         assert!(0.0 <= self.origin.y);
                     }
-                    if self.board.height() as f32 * delta <= self.origin.y + regsize.y {
-                        let dy = self.origin.y + regsize.y - self.board.height() as f32 * delta;
+                    if self.board.height_px(delta) <= self.origin.y + regsize.y {
+                        let dy = self.origin.y + regsize.y - self.board.height_px(delta);
                         assert!(0.0 <= dy);
-                        let d = (dy / chunk_pxls).ceil();
+                        let d = (dy / chunk_pxls_y).ceil();
                         self.board.expand_y(d as isize, init);
                     }
                 } else {
