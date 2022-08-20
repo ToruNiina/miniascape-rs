@@ -427,14 +427,12 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                     if let Some(next) = &self.cell_modifying {
                         *self.board.cell_at_mut(ix, iy) = next.clone();
                     } else {
-                        let next = self
-                            .rule
-                            .next(self.board.cell_at(ix, iy).clone());
+                        let next = self.rule.next(self.board.cell_at(ix, iy).clone());
                         match next {
                             Ok(val) => {
                                 *self.board.cell_at_mut(ix, iy) = val.clone();
                                 self.cell_modifying = Some(val);
-                            },
+                            }
                             Err(e) => {
                                 self.err = Some(format!("{:?}", e));
                             }
