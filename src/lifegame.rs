@@ -34,9 +34,9 @@ pub struct LifeGameRule {
 impl Default for LifeGameRule {
     fn default() -> Self {
         Self {
-            background: egui::Color32::from_rgb(0, 128, 0),
-            alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color: egui::Color32::from_rgb(0, 0, 0),
+            background: egui::Color32::from_rgb(24, 128, 24),
+            alive_color: egui::Color32::from_rgb(24, 255, 24),
+            dead_color: egui::Color32::from_rgb(24, 24, 24),
         }
     }
 }
@@ -128,9 +128,9 @@ pub struct HighLifeRule {
 impl Default for HighLifeRule {
     fn default() -> Self {
         Self {
-            background: egui::Color32::from_rgb(0, 128, 0),
-            alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color: egui::Color32::from_rgb(0, 0, 0),
+            background: egui::Color32::from_rgb(24, 128, 24),
+            alive_color: egui::Color32::from_rgb(24, 255, 24),
+            dead_color: egui::Color32::from_rgb(24, 24, 24),
         }
     }
 }
@@ -245,9 +245,9 @@ impl Default for LifeLikeGameRule {
             birth,
             rule: "23/3".to_string(),
             show_err_msg_about_rule: false,
-            background: egui::Color32::from_rgb(0, 128, 0),
-            alive_color: egui::Color32::from_rgb(0, 255, 0),
-            dead_color: egui::Color32::from_rgb(0, 0, 0),
+            background: egui::Color32::from_rgb(24, 128, 24),
+            alive_color: egui::Color32::from_rgb(24, 255, 24),
+            dead_color: egui::Color32::from_rgb(24, 24, 24),
         }
     }
 }

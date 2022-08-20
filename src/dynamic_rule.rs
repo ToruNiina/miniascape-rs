@@ -144,9 +144,9 @@ fn next(self) {
         let color_fn_str = r#"
 fn color(self) {
     return if self {
-        [0.0, 1.0, 0.0]
+        [0.1, 1.0, 0.1]
     } else {
-        [0.0, 0.0, 0.0]
+        [0.1, 0.1, 0.1]
     };
 }"#
         .to_string();
@@ -183,7 +183,7 @@ fn color(self) {
             open_color_fn: true,
             open_color_fn_compilation_result: None,
 
-            background: egui::Color32::from_rgb(0, 128, 0),
+            background: egui::Color32::from_rgb(0, 0, 0),
         }
     }
 }
