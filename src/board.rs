@@ -43,6 +43,7 @@
 /// ```
 use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
+use thiserror::Error;
 
 const CHUNK_LEN: usize = 16;
 const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
@@ -699,6 +700,85 @@ where
                     r,
                     rule.color(self.grid.cell_at(i, j))?,
                 ));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// A small piece of board to copy-paste a region in a board
+struct ClipBoard<T: State> {
+    x: usize,
+    y: usize,
+    cells: Vec<Option<T>>,
+}
+
+impl<T: State> ClipBoard<T> {
+    fn new(x: usize, y: usize) -> Self {
+        let mut cells = Vec::new();
+        cells.resize(x * y, None);
+        Self { x, y, cells }
+    }
+    fn from_vec(x: usize, y: usize, cells: Vec<Option<T>>) -> Option<Self> {
+        if cells.len() == x * y {
+            Some(Self { x, y, cells })
+        } else {
+            None
+        }
+    }
+
+    fn cell_at(&self, x: usize, y: usize) -> &Option<T> {
+        assert!(x < self.x && y < self.y, "x({}) < {} && y({}) < {}", x, self.x, y, self.y);
+        &self.cells[x + y * self.x]
+    }
+    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut Option<T> {
+        assert!(x < self.x && y < self.y, "x({}) < {} && y({}) < {}", x, self.x, y, self.y);
+        &mut self.cells[x + y * self.x]
+    }
+
+    fn width(&self) -> usize {
+        self.x
+    }
+    fn height(&self) -> usize {
+        self.y
+    }
+}
+
+#[derive(Error, Debug)]
+struct ClipBoardError {
+    msg: String,
+}
+impl std::fmt::Display for ClipBoardError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl<T: State> Grid<T> {
+    fn merge_clipboard(
+        &mut self,
+        xofs: usize,
+        yofs: usize,
+        cb: ClipBoard<T>,
+    ) -> anyhow::Result<()> {
+        if self.width() < xofs + cb.width() || self.height() < yofs + cb.width() {
+            return Err(ClipBoardError {
+                msg: format!(
+                    "clipboard({}x{}+{}x{}) sticks out of the range({}x{})",
+                    xofs,
+                    yofs,
+                    cb.width(),
+                    cb.height(),
+                    self.width(),
+                    self.height()
+                ),
+            }.into());
+        }
+        for j in 0..cb.height() {
+            for i in 0..cb.width() {
+                if let Some(c) = cb.cell_at(i, j) {
+                    *self.cell_at_mut(i + xofs, j + yofs) = c.clone();
+                }
             }
         }
         Ok(())
