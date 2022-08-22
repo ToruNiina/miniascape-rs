@@ -1,4 +1,5 @@
 use rand::Rng;
+use crate::board::ClipBoard;
 
 /// State of a cell.
 ///
@@ -59,6 +60,10 @@ pub trait Rule<N: Neighbors>: Default {
     /// This *step* means update of a window.
     fn iteration_per_step(&self) -> u32 {
         1
+    }
+
+    fn library(&self) -> &Vec<(String, ClipBoard<Self::CellState>)> {
+        Vec::new()
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) -> anyhow::Result<()>;

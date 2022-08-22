@@ -95,6 +95,10 @@ impl<N: Neighbors> Rule<N> for LifeGameRule {
         })
     }
 
+    fn library(&self) -> Vec<(String, ClipBoard<Self::CellState>)> {
+        self.library.clone()
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
         ui.hyperlink_to(
             "Conway's Game of Life - Wikipedia",

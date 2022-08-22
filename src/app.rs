@@ -28,6 +28,7 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
     pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
+    pub(crate) pasting: bool,
 }
 
 impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
@@ -53,6 +54,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
             clipboard: None,
+            pasting: false,
         }
     }
 }
@@ -89,6 +91,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
             clipboard: None,
+            pasting: false,
         }
     }
     pub fn min_gridsize() -> f32 {
@@ -234,6 +237,13 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
 
             ui.separator(); // -------------------------------------------------
+
+            for (name, clip) in self.rule.library().into_iter() {
+                // TODO: paint clipboard content
+                if ui.button(name).clicked() {
+                    self.clipboard = Some(clip)
+                }
+            }
 
             if let Err(e) = self.rule.ui(ui, ctx) {
                 self.err = Some(format!("{:?}", e));
@@ -423,6 +433,16 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                         r,
                         epaint::Stroke { width: 2.0, color: egui::Color32::from_rgb(0, 0, 0) },
                     ));
+                }
+            } else if self.clipboard.is_some() {
+                if let Clicked::Primary(ix, iy) = clicked {
+                    self.board.paste_clipboard(ix, iy, self.clipboard.as_ref().expect("checked"));
+                    self.pasting = true;
+                }
+                let pointer = &ctx.input().pointer;
+                if self.pasting && !pointer.primary_down() {
+                    self.pasting = false;
+                    self.clipboard = None;
                 }
             } else {
                 // if inspector is closed, then we can click a cell
