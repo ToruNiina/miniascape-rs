@@ -369,6 +369,13 @@ pub trait Board<N: Neighbors, R: Rule<N>> {
         cell_width: f32,
         rule: &R,
     ) -> anyhow::Result<()>;
+
+    fn paste_clipboard(
+        &mut self,
+        xofs: usize,
+        yofs: usize,
+        cb: &ClipBoard<R::CellState>,
+    ) -> anyhow::Result<()>;
 }
 
 /// Square grid wraps a `Grid` and implement vis/UI functions.
@@ -531,6 +538,15 @@ where
             }
         }
         Ok(())
+    }
+
+    fn paste_clipboard(
+        &mut self,
+        xofs: usize,
+        yofs: usize,
+        cb: &ClipBoard<R::CellState>,
+    ) -> anyhow::Result<()> {
+        self.grid.paste_clipboard(xofs, yofs, cb)
     }
 }
 
@@ -704,10 +720,19 @@ where
         }
         Ok(())
     }
+
+    fn paste_clipboard(
+        &mut self,
+        xofs: usize,
+        yofs: usize,
+        cb: &ClipBoard<R::CellState>,
+    ) -> anyhow::Result<()> {
+        self.grid.paste_clipboard(xofs, yofs, cb)
+    }
 }
 
 /// A small piece of board to copy-paste a region in a board
-struct ClipBoard<T: State> {
+pub struct ClipBoard<T: State> {
     x: usize,
     y: usize,
     cells: Vec<Option<T>>,
@@ -755,11 +780,11 @@ impl std::fmt::Display for ClipBoardError {
 }
 
 impl<T: State> Grid<T> {
-    fn merge_clipboard(
+    fn paste_clipboard(
         &mut self,
         xofs: usize,
         yofs: usize,
-        cb: ClipBoard<T>,
+        cb: &ClipBoard<T>,
     ) -> anyhow::Result<()> {
         if self.width() < xofs + cb.width() || self.height() < yofs + cb.width() {
             return Err(ClipBoardError {
