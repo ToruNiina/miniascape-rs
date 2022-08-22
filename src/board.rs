@@ -732,6 +732,7 @@ where
 }
 
 /// A small piece of board to copy-paste a region in a board
+#[derive(Clone)]
 pub struct ClipBoard<T: State> {
     x: usize,
     y: usize,
@@ -739,12 +740,12 @@ pub struct ClipBoard<T: State> {
 }
 
 impl<T: State> ClipBoard<T> {
-    fn new(x: usize, y: usize) -> Self {
+    pub fn new(x: usize, y: usize) -> Self {
         let mut cells = Vec::new();
         cells.resize(x * y, None);
         Self { x, y, cells }
     }
-    fn from_vec(x: usize, y: usize, cells: Vec<Option<T>>) -> Option<Self> {
+    pub fn from_vec(x: usize, y: usize, cells: Vec<Option<T>>) -> Option<Self> {
         if cells.len() == x * y {
             Some(Self { x, y, cells })
         } else {
@@ -756,15 +757,19 @@ impl<T: State> ClipBoard<T> {
         assert!(x < self.x && y < self.y, "x({}) < {} && y({}) < {}", x, self.x, y, self.y);
         &self.cells[x + y * self.x]
     }
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut Option<T> {
+    pub fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut Option<T> {
         assert!(x < self.x && y < self.y, "x({}) < {} && y({}) < {}", x, self.x, y, self.y);
         &mut self.cells[x + y * self.x]
     }
 
-    fn width(&self) -> usize {
+    pub fn has_cell(&self, x: usize, y: usize) -> bool {
+        x < self.width() && y < self.height()
+    }
+
+    pub fn width(&self) -> usize {
         self.x
     }
-    fn height(&self) -> usize {
+    pub fn height(&self) -> usize {
         self.y
     }
 }
