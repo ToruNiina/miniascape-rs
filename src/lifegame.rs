@@ -1,4 +1,5 @@
 use crate::rule::{Neighbors, Rule, State};
+use crate::board::{ClipBoard};
 use arrayvec::ArrayVec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
@@ -29,14 +30,24 @@ pub struct LifeGameRule {
     background: egui::Color32,
     alive_color: egui::Color32,
     dead_color: egui::Color32,
+
+    library: Vec<(String, ClipBoard<LifeGameState>)>,
 }
 
 impl Default for LifeGameRule {
+    #[rustfmt::skip]
     fn default() -> Self {
+        let alive = Some(LifeGameState::Alive);
+        let glider = ClipBoard::<LifeGameState>::from_vec(3, 3, vec![
+            None,  alive, None,
+            None,  None,  alive,
+            alive, alive, alive,
+        ]).expect("3x3=9");
         Self {
             background: egui::Color32::from_rgb(24, 128, 24),
             alive_color: egui::Color32::from_rgb(24, 255, 24),
             dead_color: egui::Color32::from_rgb(24, 24, 24),
+            library: vec![("glider".to_string(), glider)],
         }
     }
 }
