@@ -1,4 +1,4 @@
-use crate::board::Board;
+use crate::board::{Board, ClipBoard};
 use crate::rule::{Neighbors, Rule, State};
 
 use rand::SeedableRng;
@@ -27,6 +27,7 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) cell_modifying: Option<R::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
+    pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
 }
 
 impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
@@ -51,6 +52,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
+            clipboard: None,
         }
     }
 }
@@ -86,6 +88,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
+            clipboard: None,
         }
     }
     pub fn min_gridsize() -> f32 {
