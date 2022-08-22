@@ -812,7 +812,8 @@ impl<T: State> Grid<T> {
                     self.width(),
                     self.height()
                 ),
-            }.into());
+            }
+            .into());
         }
         for j in 0..cb.height() {
             for i in 0..cb.width() {

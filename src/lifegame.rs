@@ -1,5 +1,5 @@
+use crate::board::ClipBoard;
 use crate::rule::{Neighbors, Rule, State};
-use crate::board::{ClipBoard};
 use arrayvec::ArrayVec;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::Rng;
