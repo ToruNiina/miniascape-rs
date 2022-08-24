@@ -62,7 +62,7 @@ pub trait Rule<N: Neighbors>: Default {
         1
     }
 
-    fn library(&self) -> &Vec<(String, ClipBoard<Self::CellState>)> {
+    fn library(&self) -> Vec<(String, ClipBoard<Self::CellState>)> {
         Vec::new()
     }
 
