@@ -15,8 +15,7 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) board: B,
     pub(crate) fix_board_size: bool,
     pub(crate) fix_grid_size: bool,
-    pub(crate) is_inspect_mode: bool,
-    pub(crate) is_grab_mode: bool,
+    pub(crate) click_mode: ClickMode,
     pub(crate) running: bool,
     pub(crate) inspector: Option<(usize, usize)>,
     pub(crate) inspector_indicator: bool,
@@ -31,6 +30,15 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) pasting: bool,
 }
 
+// in some cases, like PC trackpad + browser, gestures cannot be used.
+// as a fallback system, we introduce click mode.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub(crate) enum ClickMode {
+    Normal,
+    Grab,
+    Inspect,
+}
+
 impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
     fn default() -> Self {
         let rule = R::default();
@@ -41,8 +49,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             board,
             fix_board_size: false,
             fix_grid_size: false,
-            is_inspect_mode: false,
-            is_grab_mode: false,
+            click_mode: ClickMode::Normal,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -68,8 +75,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
             board,
             fix_board_size: false,
             fix_grid_size: false,
-            is_inspect_mode: false,
-            is_grab_mode: false,
+            click_mode: ClickMode::Normal,
             running: false,
             inspector: None,
             inspector_indicator: true,
@@ -211,8 +217,11 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 ui.checkbox(&mut self.fix_grid_size, "Fix Grid Size");
             });
             ui.checkbox(&mut self.fix_board_size, "Fix Board Size");
-            ui.checkbox(&mut self.is_grab_mode, "Grab Board");
-            ui.checkbox(&mut self.is_inspect_mode, "Open Inspector by click");
+
+            ui.label("On browser, PC trackpad does not work. Instead, change click mode.");
+            ui.radio_value(&mut self.click_mode, ClickMode::Normal, "Normal mode");
+            ui.radio_value(&mut self.click_mode, ClickMode::Grab, "Grab mode");
+            ui.radio_value(&mut self.click_mode, ClickMode::Inspect, "Inspect mode");
 
             ui.separator();
             ui.label("status:");
@@ -242,7 +251,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             if self.grabbed {
                 self.origin -= multi_touch.translation_delta;
             }
-            if multi_touch.num_touches == 2 || self.is_grab_mode {
+            if multi_touch.num_touches == 2 || self.click_mode == ClickMode::Grab {
                 self.grabbed = true;
             } else {
                 self.grabbed = false;
@@ -253,7 +262,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             if self.grabbed {
                 self.origin -= pointer.delta();
             }
-            if pointer.middle_down() || (self.is_grab_mode && pointer.any_down()) {
+            if pointer.middle_down() || (self.click_mode == ClickMode::Grab && pointer.any_down()) {
                 self.grabbed = true;
             } else {
                 self.grabbed = false;
@@ -377,7 +386,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
 
             if primary.is_none() && secondary.is_none() {
                 self.cell_modifying = None;
-            } else if self.is_inspect_mode {
+            } else if self.click_mode == ClickMode::Inspect {
                 self.running = false;
                 self.cell_modifying = None;
                 self.inspector = primary.or(secondary);
