@@ -383,10 +383,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             let (primary, secondary) = self.clicked(ctx, region.min);
 
             // stop running and inspect cell state by right click
-
-            if primary.is_none() && secondary.is_none() {
-                self.cell_modifying = None;
-            } else if self.click_mode == ClickMode::Inspect {
+            if self.click_mode == ClickMode::Inspect {
                 self.running = false;
                 self.cell_modifying = None;
                 self.inspector = primary.or(secondary);
@@ -394,7 +391,11 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 self.running = false;
                 self.inspector = secondary;
                 self.cell_modifying = None;
+            } else if primary.is_none() && secondary.is_none() {
+                self.cell_modifying = None;
             }
+
+            // ----------------------------------------------------------------
 
             if let Some((ix, iy)) = self.inspector {
                 let mut open = true;
@@ -425,31 +426,37 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                         epaint::Stroke { width: 2.0, color: egui::Color32::from_rgb(0, 0, 0) },
                     ));
                 }
+
             } else if self.clipboard.is_some() {
+                // paste from clipboard
+
                 if let Some((ix, iy)) = primary {
-                    self.board.paste_clipboard(ix, iy, self.clipboard.as_ref().expect("checked"));
-                    self.pasting = true;
+                    self.pasting = true; // suppress click-drawing
+                    if let Err(e) = self.board.paste_clipboard(
+                        ix, iy, self.clipboard.as_ref().expect("checked")) {
+                        self.err = Some(format!("{:?}", e));
+                    }
                 }
                 let pointer = &ctx.input().pointer;
                 if self.pasting && !pointer.primary_down() {
                     self.pasting = false;
                     self.clipboard = None;
                 }
-            } else {
-                // if inspector is closed, then we can click a cell
-                if let Some((ix, iy)) = primary {
-                    if let Some(next) = &self.cell_modifying {
-                        *self.board.cell_at_mut(ix, iy) = next.clone();
-                    } else {
-                        let next = self.rule.next(self.board.cell_at(ix, iy).clone());
-                        match next {
-                            Ok(val) => {
-                                *self.board.cell_at_mut(ix, iy) = val.clone();
-                                self.cell_modifying = Some(val);
-                            }
-                            Err(e) => {
-                                self.err = Some(format!("{:?}", e));
-                            }
+
+            } else if let Some((ix, iy)) = primary {
+                // draw cell using `cell_modifying`
+
+                if let Some(next) = &self.cell_modifying {
+                    *self.board.cell_at_mut(ix, iy) = next.clone();
+                } else {
+                    let next = self.rule.next(self.board.cell_at(ix, iy).clone());
+                    match next {
+                        Ok(val) => {
+                            *self.board.cell_at_mut(ix, iy) = val.clone();
+                            self.cell_modifying = Some(val);
+                        }
+                        Err(e) => {
+                            self.err = Some(format!("{:?}", e));
                         }
                     }
                 }
