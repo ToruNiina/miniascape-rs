@@ -775,9 +775,9 @@ impl<T: State> ClipBoard<T> {
 
     pub fn rotate(&mut self) {
         let mut rotated = Self::new(self.y, self.x);
-        for j in 0..self.y {
-            for i in 0..self.x {
-                *rotated.cell_at_mut(i, j) = self.cell_at(self.y - 1 - j, i).clone();
+        for j in 0..rotated.height() {
+            for i in 0..rotated.width() {
+                *rotated.cell_at_mut(i, j) = self.cell_at(self.x - 1 - j, i).clone();
             }
         }
         *self = rotated;
