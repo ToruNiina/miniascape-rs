@@ -47,21 +47,12 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
         Self {
             rule,
             board,
-            fix_board_size: false,
-            fix_grid_size: false,
             click_mode: ClickMode::Normal,
-            running: false,
-            inspector: None,
-            inspector_indicator: true,
-            inspector_code_buf: String::new(),
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
-            grabbed: false,
-            cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
-            err: None,
-            clipboard: None,
-            pasting: false,
+            inspector_indicator: true,
+            ..Default::default()
         }
     }
 }
@@ -73,21 +64,13 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
         Self {
             rule,
             board,
-            fix_board_size: false,
-            fix_grid_size: false,
             click_mode: ClickMode::Normal,
-            running: false,
-            inspector: None,
-            inspector_indicator: true,
             inspector_code_buf: String::new(),
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
-            grabbed: false,
-            cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
-            err: None,
-            clipboard: None,
-            pasting: false,
+            inspector_indicator: true,
+            ..Default::default()
         }
     }
     pub fn min_gridsize() -> f32 {
