@@ -18,7 +18,6 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) click_mode: ClickMode,
     pub(crate) running: bool,
     pub(crate) inspector: Option<(usize, usize)>,
-    pub(crate) inspector_indicator: bool,
     pub(crate) inspector_code_buf: String,
     pub(crate) grid_width: f32,
     pub(crate) origin: egui::Pos2,
@@ -26,8 +25,12 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) cell_modifying: Option<R::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
+
     pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
     pub(crate) pasting: bool,
+    pub(crate) secondary_start: Option<(usize, usize)>,
+    pub(crate) secondary_curr:  Option<(usize, usize)>,
+    pub(crate) selected_region: Option<((usize, usize), (usize, usize))>,
 }
 
 // in some cases, like PC trackpad + browser, gestures cannot be used.
@@ -47,12 +50,23 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
         Self {
             rule,
             board,
+            fix_board_size: false,
+            fix_grid_size: false,
             click_mode: ClickMode::Normal,
+            running: false,
+            inspector: None,
+            inspector_code_buf: String::new(),
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
+            grabbed: false,
+            cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
-            inspector_indicator: true,
-            ..Default::default()
+            err: None,
+            clipboard: None,
+            pasting: false,
+            secondary_start: None,
+            secondary_curr:  None,
+            selected_region: None,
         }
     }
 }
@@ -69,7 +83,6 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
             grid_width: 32.0,
             origin: egui::Pos2::new(0.0, 0.0),
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
-            inspector_indicator: true,
             ..Default::default()
         }
     }
@@ -372,44 +385,98 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 self.inspector = primary.or(secondary);
             } else if secondary.is_some() {
                 self.running = false;
-                self.inspector = secondary;
                 self.cell_modifying = None;
+
+                if self.secondary_start.is_none() {
+                    self.secondary_start = secondary;
+                }
+                self.secondary_curr = secondary;
+
+                let (sx, sy) = self.secondary_start.expect("we have just set this");
+                let (ex, ey) = self.secondary_curr.expect("we have just set this");
+                let min = (sx.min(ex), sy.min(ey));
+                let max = (sx.max(ex), sy.max(ey));
+                self.selected_region = Some((min, max));
+
             } else if primary.is_none() && secondary.is_none() {
                 self.cell_modifying = None;
+
+                if let Some((sx, sy)) = self.secondary_start {
+                    // set selected region
+                    let (ex, ey) = self.secondary_curr
+                        .expect("when secondary_start is some, curr is always some");
+
+                    // if the pointer did not move, open inspector
+                    if sx == ex && sy == ey {
+                        self.inspector = Some((sx, sy));
+                    }
+                    // reset because secondary button is released
+                    self.secondary_start = None;
+                    self.secondary_curr = None;
+                }
             }
 
-            // ----------------------------------------------------------------
-
-            if let Some((ix, iy)) = self.inspector {
-                let mut open = true;
-                egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
-                    ui.checkbox(&mut self.inspector_indicator, "Indicator");
-                    self.board.cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
-                });
-                if !open {
-                    self.inspector = None;
-                }
-
-                // point the cell that is inspected by a line if inspector is opened
-
-                if self.inspector_indicator {
-                    let c = self.board.location(ix, iy, self.origin, region.min, delta);
+            // show selected region
+            if let Some(((sx, sy), (ex, ey))) = self.selected_region {
+                if sx == ex && sy == ey {
+                    // show the corresponding cell
+                    let c = self.board.location(sx, sy, self.origin, region.min, delta);
                     let r = delta * 0.5_f32.sqrt();
                     painter.add(epaint::CircleShape::stroke(
                         c,
                         r,
                         epaint::Stroke {
                             width: 5.0,
-                            color: egui::Color32::from_rgb(255, 255, 255),
+                            color: egui::Color32::WHITE
                         },
                     ));
                     painter.add(epaint::CircleShape::stroke(
                         c,
                         r,
-                        epaint::Stroke { width: 2.0, color: egui::Color32::from_rgb(0, 0, 0) },
+                        epaint::Stroke {
+                            width: 2.0,
+                            color: egui::Color32::BLACK
+                        },
+                    ));
+
+                } else { // show the corresponding region
+
+                    let min = self.board.location(sx, sy, self.origin, region.min, delta);
+                    let max = self.board.location(ex, ey, self.origin, region.min, delta);
+                    let r = delta * 0.5_f32.sqrt();
+
+                    let min = egui::Pos2::new(min.x - r, min.y - r);
+                    let max = egui::Pos2::new(max.x + r, max.y + r);
+
+                    painter.add(epaint::RectShape::stroke(
+                        epaint::Rect { min, max },
+                        epaint::Rounding::same(r),
+                        epaint::Stroke {
+                            width: 5.0, color: egui::Color32::WHITE
+                        },
+                    ));
+                    painter.add(epaint::RectShape::stroke(
+                        epaint::Rect { min, max },
+                        epaint::Rounding::same(r),
+                        epaint::Stroke {
+                            width: 2.0, color: egui::Color32::BLACK
+                        },
                     ));
                 }
+            }
 
+            // check C-c, C-x, C-v
+
+            // ----------------------------------------------------------------
+
+            if let Some((ix, iy)) = self.inspector {
+                let mut open = true;
+                egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
+                    self.board.cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
+                });
+                if !open {
+                    self.inspector = None;
+                }
             } else if self.clipboard.is_some() {
                 // paste from clipboard
 
