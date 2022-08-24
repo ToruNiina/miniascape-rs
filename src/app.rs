@@ -27,7 +27,6 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) err: Option<String>,
 
     pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
-    pub(crate) pasting: bool,
     pub(crate) secondary_start: Option<(usize, usize)>,
     pub(crate) secondary_curr:  Option<(usize, usize)>,
     pub(crate) selected_region: Option<((usize, usize), (usize, usize))>,
@@ -63,7 +62,6 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
             clipboard: None,
-            pasting: false,
             secondary_start: None,
             secondary_curr:  None,
             selected_region: None,
@@ -398,6 +396,10 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 let max = (sx.max(ex), sy.max(ey));
                 self.selected_region = Some((min, max));
 
+            } else if primary.is_some() {
+
+                self.selected_region = None; // reset
+
             } else if primary.is_none() && secondary.is_none() {
                 self.cell_modifying = None;
 
@@ -465,8 +467,6 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 }
             }
 
-            // check C-c, C-x, C-v
-
             // ----------------------------------------------------------------
 
             if let Some((ix, iy)) = self.inspector {
@@ -476,21 +476,52 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 });
                 if !open {
                     self.inspector = None;
+                    self.selected_region = None;
                 }
-            } else if self.clipboard.is_some() {
-                // paste from clipboard
 
-                if let Some((ix, iy)) = primary {
-                    self.pasting = true; // suppress click-drawing
-                    if let Err(e) = self.board.paste_clipboard(
-                        ix, iy, self.clipboard.as_ref().expect("checked")) {
-                        self.err = Some(format!("{:?}", e));
+            } else if let Some(((sx, sy), (ex, ey))) = self.selected_region {
+
+                // when copy, cut, or delete is performed, selected region dissapears.
+                let (copy, cut) = {
+                    let mut input_state = ctx.input_mut();
+
+                    // command on mac, ctrl on others
+                    let command = egui::Modifiers::COMMAND;
+
+                    let c = input_state.consume_key(command, egui::Key::C);
+                    let x = input_state.consume_key(command, egui::Key::X);
+                    (c, x)
+                };
+
+                // copy region to clipboard
+                if copy || cut {
+                    let mut cb = ClipBoard::<R::CellState>::new(ex - sx + 1, ey - sy + 1);
+                    for j in 0..cb.height() {
+                        for i in 0..cb.width() {
+                            if self.board.has_cell(sx + i, sy + j) {
+                                *cb.cell_at_mut(i, j) =
+                                    Some(self.board.cell_at(sx + i, sy + j).clone());
+                            }
+                        }
                     }
+                    // overwrite
+                    self.clipboard = Some(cb);
                 }
-                let pointer = &ctx.input().pointer;
-                if self.pasting && !pointer.primary_down() {
-                    self.pasting = false;
-                    self.clipboard = None;
+
+                // clear selected region
+                if cut {
+                    match self.rule.default_state() {
+                        Ok(st) => {
+                            for j in sy..=ey {
+                                for i in sx..=ex {
+                                    *self.board.cell_at_mut(i, j) = st.clone();
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            self.err = Some(format!("{:?}", e));
+                        }
+                    }
                 }
 
             } else if let Some((ix, iy)) = primary {
@@ -512,6 +543,48 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 }
             }
 
+            // ----------------------------------------------------------------
+            // rotate clipboard when R is pressed
+            let rot = {
+                let mut input_state = ctx.input_mut();
+                input_state.consume_key(egui::Modifiers::NONE, egui::Key::R)
+            };
+            if self.clipboard.is_some() && rot {
+                self.clipboard.as_mut().expect("already checked").rotate();
+            }
+
+            // ----------------------------------------------------------------
+            // paint clipboard on top of current board with alpha
+
+            // TODO
+
+            // ----------------------------------------------------------------
+            // paste clipboard under the cursor
+
+            let cursor_pos = {
+                let pos = &ctx.input().pointer.interact_pos()
+                    .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
+                let dx = pos.x - region.min.x + self.origin.x;
+                let dy = pos.y - region.min.y + self.origin.y;
+
+                self.board.clicked(dx, dy, self.grid_width)
+            };
+
+            if let Some((cursor_x, cursor_y)) = cursor_pos {
+                let paste = {
+                    let mut input_state = ctx.input_mut();
+                    input_state.consume_key(egui::Modifiers::COMMAND, egui::Key::V)
+                };
+                if self.clipboard.is_some() && paste {
+                    // see the current position
+                    if let Err(e) = self.board.paste_clipboard(
+                        cursor_x, cursor_y, self.clipboard.as_ref().expect("already checked")) {
+                        self.err = Some(format!("{:?}", e));
+                    }
+                }
+            }
+
+            // ----------------------------------------------------------------
             // detect debug build
             egui::warn_if_debug_build(ui);
         });
