@@ -59,16 +59,6 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
     }
 }
 
-/// Represents which cell is clicked.
-///
-/// To avoid context lock by `ctx.input()` (and to make the code shorter),
-/// `clicked()` function that returns `Clicked` is implemented.
-pub enum Clicked {
-    Primary(usize, usize),
-    Secondary(usize, usize),
-    NotClicked,
-}
-
 impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
     pub fn new(rule: R) -> Self {
         let mut board = B::new(4, 3);
@@ -108,10 +98,12 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
     ///
     /// If no button is pressed or pressed position is out of board, it returns `NotClicked`.
     /// Otherwise, it returns which cell is clicked.
-    pub fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
+    pub fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2)
+        -> (Option<(usize, usize)>, Option<(usize, usize)>) {
+
         let pointer = &ctx.input().pointer;
         if !pointer.primary_down() && !pointer.secondary_down() {
-            return Clicked::NotClicked;
+            return (None, None);
         }
 
         let pos = pointer
@@ -122,15 +114,11 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
         let dy = pos.y - region_min.y + self.origin.y;
 
         if let Some((ix, iy)) = self.board.clicked(dx, dy, self.grid_width) {
-            if pointer.primary_down() {
-                Clicked::Primary(ix, iy)
-            } else if pointer.secondary_down() {
-                Clicked::Secondary(ix, iy)
-            } else {
-                Clicked::NotClicked
-            }
+            let p = if pointer.primary_down() { Some((ix, iy)) } else { None };
+            let s = if pointer.secondary_down() { Some((ix, iy)) } else { None };
+            (p, s)
         } else {
-            Clicked::NotClicked
+            (None, None)
         }
     }
 }
@@ -383,25 +371,19 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             // ----------------------------------------------------------------
             // handle left/right click
 
-            let clicked = self.clicked(ctx, region.min);
+            let (primary, secondary) = self.clicked(ctx, region.min);
 
             // stop running and inspect cell state by right click
 
-            if let Clicked::NotClicked = clicked {
+            if primary.is_none() && secondary.is_none() {
                 self.cell_modifying = None;
             } else if self.is_inspect_mode {
                 self.running = false;
                 self.cell_modifying = None;
-                self.inspector = if let Clicked::Primary(ix, iy) = clicked {
-                    Some((ix, iy))
-                } else if let Clicked::Secondary(ix, iy) = clicked {
-                    Some((ix, iy))
-                } else {
-                    None
-                };
-            } else if let Clicked::Secondary(ix, iy) = clicked {
+                self.inspector = primary.or(secondary);
+            } else if secondary.is_some() {
                 self.running = false;
-                self.inspector = Some((ix, iy));
+                self.inspector = secondary;
                 self.cell_modifying = None;
             }
 
@@ -435,7 +417,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                     ));
                 }
             } else if self.clipboard.is_some() {
-                if let Clicked::Primary(ix, iy) = clicked {
+                if let Some((ix, iy)) = primary {
                     self.board.paste_clipboard(ix, iy, self.clipboard.as_ref().expect("checked"));
                     self.pasting = true;
                 }
@@ -446,7 +428,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 }
             } else {
                 // if inspector is closed, then we can click a cell
-                if let Clicked::Primary(ix, iy) = clicked {
+                if let Some((ix, iy)) = primary {
                     if let Some(next) = &self.cell_modifying {
                         *self.board.cell_at_mut(ix, iy) = next.clone();
                     } else {
