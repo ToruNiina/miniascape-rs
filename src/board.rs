@@ -529,7 +529,7 @@ where
         let cell_end_y = ((origin.y + regsize.y) * rwidth).ceil() as usize;
 
         // draw grid
-        let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
+        let ofs = if cell_width <= 16.0 { 0.0 } else { 1.0 };
         for j in cell_begin_y..cell_end_y {
             let y0 = j as f32 * cell_width - origin.y + region.min.y + ofs;
             let y1 = (j + 1) as f32 * cell_width - origin.y + region.min.y - ofs;
@@ -576,7 +576,7 @@ where
         let cell_end_y = yofs + clip_board.height();
 
         // draw grid
-        let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
+        let ofs = if cell_width <= 16.0 { 0.0 } else { 1.0 };
         for j in cell_begin_y..cell_end_y {
             let y0 = j as f32 * cell_width - origin.y + region.min.y + ofs;
             let y1 = (j + 1) as f32 * cell_width - origin.y + region.min.y - ofs;
