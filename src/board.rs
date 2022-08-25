@@ -370,6 +370,20 @@ pub trait Board<N: Neighbors, R: Rule<N>> {
         rule: &R,
     ) -> anyhow::Result<()>;
 
+    #[allow(clippy::too_many_arguments)]
+    fn paint_clipboard(
+        &mut self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        rule: &R,
+
+        xofs: usize,
+        yofs: usize,
+        cb: &ClipBoard<R::CellState>,
+        alpha: f32,
+    ) -> anyhow::Result<()>;
+
     fn paste_clipboard(
         &mut self,
         xofs: usize,
@@ -535,6 +549,61 @@ where
                     egui::Rounding::none(),
                     rule.color(self.grid.cell_at(i, j))?,
                 ));
+            }
+        }
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn paint_clipboard(
+        &mut self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        rule: &R,
+
+        xofs: usize,
+        yofs: usize,
+        clip_board: &ClipBoard<R::CellState>,
+        alpha: f32,
+    ) -> anyhow::Result<()> {
+        let region = painter.clip_rect();
+        let alpha  = (256.0 * alpha).clamp(0.0, 255.0) as u8;
+
+        let cell_begin_x = xofs;
+        let cell_begin_y = yofs;
+        let cell_end_x = xofs + clip_board.width();
+        let cell_end_y = yofs + clip_board.height();
+
+        // draw grid
+        let ofs = if cell_width <= 25.0 { 0.0 } else { 1.0 };
+        for j in cell_begin_y..cell_end_y {
+            let y0 = j as f32 * cell_width - origin.y + region.min.y + ofs;
+            let y1 = (j + 1) as f32 * cell_width - origin.y + region.min.y - ofs;
+
+            for i in cell_begin_x..cell_end_x {
+                let x0 = i as f32 * cell_width - origin.x + region.min.x + ofs;
+                let x1 = (i + 1) as f32 * cell_width - origin.x + region.min.x - ofs;
+
+                let i = i - xofs;
+                let j = j - yofs;
+                if !clip_board.has_cell(i, j) {
+                    continue;
+                }
+                if let Some(cell) = clip_board.cell_at(i, j) {
+                    let color = rule.color(cell)?;
+                    let color = egui::Color32::from_rgba_premultiplied(
+                        color.r(), color.g(), color.b(), alpha);
+
+                    painter.add(epaint::RectShape::filled(
+                        egui::Rect {
+                            min: egui::Pos2 { x: x0, y: y0 },
+                            max: egui::Pos2 { x: x1, y: y1 },
+                        },
+                        egui::Rounding::none(),
+                        color,
+                    ));
+                }
             }
         }
         Ok(())
@@ -716,6 +785,61 @@ where
                     r,
                     rule.color(self.grid.cell_at(i, j))?,
                 ));
+            }
+        }
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn paint_clipboard(
+        &mut self,
+        painter: &egui::Painter,
+        origin: egui::Pos2,
+        cell_width: f32,
+        rule: &R,
+
+        xofs: usize,
+        yofs: usize,
+        clip_board: &ClipBoard<R::CellState>,
+        alpha: f32,
+    ) -> anyhow::Result<()> {
+        let region = painter.clip_rect();
+        let alpha  = (256.0 * alpha).clamp(0.0, 255.0) as u8;
+
+        let cell_begin_x = xofs;
+        let cell_begin_y = yofs;
+        let cell_end_x = xofs + clip_board.width();
+        let cell_end_y = yofs + clip_board.height();
+
+        let diameter = cell_width;
+        let r = diameter * 0.5;
+        let sqrt3 = 3.0_f32.sqrt();
+
+        // draw circles
+        for j in cell_begin_y..cell_end_y {
+            let y = r + j as f32 * r * sqrt3 - origin.y + region.min.y;
+            let offset = if j % 2 == 0 { r } else { diameter };
+
+            for i in cell_begin_x..cell_end_x {
+                let x = offset + (i as f32) * diameter - origin.x + region.min.x;
+
+                let i = i - xofs;
+                let j = j - yofs;
+
+                if !clip_board.has_cell(i, j) {
+                    continue;
+                }
+                if let Some(cell) = clip_board.cell_at(i, j) {
+                    let color = rule.color(cell)?;
+                    let color = egui::Color32::from_rgba_premultiplied(
+                        color.r(), color.g(), color.b(), alpha);
+
+                    painter.add(epaint::CircleShape::filled(
+                        egui::Pos2 { x, y },
+                        r,
+                        color,
+                    ));
+                }
             }
         }
         Ok(())
