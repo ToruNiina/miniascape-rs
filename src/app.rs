@@ -1,4 +1,4 @@
-use crate::board::{Board, ClipBoard};
+use crate::board::{Board, ClipBoard, CHUNK_LEN};
 use crate::rule::{Neighbors, Rule, State};
 
 use rand::SeedableRng;
@@ -585,12 +585,43 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 };
                 if self.clipboard.is_some() && paste {
                     let cb = self.clipboard.as_ref().expect("already checked");
-                    let ofs_x = cursor_x - cb.width() / 2;
-                    let ofs_y = cursor_y - cb.height() / 2;
+                    let mut ofs_x = (cursor_x as isize) - (cb.width() as isize) / 2;
+                    let mut ofs_y = (cursor_y as isize) - (cb.height() as isize) / 2;
 
-                    // see the current position
-                    if let Err(e) = self.board.paste_clipboard(ofs_x, ofs_y, cb) {
-                        self.err = Some(format!("{:?}", e));
+                    if let Ok(st) = self.rule.default_state() {
+                        // check if clipboard sticks out of the board
+                        if ofs_x < 0 {
+                            let d = ofs_x.abs() / CHUNK_LEN as isize;
+                            let m = ofs_x.abs() % CHUNK_LEN as isize;
+                            let n = if m == 0 {d} else {d + 1};
+                            self.board.expand_x(-n, st.clone());
+                            ofs_x += n * CHUNK_LEN as isize;
+                        }
+                        if self.board.width() as isize <= ofs_x + cb.width() as isize {
+                            let d = (ofs_x + cb.width() as isize - self.board.width() as isize) / CHUNK_LEN as isize;
+                            let m = (ofs_x + cb.width() as isize - self.board.width() as isize) % CHUNK_LEN as isize;
+                            let n = if m == 0 {d} else {d + 1};
+                            self.board.expand_x(n, st.clone());
+                        }
+
+                        if ofs_y < 0 {
+                            let d = ofs_y.abs() / CHUNK_LEN as isize;
+                            let m = ofs_y.abs() % CHUNK_LEN as isize;
+                            let n = if m == 0 {d} else {d + 1};
+                            self.board.expand_y(-n, st.clone());
+                            ofs_y += n * CHUNK_LEN as isize;
+                        }
+                        if self.board.height() as isize <= ofs_y + cb.height() as isize {
+                            let d = (ofs_y + cb.height() as isize - self.board.height() as isize) / CHUNK_LEN as isize;
+                            let m = (ofs_y + cb.height() as isize - self.board.height() as isize) % CHUNK_LEN as isize;
+                            let n = if m == 0 {d} else {d + 1};
+                            self.board.expand_y(n, st.clone());
+                        }
+
+                        // see the current position
+                        if let Err(e) = self.board.paste_clipboard(ofs_x as usize, ofs_y as usize, cb) {
+                            self.err = Some(format!("{:?}", e));
+                        }
                     }
                 }
             }

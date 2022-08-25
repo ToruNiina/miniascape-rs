@@ -45,8 +45,8 @@ use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
 use thiserror::Error;
 
-const CHUNK_LEN: usize = 16;
-const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
+pub(crate) const CHUNK_LEN: usize = 16;
+pub(crate) const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
 /// A square-shaped Chunk of cells.
 #[derive(Clone)]
@@ -925,20 +925,6 @@ impl<T: State> Grid<T> {
         yofs: usize,
         cb: &ClipBoard<T>,
     ) -> anyhow::Result<()> {
-        if self.width() < xofs + cb.width() || self.height() < yofs + cb.width() {
-            return Err(ClipBoardError {
-                msg: format!(
-                    "clipboard({}x{}+{}x{}) sticks out of the range({}x{})",
-                    xofs,
-                    yofs,
-                    cb.width(),
-                    cb.height(),
-                    self.width(),
-                    self.height()
-                ),
-            }
-            .into());
-        }
         for j in 0..cb.height() {
             for i in 0..cb.width() {
                 if let Some(c) = cb.cell_at(i, j) {
