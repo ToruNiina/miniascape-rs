@@ -399,6 +399,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             } else if primary.is_some() {
 
                 self.selected_region = None; // reset
+                self.clipboard = None;
 
             } else if primary.is_none() && secondary.is_none() {
                 self.cell_modifying = None;
@@ -556,11 +557,6 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             // ----------------------------------------------------------------
             // paint clipboard on top of current board with alpha
 
-            // TODO
-
-            // ----------------------------------------------------------------
-            // paste clipboard under the cursor
-
             let cursor_pos = {
                 let pos = &ctx.input().pointer.interact_pos()
                     .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
@@ -571,14 +567,29 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             };
 
             if let Some((cursor_x, cursor_y)) = cursor_pos {
+
+                if let Some(cb) = self.clipboard.as_ref() {
+                    let ofs_x = cursor_x - cb.width() / 2;
+                    let ofs_y = cursor_y - cb.height() / 2;
+
+                    if let Err(e) = self.board.paint_clipboard(
+                        &painter, self.origin, delta, &self.rule,
+                        ofs_x, ofs_y, cb, 0.5) {
+                        self.err = Some(format!("{:?}", e));
+                    }
+                }
+
                 let paste = {
                     let mut input_state = ctx.input_mut();
                     input_state.consume_key(egui::Modifiers::COMMAND, egui::Key::V)
                 };
                 if self.clipboard.is_some() && paste {
+                    let cb = self.clipboard.as_ref().expect("already checked");
+                    let ofs_x = cursor_x - cb.width() / 2;
+                    let ofs_y = cursor_y - cb.height() / 2;
+
                     // see the current position
-                    if let Err(e) = self.board.paste_clipboard(
-                        cursor_x, cursor_y, self.clipboard.as_ref().expect("already checked")) {
+                    if let Err(e) = self.board.paste_clipboard(ofs_x, ofs_y, cb) {
                         self.err = Some(format!("{:?}", e));
                     }
                 }
