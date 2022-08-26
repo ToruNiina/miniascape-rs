@@ -30,6 +30,7 @@ arrayvec = "0.7"
 image = { version = "0.24", default-features = false, features = ["png"] }
 rhai.version = "1.8"
 rhai.features = [
+    "serde",
     "wasm-bindgen", # comment out if you run this locally
     "only_i32",    # use only one integer type
     "f32_float",   # minimize size of Dynamic
