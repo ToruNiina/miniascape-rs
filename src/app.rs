@@ -136,7 +136,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             }
         }
 
-        egui::SidePanel::left("side_panel").show(ctx, |ui| {
+        let sidepanel_response = egui::SidePanel::left("side_panel").show(ctx, |ui| {
             ui.push_id(0, |ui| {
                 egui_extras::TableBuilder::new(ui)
                     .column(egui_extras::Size::initial(100.0))
@@ -239,27 +239,31 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             if let Err(e) = self.rule.ui(ui, ctx) {
                 self.err = Some(format!("{:?}", e));
             }
-        });
+        }).response;
 
-        if let Some(multi_touch) = ctx.multi_touch() {
-            if self.grabbed {
-                self.origin -= multi_touch.translation_delta;
-            }
-            if multi_touch.num_touches == 2 || self.click_mode == ClickMode::Grab {
-                self.grabbed = true;
+        let cursor_is_on_sidepanel = sidepanel_response.hovered();
+
+        if ! cursor_is_on_sidepanel {
+            if let Some(multi_touch) = ctx.multi_touch() {
+                if self.grabbed {
+                    self.origin -= multi_touch.translation_delta;
+                }
+                if multi_touch.num_touches == 2 || self.click_mode == ClickMode::Grab {
+                    self.grabbed = true;
+                } else {
+                    self.grabbed = false;
+                }
             } else {
-                self.grabbed = false;
-            }
-        } else {
-            // we need to drop pointer after checking the value to release ctx.
-            let pointer = &ctx.input().pointer;
-            if self.grabbed {
-                self.origin -= pointer.delta();
-            }
-            if pointer.middle_down() || (self.click_mode == ClickMode::Grab && pointer.any_down()) {
-                self.grabbed = true;
-            } else {
-                self.grabbed = false;
+                // we need to drop pointer after checking the value to release ctx.
+                let pointer = &ctx.input().pointer;
+                if self.grabbed {
+                    self.origin -= pointer.delta();
+                }
+                if pointer.middle_down() || (self.click_mode == ClickMode::Grab && pointer.any_down()) {
+                    self.grabbed = true;
+                } else {
+                    self.grabbed = false;
+                }
             }
         }
 
@@ -374,255 +378,257 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             // ----------------------------------------------------------------
             // handle left/right click
 
-            let (primary, secondary) = self.clicked(ctx, region.min);
+            if ! cursor_is_on_sidepanel {
+                let (primary, secondary) = self.clicked(ctx, region.min);
 
-            // stop running and inspect cell state by right click
-            if self.click_mode == ClickMode::Inspect {
-                self.running = false;
-                self.cell_modifying = None;
-                self.inspector = primary.or(secondary);
-            } else if secondary.is_some() {
-                self.running = false;
-                self.cell_modifying = None;
+                // stop running and inspect cell state by right click
+                if self.click_mode == ClickMode::Inspect {
+                    self.running = false;
+                    self.cell_modifying = None;
+                    self.inspector = primary.or(secondary);
+                } else if secondary.is_some() {
+                    self.running = false;
+                    self.cell_modifying = None;
 
-                if self.secondary_start.is_none() {
-                    self.secondary_start = secondary;
-                }
-                self.secondary_curr = secondary;
-
-                let (sx, sy) = self.secondary_start.expect("we have just set this");
-                let (ex, ey) = self.secondary_curr.expect("we have just set this");
-                let min = (sx.min(ex), sy.min(ey));
-                let max = (sx.max(ex), sy.max(ey));
-                self.selected_region = Some((min, max));
-
-            } else if primary.is_some() {
-
-                self.selected_region = None; // reset
-                self.clipboard = None;
-
-            } else if primary.is_none() && secondary.is_none() {
-                self.cell_modifying = None;
-
-                if let Some((sx, sy)) = self.secondary_start {
-                    // set selected region
-                    let (ex, ey) = self.secondary_curr
-                        .expect("when secondary_start is some, curr is always some");
-
-                    // if the pointer did not move, open inspector
-                    if sx == ex && sy == ey {
-                        self.inspector = Some((sx, sy));
+                    if self.secondary_start.is_none() {
+                        self.secondary_start = secondary;
                     }
-                    // reset because secondary button is released
-                    self.secondary_start = None;
-                    self.secondary_curr = None;
-                }
-            }
+                    self.secondary_curr = secondary;
 
-            // show selected region
-            if let Some(((sx, sy), (ex, ey))) = self.selected_region {
-                if sx == ex && sy == ey {
-                    // show the corresponding cell
-                    let c = self.board.location(sx, sy, self.origin, region.min, delta);
-                    let r = delta * 0.5_f32.sqrt();
-                    painter.add(epaint::CircleShape::stroke(
-                        c,
-                        r,
-                        epaint::Stroke {
-                            width: 5.0,
-                            color: egui::Color32::WHITE
-                        },
-                    ));
-                    painter.add(epaint::CircleShape::stroke(
-                        c,
-                        r,
-                        epaint::Stroke {
-                            width: 2.0,
-                            color: egui::Color32::BLACK
-                        },
-                    ));
+                    let (sx, sy) = self.secondary_start.expect("we have just set this");
+                    let (ex, ey) = self.secondary_curr.expect("we have just set this");
+                    let min = (sx.min(ex), sy.min(ey));
+                    let max = (sx.max(ex), sy.max(ey));
+                    self.selected_region = Some((min, max));
 
-                } else { // show the corresponding region
+                } else if primary.is_some() {
 
-                    let min = self.board.location(sx, sy, self.origin, region.min, delta);
-                    let max = self.board.location(ex, ey, self.origin, region.min, delta);
-                    let r = delta * 0.5_f32.sqrt();
+                    self.selected_region = None; // reset
+                    self.clipboard = None;
 
-                    let min = egui::Pos2::new(min.x - r, min.y - r);
-                    let max = egui::Pos2::new(max.x + r, max.y + r);
+                } else if primary.is_none() && secondary.is_none() {
+                    self.cell_modifying = None;
 
-                    painter.add(epaint::RectShape::stroke(
-                        epaint::Rect { min, max },
-                        epaint::Rounding::same(r),
-                        epaint::Stroke {
-                            width: 5.0, color: egui::Color32::WHITE
-                        },
-                    ));
-                    painter.add(epaint::RectShape::stroke(
-                        epaint::Rect { min, max },
-                        epaint::Rounding::same(r),
-                        epaint::Stroke {
-                            width: 2.0, color: egui::Color32::BLACK
-                        },
-                    ));
-                }
-            }
+                    if let Some((sx, sy)) = self.secondary_start {
+                        // set selected region
+                        let (ex, ey) = self.secondary_curr
+                            .expect("when secondary_start is some, curr is always some");
 
-            // ----------------------------------------------------------------
-
-            if let Some((ix, iy)) = self.inspector {
-                let mut open = true;
-                egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
-                    self.board.cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
-                });
-                if !open {
-                    self.inspector = None;
-                    self.selected_region = None;
-                }
-
-            } else if let Some(((sx, sy), (ex, ey))) = self.selected_region {
-
-                // when copy, cut, or delete is performed, selected region dissapears.
-                let (copy, cut, del) = {
-                    let mut input_state = ctx.input_mut();
-
-                    // command on mac, ctrl on others
-                    let command = egui::Modifiers::COMMAND;
-
-                    let c = input_state.consume_key(command, egui::Key::C);
-                    let x = input_state.consume_key(command, egui::Key::X);
-                    let d = input_state.consume_key(egui::Modifiers::NONE, egui::Key::Delete) ||
-                            input_state.consume_key(egui::Modifiers::NONE, egui::Key::Backspace);
-                    (c, x, d)
-                };
-
-                // copy region to clipboard
-                if copy || cut {
-                    let mut cb = ClipBoard::<R::CellState>::new(ex - sx + 1, ey - sy + 1);
-                    for j in 0..cb.height() {
-                        for i in 0..cb.width() {
-                            if self.board.has_cell(sx + i, sy + j) {
-                                *cb.cell_at_mut(i, j) =
-                                    Some(self.board.cell_at(sx + i, sy + j).clone());
-                            }
+                        // if the pointer did not move, open inspector
+                        if sx == ex && sy == ey {
+                            self.inspector = Some((sx, sy));
                         }
+                        // reset because secondary button is released
+                        self.secondary_start = None;
+                        self.secondary_curr = None;
                     }
-                    // overwrite
-                    self.clipboard = Some(cb);
                 }
 
-                // clear selected region
-                if cut || del {
-                    match self.rule.default_state() {
-                        Ok(st) => {
-                            for j in sy..=ey {
-                                for i in sx..=ex {
-                                    *self.board.cell_at_mut(i, j) = st.clone();
+                // show selected region
+                if let Some(((sx, sy), (ex, ey))) = self.selected_region {
+                    if sx == ex && sy == ey {
+                        // show the corresponding cell
+                        let c = self.board.location(sx, sy, self.origin, region.min, delta);
+                        let r = delta * 0.5_f32.sqrt();
+                        painter.add(epaint::CircleShape::stroke(
+                            c,
+                            r,
+                            epaint::Stroke {
+                                width: 5.0,
+                                color: egui::Color32::WHITE
+                            },
+                        ));
+                        painter.add(epaint::CircleShape::stroke(
+                            c,
+                            r,
+                            epaint::Stroke {
+                                width: 2.0,
+                                color: egui::Color32::BLACK
+                            },
+                        ));
+
+                    } else { // show the corresponding region
+
+                        let min = self.board.location(sx, sy, self.origin, region.min, delta);
+                        let max = self.board.location(ex, ey, self.origin, region.min, delta);
+                        let r = delta * 0.5_f32.sqrt();
+
+                        let min = egui::Pos2::new(min.x - r, min.y - r);
+                        let max = egui::Pos2::new(max.x + r, max.y + r);
+
+                        painter.add(epaint::RectShape::stroke(
+                            epaint::Rect { min, max },
+                            epaint::Rounding::same(r),
+                            epaint::Stroke {
+                                width: 5.0, color: egui::Color32::WHITE
+                            },
+                        ));
+                        painter.add(epaint::RectShape::stroke(
+                            epaint::Rect { min, max },
+                            epaint::Rounding::same(r),
+                            epaint::Stroke {
+                                width: 2.0, color: egui::Color32::BLACK
+                            },
+                        ));
+                    }
+                }
+
+                // ----------------------------------------------------------------
+
+                if let Some((ix, iy)) = self.inspector {
+                    let mut open = true;
+                    egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
+                        self.board.cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
+                    });
+                    if !open {
+                        self.inspector = None;
+                        self.selected_region = None;
+                    }
+
+                } else if let Some(((sx, sy), (ex, ey))) = self.selected_region {
+
+                    // when copy, cut, or delete is performed, selected region dissapears.
+                    let (copy, cut, del) = {
+                        let mut input_state = ctx.input_mut();
+
+                        // command on mac, ctrl on others
+                        let command = egui::Modifiers::COMMAND;
+
+                        let c = input_state.consume_key(command, egui::Key::C);
+                        let x = input_state.consume_key(command, egui::Key::X);
+                        let d = input_state.consume_key(egui::Modifiers::NONE, egui::Key::Delete) ||
+                                input_state.consume_key(egui::Modifiers::NONE, egui::Key::Backspace);
+                        (c, x, d)
+                    };
+
+                    // copy region to clipboard
+                    if copy || cut {
+                        let mut cb = ClipBoard::<R::CellState>::new(ex - sx + 1, ey - sy + 1);
+                        for j in 0..cb.height() {
+                            for i in 0..cb.width() {
+                                if self.board.has_cell(sx + i, sy + j) {
+                                    *cb.cell_at_mut(i, j) =
+                                        Some(self.board.cell_at(sx + i, sy + j).clone());
                                 }
                             }
                         }
-                        Err(e) => {
-                            self.err = Some(format!("{:?}", e));
+                        // overwrite
+                        self.clipboard = Some(cb);
+                    }
+
+                    // clear selected region
+                    if cut || del {
+                        match self.rule.default_state() {
+                            Ok(st) => {
+                                for j in sy..=ey {
+                                    for i in sx..=ex {
+                                        *self.board.cell_at_mut(i, j) = st.clone();
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                self.err = Some(format!("{:?}", e));
+                            }
+                        }
+                    }
+
+                } else if let Some((ix, iy)) = primary {
+                    // draw cell using `cell_modifying`
+
+                    if let Some(next) = &self.cell_modifying {
+                        *self.board.cell_at_mut(ix, iy) = next.clone();
+                    } else {
+                        let next = self.rule.next(self.board.cell_at(ix, iy).clone());
+                        match next {
+                            Ok(val) => {
+                                *self.board.cell_at_mut(ix, iy) = val.clone();
+                                self.cell_modifying = Some(val);
+                            }
+                            Err(e) => {
+                                self.err = Some(format!("{:?}", e));
+                            }
                         }
                     }
                 }
 
-            } else if let Some((ix, iy)) = primary {
-                // draw cell using `cell_modifying`
-
-                if let Some(next) = &self.cell_modifying {
-                    *self.board.cell_at_mut(ix, iy) = next.clone();
-                } else {
-                    let next = self.rule.next(self.board.cell_at(ix, iy).clone());
-                    match next {
-                        Ok(val) => {
-                            *self.board.cell_at_mut(ix, iy) = val.clone();
-                            self.cell_modifying = Some(val);
-                        }
-                        Err(e) => {
-                            self.err = Some(format!("{:?}", e));
-                        }
-                    }
-                }
-            }
-
-            // ----------------------------------------------------------------
-            // rotate clipboard when R is pressed
-            let rot = {
-                let mut input_state = ctx.input_mut();
-                input_state.consume_key(egui::Modifiers::NONE, egui::Key::R)
-            };
-            if self.clipboard.is_some() && rot {
-                self.clipboard.as_mut().expect("already checked").rotate();
-            }
-
-            // ----------------------------------------------------------------
-            // paint clipboard on top of current board with alpha
-
-            let cursor_pos = {
-                let pos = &ctx.input().pointer.interact_pos()
-                    .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
-                let dx = pos.x - region.min.x + self.origin.x;
-                let dy = pos.y - region.min.y + self.origin.y;
-
-                self.board.clicked(dx, dy, self.grid_width)
-            };
-
-            if let Some((cursor_x, cursor_y)) = cursor_pos {
-
-                if let Some(cb) = self.clipboard.as_ref() {
-                    let ofs_x = cursor_x - cb.width() / 2;
-                    let ofs_y = cursor_y - cb.height() / 2;
-
-                    if let Err(e) = self.board.paint_clipboard(
-                        &painter, self.origin, delta, &self.rule,
-                        ofs_x, ofs_y, cb, 0.5) {
-                        self.err = Some(format!("{:?}", e));
-                    }
-                }
-
-                let paste = {
+                // ----------------------------------------------------------------
+                // rotate clipboard when R is pressed
+                let rot = {
                     let mut input_state = ctx.input_mut();
-                    input_state.consume_key(egui::Modifiers::COMMAND, egui::Key::V)
+                    input_state.consume_key(egui::Modifiers::NONE, egui::Key::R)
                 };
-                if self.clipboard.is_some() && paste {
-                    let cb = self.clipboard.as_ref().expect("already checked");
-                    let mut ofs_x = (cursor_x as isize) - (cb.width() as isize) / 2;
-                    let mut ofs_y = (cursor_y as isize) - (cb.height() as isize) / 2;
+                if self.clipboard.is_some() && rot {
+                    self.clipboard.as_mut().expect("already checked").rotate();
+                }
 
-                    if let Ok(st) = self.rule.default_state() {
-                        // check if clipboard sticks out of the board
-                        if ofs_x < 0 {
-                            let d = ofs_x.abs() / CHUNK_LEN as isize;
-                            let m = ofs_x.abs() % CHUNK_LEN as isize;
-                            let n = if m == 0 {d} else {d + 1};
-                            self.board.expand_x(-n, st.clone());
-                            ofs_x += n * CHUNK_LEN as isize;
-                        }
-                        if self.board.width() as isize <= ofs_x + cb.width() as isize {
-                            let d = (ofs_x + cb.width() as isize - self.board.width() as isize) / CHUNK_LEN as isize;
-                            let m = (ofs_x + cb.width() as isize - self.board.width() as isize) % CHUNK_LEN as isize;
-                            let n = if m == 0 {d} else {d + 1};
-                            self.board.expand_x(n, st.clone());
-                        }
+                // ----------------------------------------------------------------
+                // paint clipboard on top of current board with alpha
 
-                        if ofs_y < 0 {
-                            let d = ofs_y.abs() / CHUNK_LEN as isize;
-                            let m = ofs_y.abs() % CHUNK_LEN as isize;
-                            let n = if m == 0 {d} else {d + 1};
-                            self.board.expand_y(-n, st.clone());
-                            ofs_y += n * CHUNK_LEN as isize;
-                        }
-                        if self.board.height() as isize <= ofs_y + cb.height() as isize {
-                            let d = (ofs_y + cb.height() as isize - self.board.height() as isize) / CHUNK_LEN as isize;
-                            let m = (ofs_y + cb.height() as isize - self.board.height() as isize) % CHUNK_LEN as isize;
-                            let n = if m == 0 {d} else {d + 1};
-                            self.board.expand_y(n, st.clone());
-                        }
+                let cursor_pos = {
+                    let pos = &ctx.input().pointer.interact_pos()
+                        .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
+                    let dx = pos.x - region.min.x + self.origin.x;
+                    let dy = pos.y - region.min.y + self.origin.y;
 
-                        // see the current position
-                        if let Err(e) = self.board.paste_clipboard(ofs_x as usize, ofs_y as usize, cb) {
+                    self.board.clicked(dx, dy, self.grid_width)
+                };
+
+                if let Some((cursor_x, cursor_y)) = cursor_pos {
+
+                    if let Some(cb) = self.clipboard.as_ref() {
+                        let ofs_x = cursor_x - cb.width() / 2;
+                        let ofs_y = cursor_y - cb.height() / 2;
+
+                        if let Err(e) = self.board.paint_clipboard(
+                            &painter, self.origin, delta, &self.rule,
+                            ofs_x, ofs_y, cb, 0.5) {
                             self.err = Some(format!("{:?}", e));
+                        }
+                    }
+
+                    let paste = {
+                        let mut input_state = ctx.input_mut();
+                        input_state.consume_key(egui::Modifiers::COMMAND, egui::Key::V)
+                    };
+                    if self.clipboard.is_some() && paste {
+                        let cb = self.clipboard.as_ref().expect("already checked");
+                        let mut ofs_x = (cursor_x as isize) - (cb.width() as isize) / 2;
+                        let mut ofs_y = (cursor_y as isize) - (cb.height() as isize) / 2;
+
+                        if let Ok(st) = self.rule.default_state() {
+                            // check if clipboard sticks out of the board
+                            if ofs_x < 0 {
+                                let d = ofs_x.abs() / CHUNK_LEN as isize;
+                                let m = ofs_x.abs() % CHUNK_LEN as isize;
+                                let n = if m == 0 {d} else {d + 1};
+                                self.board.expand_x(-n, st.clone());
+                                ofs_x += n * CHUNK_LEN as isize;
+                            }
+                            if self.board.width() as isize <= ofs_x + cb.width() as isize {
+                                let d = (ofs_x + cb.width() as isize - self.board.width() as isize) / CHUNK_LEN as isize;
+                                let m = (ofs_x + cb.width() as isize - self.board.width() as isize) % CHUNK_LEN as isize;
+                                let n = if m == 0 {d} else {d + 1};
+                                self.board.expand_x(n, st.clone());
+                            }
+
+                            if ofs_y < 0 {
+                                let d = ofs_y.abs() / CHUNK_LEN as isize;
+                                let m = ofs_y.abs() % CHUNK_LEN as isize;
+                                let n = if m == 0 {d} else {d + 1};
+                                self.board.expand_y(-n, st.clone());
+                                ofs_y += n * CHUNK_LEN as isize;
+                            }
+                            if self.board.height() as isize <= ofs_y + cb.height() as isize {
+                                let d = (ofs_y + cb.height() as isize - self.board.height() as isize) / CHUNK_LEN as isize;
+                                let m = (ofs_y + cb.height() as isize - self.board.height() as isize) % CHUNK_LEN as isize;
+                                let n = if m == 0 {d} else {d + 1};
+                                self.board.expand_y(n, st.clone());
+                            }
+
+                            // see the current position
+                            if let Err(e) = self.board.paste_clipboard(ofs_x as usize, ofs_y as usize, cb) {
+                                self.err = Some(format!("{:?}", e));
+                            }
                         }
                     }
                 }
