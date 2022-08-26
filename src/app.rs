@@ -25,6 +25,7 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) cell_modifying: Option<R::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
+    pub(crate) cursor_is_on_sidepanel: bool, // at the last frame
 
     pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
     pub(crate) secondary_start: Option<(usize, usize)>,
@@ -61,6 +62,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
+            cursor_is_on_sidepanel: false,
             clipboard: None,
             secondary_start: None,
             secondary_curr:  None,
@@ -236,14 +238,16 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 }
             }
 
-            if let Err(e) = self.rule.ui(ui, ctx) {
+            // we can only know the cursor hovers on sidepanel after drawing
+            // sidepanel, so we use the status of the last frame
+            if let Err(e) = self.rule.ui(ui, ctx, self.cursor_is_on_sidepanel) {
                 self.err = Some(format!("{:?}", e));
             }
         }).response;
 
-        let cursor_is_on_sidepanel = sidepanel_response.hovered();
+        self.cursor_is_on_sidepanel = sidepanel_response.hovered();
 
-        if ! cursor_is_on_sidepanel {
+        if ! self.cursor_is_on_sidepanel {
             if let Some(multi_touch) = ctx.multi_touch() {
                 if self.grabbed {
                     self.origin -= multi_touch.translation_delta;
@@ -378,7 +382,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             // ----------------------------------------------------------------
             // handle left/right click
 
-            if ! cursor_is_on_sidepanel {
+            if ! self.cursor_is_on_sidepanel {
                 let (primary, secondary) = self.clicked(ctx, region.min);
 
                 // stop running and inspect cell state by right click

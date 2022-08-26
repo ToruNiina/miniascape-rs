@@ -105,7 +105,7 @@ impl Rule<MooreNeighborhood> for WireWorldRule {
         })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) -> anyhow::Result<()> {
+    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context, _on_side_panel: bool) -> anyhow::Result<()> {
         ui.hyperlink_to("Wireworld - Wikipedia", "https://en.wikipedia.org/wiki/Wireworld");
         ui.separator();
 

@@ -336,7 +336,7 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
         Ok(Self::CellState { value })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) -> anyhow::Result<()> {
+    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, on_side_panel: bool) -> anyhow::Result<()> {
         egui::ScrollArea::vertical().show(ui, |ui| {
             ui.label("Background Color");
             egui::widgets::color_picker::color_edit_button_srgba(
@@ -438,49 +438,51 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
             );
         });
 
-        // load file content and compile the code
-        let dropped_files = ctx.input().raw.dropped_files.clone();
-        if !dropped_files.is_empty() && !dropped_files.iter().any(|f| f.name.ends_with(".rhai")) {
-            return Err(DynamicRuleError::FileError(
-                "source file should ends with `.rhai`. file ignored".to_string(),
-                dropped_files[0].name.clone(),
-            ).into());
-        }
-
-        if let Some(file) = dropped_files.into_iter().find(|f| f.name.ends_with(".rhai")) {
-            if let Some(bytes) = &file.bytes {
-                let content = std::str::from_utf8(bytes)
-                    .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
-                    .to_owned();
-
-                self.update_fn_str = content.clone();
-                self.clear_fn_str = content.clone();
-                self.randomize_fn_str = content.clone();
-                self.next_fn_str = content.clone();
-                self.color_fn_str = content.clone();
-
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
-                self.randomize_fn = self
-                    .engine
-                    .compile(&content)
-                    .context(format!("failed to compile file content -> {}", file.name))?;
-
-                self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
-                let ast = self
-                    .engine
-                    .compile(content)
-                    .context(format!("failed to compile file content -> {}", file.name))?;
-
-                self.update_fn = ast.clone();
-                self.clear_fn = ast.clone();
-                self.next_fn = ast.clone();
-                self.color_fn = ast;
-            } else {
+        // load file content and compile the code if file is dropped on side panel
+        if on_side_panel {
+            let dropped_files = ctx.input().raw.dropped_files.clone();
+            if !dropped_files.is_empty() && !dropped_files.iter().any(|f| f.name.ends_with(".rhai")) {
                 return Err(DynamicRuleError::FileError(
-                    "couldn't read file content".to_string(),
-                    file.name.clone(),
-                )
-                .into());
+                    "source file should ends with `.rhai`. file ignored".to_string(),
+                    dropped_files[0].name.clone(),
+                ).into());
+            }
+
+            if let Some(file) = dropped_files.into_iter().find(|f| f.name.ends_with(".rhai")) {
+                if let Some(bytes) = &file.bytes {
+                    let content = std::str::from_utf8(bytes)
+                        .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
+                        .to_owned();
+
+                    self.update_fn_str = content.clone();
+                    self.clear_fn_str = content.clone();
+                    self.randomize_fn_str = content.clone();
+                    self.next_fn_str = content.clone();
+                    self.color_fn_str = content.clone();
+
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Simple);
+                    self.randomize_fn = self
+                        .engine
+                        .compile(&content)
+                        .context(format!("failed to compile file content -> {}", file.name))?;
+
+                    self.engine.set_optimization_level(rhai::OptimizationLevel::Full);
+                    let ast = self
+                        .engine
+                        .compile(content)
+                        .context(format!("failed to compile file content -> {}", file.name))?;
+
+                    self.update_fn = ast.clone();
+                    self.clear_fn = ast.clone();
+                    self.next_fn = ast.clone();
+                    self.color_fn = ast;
+                } else {
+                    return Err(DynamicRuleError::FileError(
+                        "couldn't read file content".to_string(),
+                        file.name.clone(),
+                    )
+                    .into());
+                }
             }
         }
         Ok(())
