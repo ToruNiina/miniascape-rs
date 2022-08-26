@@ -3,12 +3,12 @@ use rand::Rng;
 use rhai::packages::Package;
 use rhai::{Dynamic, Engine, Scope, AST};
 use rhai_rand::RandomPackage;
-// use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use anyhow::Context as _;
 use thiserror::Error;
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct DynamicState {
     value: rhai::Dynamic,
 }
