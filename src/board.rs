@@ -44,13 +44,16 @@
 use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
 use thiserror::Error;
+use serde::{Deserialize, Serialize};
 
 pub(crate) const CHUNK_LEN: usize = 16;
 pub(crate) const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
 
 /// A square-shaped Chunk of cells.
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Chunk<T: State> {
+    #[serde(with = "serde_arrays")]
+    #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     cells: [T; CHUNK_SIZE],
 }
 
@@ -102,11 +105,13 @@ impl<T: State> Chunk<T> {
 }
 
 /// A square lattice of chunks.
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Grid<T: State> {
     pub(crate) num_chunks_x: usize,
     pub(crate) num_chunks_y: usize,
+    #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     pub(crate) chunks: Vec<Chunk<T>>,
+    #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     pub(crate) buffer: Vec<Chunk<T>>,
 }
 
@@ -393,7 +398,9 @@ pub trait Board<N: Neighbors, R: Rule<N>> {
 }
 
 /// Square grid wraps a `Grid` and implement vis/UI functions.
+#[derive(Default, Serialize, Deserialize)]
 pub struct SquareGrid<T: State> {
+    #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     grid: Grid<T>,
 }
 impl<T, N, R> Board<N, R> for SquareGrid<T>
@@ -620,7 +627,9 @@ where
 }
 
 /// Hex grid wraps a `Grid` and implement vis/UI functions.
+#[derive(Default, Serialize, Deserialize)]
 pub struct HexGrid<T: State> {
+    #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     grid: Grid<T>,
 }
 impl<T, N, R> Board<N, R> for HexGrid<T>
@@ -856,10 +865,11 @@ where
 }
 
 /// A small piece of board to copy-paste a region in a board
-#[derive(Clone)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ClipBoard<T: State> {
     x: usize,
     y: usize,
+    #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     cells: Vec<Option<T>>,
 }
 

@@ -893,7 +893,7 @@ dependencies = [
  "rhai",
  "rhai-rand",
  "serde",
- "serde-big-array",
+ "serde_arrays",
  "thiserror",
  "tracing-subscriber",
  "tracing-wasm",
@@ -1400,10 +1400,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde-big-array"
-version = "0.4.1"
+name = "serde_arrays"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3323f09a748af288c3dc2474ea6803ee81f118321775bffa3ac8f7e65c5e90e7"
+checksum = "38636132857f68ec3d5f3eb121166d2af33cb55174c4d5ff645db6165cbef0fd"
 dependencies = [
  "serde",
 ]

@@ -22,7 +22,7 @@ egui_extras = {version = "0.18", features = ["image"]}
 epaint = "0.18"
 eframe = { version = "0.18", features = ["persistence"] }
 serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
-serde-big-array = "0.4"
+serde_arrays = "0.1"
 rand = "0.8"
 getrandom = { version = "0.2", features = ["js"] }
 array-init = "2.0"
