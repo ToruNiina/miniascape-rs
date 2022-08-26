@@ -483,7 +483,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             } else if let Some(((sx, sy), (ex, ey))) = self.selected_region {
 
                 // when copy, cut, or delete is performed, selected region dissapears.
-                let (copy, cut) = {
+                let (copy, cut, del) = {
                     let mut input_state = ctx.input_mut();
 
                     // command on mac, ctrl on others
@@ -491,7 +491,9 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
 
                     let c = input_state.consume_key(command, egui::Key::C);
                     let x = input_state.consume_key(command, egui::Key::X);
-                    (c, x)
+                    let d = input_state.consume_key(egui::Modifiers::NONE, egui::Key::Delete) ||
+                            input_state.consume_key(egui::Modifiers::NONE, egui::Key::Backspace);
+                    (c, x, d)
                 };
 
                 // copy region to clipboard
@@ -510,7 +512,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                 }
 
                 // clear selected region
-                if cut {
+                if cut || del {
                     match self.rule.default_state() {
                         Ok(st) => {
                             for j in sy..=ey {
