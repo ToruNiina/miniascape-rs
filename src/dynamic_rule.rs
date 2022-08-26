@@ -45,8 +45,6 @@ impl State for DynamicState {
 pub struct DynamicRule {
     engine: Engine,
 
-    dropped_files: Vec<egui::DroppedFile>,
-
     update_fn_str: String,
     update_fn: AST,
     open_update_fn: bool,
@@ -156,7 +154,6 @@ fn color(self) {
 
         Self {
             engine,
-            dropped_files: Default::default(),
 
             update_fn_str,
             update_fn,
@@ -441,14 +438,9 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
             );
         });
 
-        if !ctx.input().raw.dropped_files.is_empty() {
-            self.dropped_files = ctx.input().raw.dropped_files.clone();
-        }
-
         // load file content and compile the code
-        if !self.dropped_files.is_empty() {
-            let file = self.dropped_files[0].clone();
-            self.dropped_files.clear();
+        let dropped_files = ctx.input().raw.dropped_files.clone();
+        if let Some(file) = dropped_files.into_iter().find(|f| f.name.ends_with(".rhai")) {
             if let Some(bytes) = &file.bytes {
                 let content = std::str::from_utf8(bytes)
                     .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
