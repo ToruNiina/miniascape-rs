@@ -307,18 +307,9 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
                         self.grid_width = new_grid_width;
                     }
                 } else {
-                    let input = ctx.input();
-                    // check the cursor is on the center panel
-                    let cursor_pos =
-                        input.pointer.hover_pos().unwrap_or(egui::Pos2 { x: -1.0, y: -1.0 });
-                    let cursor_is_in_center_panel = region.min.x <= cursor_pos.x
-                        && cursor_pos.x <= region.max.x
-                        && region.min.y <= cursor_pos.y
-                        && cursor_pos.y <= region.max.y;
-
                     // we need to drop scroll after checking it to release ctx
-                    let scroll = input.scroll_delta.y * Self::scroll_factor();
-                    if cursor_is_in_center_panel && scroll != 0.0 {
+                    let scroll = ctx.input().scroll_delta.y * Self::scroll_factor();
+                    if !self.cursor_is_on_sidepanel && scroll != 0.0 {
                         let new_grid_width = (self.grid_width * 1.1_f32.powf(scroll))
                             .clamp(Self::min_gridsize(), Self::max_gridsize())
                             .ceil();
