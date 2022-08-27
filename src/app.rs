@@ -1,6 +1,9 @@
 use crate::board::{Board, ClipBoard, CHUNK_LEN};
 use crate::rule::{Neighbors, Rule, State};
 
+use anyhow::anyhow;
+use anyhow::Context as _;
+use serde::{Deserialize, Serialize};
 use rand::SeedableRng;
 
 // TODO: We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -25,6 +28,7 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
     pub(crate) cell_modifying: Option<R::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
+    pub(crate) serdes_buffer: Option<String>,
     pub(crate) cursor_is_on_sidepanel: bool, // at the last frame
 
     pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
@@ -62,6 +66,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
+            serdes_buffer: None,
             cursor_is_on_sidepanel: false,
             clipboard: None,
             secondary_start: None,
@@ -71,7 +76,8 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
     }
 }
 
-impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
+impl<N: Neighbors, R: Rule<N>, B> App<N, R, B>
+where for<'de> B: Board<N, R> + Deserialize<'de> {
     pub fn new(rule: R) -> Self {
         let mut board = B::new(4, 3);
         board.clear(&rule).expect("default construction must not fail");
@@ -123,9 +129,33 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> App<N, R, B> {
             (None, None)
         }
     }
+
+    fn load_from_dropped_file(&mut self, ctx: &egui::Context) -> anyhow::Result<()> {
+        let dropped_files = ctx.input().raw.dropped_files.clone();
+        if dropped_files.is_empty() {
+            return Ok(());
+        }
+        if let Some(file) = dropped_files.iter().find(|f| f.name.ends_with(".json")) {
+            if let Some(bytes) = &file.bytes {
+                let content = std::str::from_utf8(bytes)
+                    .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
+                    .to_owned();
+                self.board = serde_json::from_str(&content)
+                    .context(format!("Couldn't load file content as board -> {}", file.name))?;
+                Ok(())
+            } else {
+                Err(anyhow!("file {} could not read", file.name))
+            }
+        } else {
+            Err(anyhow!(
+                "only json deserializaion is supported. file \"{:?}\" ignored",
+                dropped_files.into_iter().map(|f| f.name).collect::<Vec<String>>()))
+        }
+    }
 }
 
-impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
+impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
+    where for<'de> B: Board<N, R> + Serialize + Deserialize<'de> {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
         //         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -204,6 +234,25 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
 
             ui.separator(); // -------------------------------------------------
 
+            if ui.button("serialize").clicked() {
+                self.serdes_buffer = Some(serde_json::to_string(&self.board).expect("TODO: serde"));
+            }
+            if let Some(sb) = self.serdes_buffer.as_mut() {
+                let mut open = true;
+                egui::Window::new("Serialize").open(&mut open).show(ctx, |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.add(egui::TextEdit::multiline(sb)
+                            .code_editor()
+                            .desired_width(f32::INFINITY));
+                    });
+                });
+                if !open {
+                    self.serdes_buffer = None;
+                }
+            }
+
+            ui.separator(); // -------------------------------------------------
+
             let min_grid = Self::min_gridsize();
             let max_grid = Self::max_gridsize();
             ui.horizontal(|ui| {
@@ -232,7 +281,6 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
             ui.separator(); // -------------------------------------------------
 
             for (name, clip) in self.rule.library().into_iter() {
-                // TODO: paint clipboard content
                 if ui.button(name).clicked() {
                     self.clipboard = Some(clip)
                 }
@@ -246,6 +294,13 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> eframe::App for App<N, R, B> {
         }).response;
 
         self.cursor_is_on_sidepanel = sidepanel_response.hovered();
+
+        // TODO: deserialize if cursor is on central panel
+        if ! self.cursor_is_on_sidepanel {
+            if let Err(e) = self.load_from_dropped_file(ctx) {
+                self.err = Some(format!("{:?}", e));
+            }
+        }
 
         if ! self.cursor_is_on_sidepanel {
             if let Some(multi_touch) = ctx.multi_touch() {
