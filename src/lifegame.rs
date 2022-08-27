@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize, std::fmt::Debug)]
 pub enum LifeGameState {
+    #[serde(rename = "0")]
     Dead,
+    #[serde(rename = "1")]
     Alive,
 }
 
