@@ -3,8 +3,8 @@ use crate::rule::{Neighbors, Rule, State};
 
 use anyhow::anyhow;
 use anyhow::Context as _;
-use serde::{Deserialize, Serialize};
 use rand::SeedableRng;
+use serde::{Deserialize, Serialize};
 
 // TODO: We derive Deserialize/Serialize so we can persist app state on shutdown.
 
@@ -33,7 +33,7 @@ pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
 
     pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
     pub(crate) secondary_start: Option<(usize, usize)>,
-    pub(crate) secondary_curr:  Option<(usize, usize)>,
+    pub(crate) secondary_curr: Option<(usize, usize)>,
     pub(crate) selected_region: Option<((usize, usize), (usize, usize))>,
 }
 
@@ -70,14 +70,26 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
             cursor_is_on_sidepanel: false,
             clipboard: None,
             secondary_start: None,
-            secondary_curr:  None,
+            secondary_curr: None,
             selected_region: None,
         }
     }
 }
 
+pub struct Clicked {
+    primary: Option<(usize, usize)>,
+    secondary: Option<(usize, usize)>,
+}
+impl Clicked {
+    fn new(primary: Option<(usize, usize)>, secondary: Option<(usize, usize)>) -> Self {
+        Self { primary, secondary }
+    }
+}
+
 impl<N: Neighbors, R: Rule<N>, B> App<N, R, B>
-where for<'de> B: Board<N, R> + Deserialize<'de> {
+where
+    for<'de> B: Board<N, R> + Deserialize<'de>,
+{
     pub fn new(rule: R) -> Self {
         let mut board = B::new(4, 3);
         board.clear(&rule).expect("default construction must not fail");
@@ -106,12 +118,10 @@ where for<'de> B: Board<N, R> + Deserialize<'de> {
     ///
     /// If no button is pressed or pressed position is out of board, it returns `NotClicked`.
     /// Otherwise, it returns which cell is clicked.
-    pub fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2)
-        -> (Option<(usize, usize)>, Option<(usize, usize)>) {
-
+    pub fn clicked(&self, ctx: &egui::Context, region_min: egui::Pos2) -> Clicked {
         let pointer = &ctx.input().pointer;
         if !pointer.primary_down() && !pointer.secondary_down() {
-            return (None, None);
+            return Clicked::new(None, None);
         }
 
         let pos = pointer
@@ -124,9 +134,9 @@ where for<'de> B: Board<N, R> + Deserialize<'de> {
         if let Some((ix, iy)) = self.board.clicked(dx, dy, self.grid_width) {
             let p = if pointer.primary_down() { Some((ix, iy)) } else { None };
             let s = if pointer.secondary_down() { Some((ix, iy)) } else { None };
-            (p, s)
+            Clicked::new(p, s)
         } else {
-            (None, None)
+            Clicked::new(None, None)
         }
     }
 
@@ -149,13 +159,16 @@ where for<'de> B: Board<N, R> + Deserialize<'de> {
         } else {
             Err(anyhow!(
                 "only json deserializaion is supported. file \"{:?}\" ignored",
-                dropped_files.into_iter().map(|f| f.name).collect::<Vec<String>>()))
+                dropped_files.into_iter().map(|f| f.name).collect::<Vec<String>>()
+            ))
         }
     }
 }
 
 impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
-    where for<'de> B: Board<N, R> + Serialize + Deserialize<'de> {
+where
+    for<'de> B: Board<N, R> + Serialize + Deserialize<'de>,
+{
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
         //         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -168,141 +181,147 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
             }
         }
 
-        let sidepanel_response = egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            ui.push_id(0, |ui| {
-                egui_extras::TableBuilder::new(ui)
-                    .column(egui_extras::Size::initial(100.0))
-                    .column(egui_extras::Size::remainder())
-                    .header(24.0, |mut header| {
-                        header.col(|ui| {
-                            ui.heading("operation");
+        let sidepanel_response = egui::SidePanel::left("side_panel")
+            .show(ctx, |ui| {
+                ui.push_id(0, |ui| {
+                    egui_extras::TableBuilder::new(ui)
+                        .column(egui_extras::Size::initial(100.0))
+                        .column(egui_extras::Size::remainder())
+                        .header(24.0, |mut header| {
+                            header.col(|ui| {
+                                ui.heading("operation");
+                            });
+                            header.col(|ui| {
+                                ui.heading("effect");
+                            });
+                        })
+                        .body(|mut body| {
+                            body.row(32.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label("left click & drag");
+                                });
+                                row.col(|ui| {
+                                    ui.label("change state of a cell clicked");
+                                });
+                            });
+                            body.row(32.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label("wheel click & drag");
+                                });
+                                row.col(|ui| {
+                                    ui.label("grab the board and move it");
+                                });
+                            });
+                            body.row(32.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label("right click");
+                                });
+                                row.col(|ui| {
+                                    ui.label("modify cell state");
+                                });
+                            });
                         });
-                        header.col(|ui| {
-                            ui.heading("effect");
-                        });
-                    })
-                    .body(|mut body| {
-                        body.row(32.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label("left click & drag");
-                            });
-                            row.col(|ui| {
-                                ui.label("change state of a cell clicked");
-                            });
-                        });
-                        body.row(32.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label("wheel click & drag");
-                            });
-                            row.col(|ui| {
-                                ui.label("grab the board and move it");
-                            });
-                        });
-                        body.row(32.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label("right click");
-                            });
-                            row.col(|ui| {
-                                ui.label("modify cell state");
-                            });
-                        });
-                    });
-            });
-
-            ui.separator(); // -------------------------------------------------
-
-            ui.horizontal_wrapped(|ui| {
-                ui.toggle_value(&mut self.running, "Run");
-
-                if ui.button("Step").clicked() {
-                    if let Err(e) = self.board.update(&self.rule) {
-                        self.err = Some(format!("{:?}", e));
-                    }
-                    ui.ctx().request_repaint();
-                }
-                if ui.button("Reset").clicked() {
-                    if let Err(e) = self.board.clear(&self.rule) {
-                        self.err = Some(format!("{:?}", e));
-                    }
-                }
-                if ui.button("Randomize").clicked() {
-                    if let Err(e) = self.board.randomize(&self.rule, &mut self.rng) {
-                        self.err = Some(format!("{:?}", e));
-                    }
-                }
-            });
-
-            ui.separator(); // -------------------------------------------------
-
-            if ui.button("serialize").clicked() {
-                self.serdes_buffer = Some(serde_json::to_string(&self.board).expect("TODO: serde"));
-            }
-            if let Some(sb) = self.serdes_buffer.as_mut() {
-                let mut open = true;
-                egui::Window::new("Serialize").open(&mut open).show(ctx, |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.add(egui::TextEdit::multiline(sb)
-                            .code_editor()
-                            .desired_width(f32::INFINITY));
-                    });
                 });
-                if !open {
-                    self.serdes_buffer = None;
+
+                ui.separator(); // -------------------------------------------------
+
+                ui.horizontal_wrapped(|ui| {
+                    ui.toggle_value(&mut self.running, "Run");
+
+                    if ui.button("Step").clicked() {
+                        if let Err(e) = self.board.update(&self.rule) {
+                            self.err = Some(format!("{:?}", e));
+                        }
+                        ui.ctx().request_repaint();
+                    }
+                    if ui.button("Reset").clicked() {
+                        if let Err(e) = self.board.clear(&self.rule) {
+                            self.err = Some(format!("{:?}", e));
+                        }
+                    }
+                    if ui.button("Randomize").clicked() {
+                        if let Err(e) = self.board.randomize(&self.rule, &mut self.rng) {
+                            self.err = Some(format!("{:?}", e));
+                        }
+                    }
+                });
+
+                ui.separator(); // -------------------------------------------------
+
+                if ui.button("serialize").clicked() {
+                    self.serdes_buffer =
+                        Some(serde_json::to_string(&self.board).expect("TODO: serde"));
                 }
-            }
-
-            ui.separator(); // -------------------------------------------------
-
-            let min_grid = Self::min_gridsize();
-            let max_grid = Self::max_gridsize();
-            ui.horizontal(|ui| {
-                ui.add(
-                    egui::Slider::new(&mut self.grid_width, min_grid..=max_grid).text("grid_width"),
-                );
-                ui.checkbox(&mut self.fix_grid_size, "Fix Grid Size");
-            });
-            ui.checkbox(&mut self.fix_board_size, "Fix Board Size");
-
-            ui.label("On browser, PC trackpad does not work. Instead, change click mode.");
-            ui.radio_value(&mut self.click_mode, ClickMode::Normal, "Normal mode");
-            ui.radio_value(&mut self.click_mode, ClickMode::Grab, "Grab mode");
-            ui.radio_value(&mut self.click_mode, ClickMode::Inspect, "Inspect mode");
-
-            ui.separator();
-            ui.label("status:");
-            ui.label(format!("current cells: {}x{}", self.board.width(), self.board.height()));
-            ui.label(format!(
-                "current chunks: {}x{}",
-                self.board.n_chunks_x(),
-                self.board.n_chunks_y()
-            ));
-            ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
-
-            ui.separator(); // -------------------------------------------------
-
-            for (name, clip) in self.rule.library().into_iter() {
-                if ui.button(name).clicked() {
-                    self.clipboard = Some(clip)
+                if let Some(sb) = self.serdes_buffer.as_mut() {
+                    let mut open = true;
+                    egui::Window::new("Serialize").open(&mut open).show(ctx, |ui| {
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            ui.add(
+                                egui::TextEdit::multiline(sb)
+                                    .code_editor()
+                                    .desired_width(f32::INFINITY),
+                            );
+                        });
+                    });
+                    if !open {
+                        self.serdes_buffer = None;
+                    }
                 }
-            }
 
-            // we can only know the cursor hovers on sidepanel after drawing
-            // sidepanel, so we use the status of the last frame
-            if let Err(e) = self.rule.ui(ui, ctx, self.cursor_is_on_sidepanel) {
-                self.err = Some(format!("{:?}", e));
-            }
-        }).response;
+                ui.separator(); // -------------------------------------------------
+
+                let min_grid = Self::min_gridsize();
+                let max_grid = Self::max_gridsize();
+                ui.horizontal(|ui| {
+                    ui.add(
+                        egui::Slider::new(&mut self.grid_width, min_grid..=max_grid)
+                            .text("grid_width"),
+                    );
+                    ui.checkbox(&mut self.fix_grid_size, "Fix Grid Size");
+                });
+                ui.checkbox(&mut self.fix_board_size, "Fix Board Size");
+
+                ui.label("On browser, PC trackpad does not work. Instead, change click mode.");
+                ui.radio_value(&mut self.click_mode, ClickMode::Normal, "Normal mode");
+                ui.radio_value(&mut self.click_mode, ClickMode::Grab, "Grab mode");
+                ui.radio_value(&mut self.click_mode, ClickMode::Inspect, "Inspect mode");
+
+                ui.separator();
+                ui.label("status:");
+                ui.label(format!("current cells: {}x{}", self.board.width(), self.board.height()));
+                ui.label(format!(
+                    "current chunks: {}x{}",
+                    self.board.n_chunks_x(),
+                    self.board.n_chunks_y()
+                ));
+                ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
+
+                ui.separator(); // -------------------------------------------------
+
+                for (name, clip) in self.rule.library().into_iter() {
+                    if ui.button(name).clicked() {
+                        self.clipboard = Some(clip)
+                    }
+                }
+
+                // we can only know the cursor hovers on sidepanel after drawing
+                // sidepanel, so we use the status of the last frame
+                if let Err(e) = self.rule.ui(ui, ctx, self.cursor_is_on_sidepanel) {
+                    self.err = Some(format!("{:?}", e));
+                }
+            })
+            .response;
 
         self.cursor_is_on_sidepanel = sidepanel_response.hovered();
 
         // TODO: deserialize if cursor is on central panel
-        if ! self.cursor_is_on_sidepanel {
+        if !self.cursor_is_on_sidepanel {
             if let Err(e) = self.load_from_dropped_file(ctx) {
                 self.err = Some(format!("{:?}", e));
             }
         }
 
-        if ! self.cursor_is_on_sidepanel {
+        if !self.cursor_is_on_sidepanel {
             if let Some(multi_touch) = ctx.multi_touch() {
                 if self.grabbed {
                     self.origin -= multi_touch.translation_delta;
@@ -318,7 +337,9 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                 if self.grabbed {
                     self.origin -= pointer.delta();
                 }
-                if pointer.middle_down() || (self.click_mode == ClickMode::Grab && pointer.any_down()) {
+                if pointer.middle_down()
+                    || (self.click_mode == ClickMode::Grab && pointer.any_down())
+                {
                     self.grabbed = true;
                 } else {
                     self.grabbed = false;
@@ -428,8 +449,8 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
             // ----------------------------------------------------------------
             // handle left/right click
 
-            if ! self.cursor_is_on_sidepanel {
-                let (primary, secondary) = self.clicked(ctx, region.min);
+            if !self.cursor_is_on_sidepanel {
+                let Clicked { primary, secondary } = self.clicked(ctx, region.min);
 
                 // stop running and inspect cell state by right click
                 if self.click_mode == ClickMode::Inspect {
@@ -450,18 +471,16 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                     let min = (sx.min(ex), sy.min(ey));
                     let max = (sx.max(ex), sy.max(ey));
                     self.selected_region = Some((min, max));
-
                 } else if primary.is_some() {
-
                     self.selected_region = None; // reset
                     self.clipboard = None;
-
                 } else if primary.is_none() && secondary.is_none() {
                     self.cell_modifying = None;
 
                     if let Some((sx, sy)) = self.secondary_start {
                         // set selected region
-                        let (ex, ey) = self.secondary_curr
+                        let (ex, ey) = self
+                            .secondary_curr
                             .expect("when secondary_start is some, curr is always some");
 
                         // if the pointer did not move, open inspector
@@ -483,21 +502,15 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                         painter.add(epaint::CircleShape::stroke(
                             c,
                             r,
-                            epaint::Stroke {
-                                width: 5.0,
-                                color: egui::Color32::WHITE
-                            },
+                            epaint::Stroke { width: 5.0, color: egui::Color32::WHITE },
                         ));
                         painter.add(epaint::CircleShape::stroke(
                             c,
                             r,
-                            epaint::Stroke {
-                                width: 2.0,
-                                color: egui::Color32::BLACK
-                            },
+                            epaint::Stroke { width: 2.0, color: egui::Color32::BLACK },
                         ));
-
-                    } else { // show the corresponding region
+                    } else {
+                        // show the corresponding region
 
                         let min = self.board.location(sx, sy, self.origin, region.min, delta);
                         let max = self.board.location(ex, ey, self.origin, region.min, delta);
@@ -509,16 +522,12 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                         painter.add(epaint::RectShape::stroke(
                             epaint::Rect { min, max },
                             epaint::Rounding::same(r),
-                            epaint::Stroke {
-                                width: 5.0, color: egui::Color32::WHITE
-                            },
+                            epaint::Stroke { width: 5.0, color: egui::Color32::WHITE },
                         ));
                         painter.add(epaint::RectShape::stroke(
                             epaint::Rect { min, max },
                             epaint::Rounding::same(r),
-                            epaint::Stroke {
-                                width: 2.0, color: egui::Color32::BLACK
-                            },
+                            epaint::Stroke { width: 2.0, color: egui::Color32::BLACK },
                         ));
                     }
                 }
@@ -534,9 +543,7 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                         self.inspector = None;
                         self.selected_region = None;
                     }
-
                 } else if let Some(((sx, sy), (ex, ey))) = self.selected_region {
-
                     // when copy, cut, or delete is performed, selected region dissapears.
                     let (copy, cut, del) = {
                         let mut input_state = ctx.input_mut();
@@ -546,8 +553,8 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
 
                         let c = input_state.consume_key(command, egui::Key::C);
                         let x = input_state.consume_key(command, egui::Key::X);
-                        let d = input_state.consume_key(egui::Modifiers::NONE, egui::Key::Delete) ||
-                                input_state.consume_key(egui::Modifiers::NONE, egui::Key::Backspace);
+                        let d = input_state.consume_key(egui::Modifiers::NONE, egui::Key::Delete)
+                            || input_state.consume_key(egui::Modifiers::NONE, egui::Key::Backspace);
                         (c, x, d)
                     };
 
@@ -581,7 +588,6 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                             }
                         }
                     }
-
                 } else if let Some((ix, iy)) = primary {
                     // draw cell using `cell_modifying`
 
@@ -615,7 +621,10 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                 // paint clipboard on top of current board with alpha
 
                 let cursor_pos = {
-                    let pos = &ctx.input().pointer.interact_pos()
+                    let pos = &ctx
+                        .input()
+                        .pointer
+                        .interact_pos()
                         .unwrap_or(egui::Pos2::new(-f32::INFINITY, -f32::INFINITY));
                     let dx = pos.x - region.min.x + self.origin.x;
                     let dy = pos.y - region.min.y + self.origin.y;
@@ -624,14 +633,20 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                 };
 
                 if let Some((cursor_x, cursor_y)) = cursor_pos {
-
                     if let Some(cb) = self.clipboard.as_ref() {
                         let ofs_x = cursor_x - cb.width() / 2;
                         let ofs_y = cursor_y - cb.height() / 2;
 
                         if let Err(e) = self.board.paint_clipboard(
-                            &painter, self.origin, delta, &self.rule,
-                            ofs_x, ofs_y, cb, 0.5) {
+                            &painter,
+                            self.origin,
+                            delta,
+                            &self.rule,
+                            ofs_x,
+                            ofs_y,
+                            cb,
+                            0.5,
+                        ) {
                             self.err = Some(format!("{:?}", e));
                         }
                     }
@@ -650,33 +665,41 @@ impl<N: Neighbors, R: Rule<N>, B> eframe::App for App<N, R, B>
                             if ofs_x < 0 {
                                 let d = ofs_x.abs() / CHUNK_LEN as isize;
                                 let m = ofs_x.abs() % CHUNK_LEN as isize;
-                                let n = if m == 0 {d} else {d + 1};
+                                let n = if m == 0 { d } else { d + 1 };
                                 self.board.expand_x(-n, st.clone());
                                 ofs_x += n * CHUNK_LEN as isize;
                             }
                             if self.board.width() as isize <= ofs_x + cb.width() as isize {
-                                let d = (ofs_x + cb.width() as isize - self.board.width() as isize) / CHUNK_LEN as isize;
-                                let m = (ofs_x + cb.width() as isize - self.board.width() as isize) % CHUNK_LEN as isize;
-                                let n = if m == 0 {d} else {d + 1};
+                                let d = (ofs_x + cb.width() as isize - self.board.width() as isize)
+                                    / CHUNK_LEN as isize;
+                                let m = (ofs_x + cb.width() as isize - self.board.width() as isize)
+                                    % CHUNK_LEN as isize;
+                                let n = if m == 0 { d } else { d + 1 };
                                 self.board.expand_x(n, st.clone());
                             }
 
                             if ofs_y < 0 {
                                 let d = ofs_y.abs() / CHUNK_LEN as isize;
                                 let m = ofs_y.abs() % CHUNK_LEN as isize;
-                                let n = if m == 0 {d} else {d + 1};
+                                let n = if m == 0 { d } else { d + 1 };
                                 self.board.expand_y(-n, st.clone());
                                 ofs_y += n * CHUNK_LEN as isize;
                             }
                             if self.board.height() as isize <= ofs_y + cb.height() as isize {
-                                let d = (ofs_y + cb.height() as isize - self.board.height() as isize) / CHUNK_LEN as isize;
-                                let m = (ofs_y + cb.height() as isize - self.board.height() as isize) % CHUNK_LEN as isize;
-                                let n = if m == 0 {d} else {d + 1};
-                                self.board.expand_y(n, st.clone());
+                                let d = (ofs_y + cb.height() as isize
+                                    - self.board.height() as isize)
+                                    / CHUNK_LEN as isize;
+                                let m = (ofs_y + cb.height() as isize
+                                    - self.board.height() as isize)
+                                    % CHUNK_LEN as isize;
+                                let n = if m == 0 { d } else { d + 1 };
+                                self.board.expand_y(n, st);
                             }
 
                             // see the current position
-                            if let Err(e) = self.board.paste_clipboard(ofs_x as usize, ofs_y as usize, cb) {
+                            if let Err(e) =
+                                self.board.paste_clipboard(ofs_x as usize, ofs_y as usize, cb)
+                            {
                                 self.err = Some(format!("{:?}", e));
                             }
                         }

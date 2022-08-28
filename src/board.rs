@@ -43,8 +43,8 @@
 /// ```
 use crate::rule::{Neighbors, Rule, State};
 use rand::Rng;
-use thiserror::Error;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 pub(crate) const CHUNK_LEN: usize = 16;
 pub(crate) const CHUNK_SIZE: usize = CHUNK_LEN * CHUNK_LEN;
@@ -575,7 +575,7 @@ where
         alpha: f32,
     ) -> anyhow::Result<()> {
         let region = painter.clip_rect();
-        let alpha  = (256.0 * alpha).clamp(0.0, 255.0) as u8;
+        let alpha = (256.0 * alpha).clamp(0.0, 255.0) as u8;
 
         let cell_begin_x = xofs;
         let cell_begin_y = yofs;
@@ -600,7 +600,11 @@ where
                 if let Some(cell) = clip_board.cell_at(i, j) {
                     let color = rule.color(cell)?;
                     let color = egui::Color32::from_rgba_premultiplied(
-                        color.r(), color.g(), color.b(), alpha);
+                        color.r(),
+                        color.g(),
+                        color.b(),
+                        alpha,
+                    );
 
                     painter.add(epaint::RectShape::filled(
                         egui::Rect {
@@ -813,7 +817,7 @@ where
         alpha: f32,
     ) -> anyhow::Result<()> {
         let region = painter.clip_rect();
-        let alpha  = (256.0 * alpha).clamp(0.0, 255.0) as u8;
+        let alpha = (256.0 * alpha).clamp(0.0, 255.0) as u8;
 
         let cell_begin_x = xofs;
         let cell_begin_y = yofs;
@@ -841,13 +845,13 @@ where
                 if let Some(cell) = clip_board.cell_at(i, j) {
                     let color = rule.color(cell)?;
                     let color = egui::Color32::from_rgba_premultiplied(
-                        color.r(), color.g(), color.b(), alpha);
+                        color.r(),
+                        color.g(),
+                        color.b(),
+                        alpha,
+                    );
 
-                    painter.add(epaint::CircleShape::filled(
-                        egui::Pos2 { x, y },
-                        r,
-                        color,
-                    ));
+                    painter.add(epaint::CircleShape::filled(egui::Pos2 { x, y }, r, color));
                 }
             }
         }

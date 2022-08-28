@@ -95,7 +95,12 @@ impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
         Ok(if n_wins >= self.threshold { wins } else { center })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context, _on_side_panel: bool) -> anyhow::Result<()> {
+    fn ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        _ctx: &egui::Context,
+        _on_side_panel: bool,
+    ) -> anyhow::Result<()> {
         ui.label("Grid Color");
         egui::widgets::color_picker::color_edit_button_srgba(
             ui,

@@ -1,5 +1,5 @@
-use rand::Rng;
 use crate::board::ClipBoard;
+use rand::Rng;
 
 /// State of a cell.
 ///
@@ -66,7 +66,12 @@ pub trait Rule<N: Neighbors>: Default {
         Vec::new()
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, on_side_panel: bool) -> anyhow::Result<()>;
+    fn ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        ctx: &egui::Context,
+        on_side_panel: bool,
+    ) -> anyhow::Result<()>;
 }
 
 /// Index of neighboring cells.

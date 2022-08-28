@@ -336,7 +336,12 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
         Ok(Self::CellState { value })
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, on_side_panel: bool) -> anyhow::Result<()> {
+    fn ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        ctx: &egui::Context,
+        on_side_panel: bool,
+    ) -> anyhow::Result<()> {
         egui::ScrollArea::vertical().show(ui, |ui| {
             ui.label("Background Color");
             egui::widgets::color_picker::color_edit_button_srgba(
@@ -441,11 +446,13 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
         // load file content and compile the code if file is dropped on side panel
         if on_side_panel {
             let dropped_files = ctx.input().raw.dropped_files.clone();
-            if !dropped_files.is_empty() && !dropped_files.iter().any(|f| f.name.ends_with(".rhai")) {
+            if !dropped_files.is_empty() && !dropped_files.iter().any(|f| f.name.ends_with(".rhai"))
+            {
                 return Err(DynamicRuleError::FileError(
                     "source file should ends with `.rhai`. file ignored".to_string(),
                     dropped_files[0].name.clone(),
-                ).into());
+                )
+                .into());
             }
 
             if let Some(file) = dropped_files.into_iter().find(|f| f.name.ends_with(".rhai")) {
