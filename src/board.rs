@@ -373,6 +373,7 @@ pub trait Board<N: Neighbors, R: Rule<N>> {
         origin: egui::Pos2,
         cell_width: f32,
         rule: &R,
+        alpha: f32,
     ) -> anyhow::Result<()>;
 
     #[allow(clippy::too_many_arguments)]
@@ -518,7 +519,9 @@ where
         origin: egui::Pos2,
         cell_width: f32,
         rule: &R,
+        alpha: f32,
     ) -> anyhow::Result<()> {
+        let alpha = (256.0 * alpha).clamp(0.0, 255.0) as u8;
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
@@ -548,13 +551,20 @@ where
                 if !self.grid.has_cell(i, j) {
                     continue;
                 }
+                let color = rule.color(self.grid.cell_at(i, j))?;
+                let color = egui::Color32::from_rgba_premultiplied(
+                    color.r(),
+                    color.g(),
+                    color.b(),
+                    alpha,
+                );
                 painter.add(epaint::RectShape::filled(
                     egui::Rect {
                         min: egui::Pos2 { x: x0, y: y0 },
                         max: egui::Pos2 { x: x1, y: y1 },
                     },
                     egui::Rounding::none(),
-                    rule.color(self.grid.cell_at(i, j))?,
+                    color,
                 ));
             }
         }
@@ -760,7 +770,9 @@ where
         origin: egui::Pos2,
         cell_width: f32,
         rule: &R,
+        alpha: f32,
     ) -> anyhow::Result<()> {
+        let alpha = (256.0 * alpha).clamp(0.0, 255.0) as u8;
         let region = painter.clip_rect();
         let regsize = region.max - region.min;
 
@@ -793,10 +805,17 @@ where
                 }
                 let x = xofs + (i as f32) * diameter - origin.x + region.min.x;
 
+                let color = rule.color(self.grid.cell_at(i, j))?;
+                let color = egui::Color32::from_rgba_premultiplied(
+                    color.r(),
+                    color.g(),
+                    color.b(),
+                    alpha,
+                );
                 painter.add(epaint::CircleShape::filled(
                     egui::Pos2 { x, y },
                     r,
-                    rule.color(self.grid.cell_at(i, j))?,
+                    color,
                 ));
             }
         }
