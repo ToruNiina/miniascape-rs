@@ -42,13 +42,6 @@ pub trait Rule<N: Neighbors>: Default {
     /// The next state. It will be used to change the state of a cell from GUI
     fn next(&self, st: Self::CellState) -> anyhow::Result<Self::CellState>;
 
-    /// Returns coordinates of neighboring cells.
-    /// It takes not only the center cell coordinate but also the width and height
-    /// of the current board to support boundary conditions.
-    fn neighbors(x: isize, y: isize, w: isize, h: isize) -> N::Neighborhood {
-        N::neighbors(x, y, w, h)
-    }
-
     /// Update the center cell using the neighboring cells.
     fn update(
         &self,
