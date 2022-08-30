@@ -293,7 +293,7 @@ impl<T: State> Grid<T> {
                         for i in 0..CHUNK_LEN {
                             let x = x0 + i;
                             let y = y0 + j;
-                            let idxs = R::neighbors(
+                            let idxs = N::neighbors(
                                 x as isize,
                                 y as isize,
                                 self.width() as isize,
