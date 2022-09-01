@@ -6,8 +6,6 @@ use anyhow::Context as _;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-// TODO: We derive Deserialize/Serialize so we can persist app state on shutdown.
-
 /// An application to manage a cell automaton.
 ///
 /// Several application can run at the same time but only the focused app will
@@ -314,7 +312,6 @@ where
 
         self.cursor_is_on_sidepanel = sidepanel_response.hovered();
 
-        // TODO: deserialize if cursor is on central panel
         if !self.cursor_is_on_sidepanel {
             if let Err(e) = self.load_from_dropped_file(ctx) {
                 self.err = Some(format!("{:?}", e));
