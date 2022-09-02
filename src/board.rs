@@ -124,6 +124,14 @@ impl<T: State> Grid<T> {
             buffer: vec![Chunk::default(); x_chunks * y_chunks],
         }
     }
+    pub fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
+        Self {
+            num_chunks_x: x_chunks,
+            num_chunks_y: y_chunks,
+            chunks: vec![Chunk::init(i.clone()); x_chunks * y_chunks],
+            buffer: vec![Chunk::init(i); x_chunks * y_chunks],
+        }
+    }
 
     /// The number of Cells, not chunks.
     pub fn width(&self) -> usize {
@@ -324,6 +332,7 @@ impl<T: State> Grid<T> {
 ///
 pub trait Board<N: Neighbors, R: Rule<N>> {
     fn new(x_chunks: usize, y_chunks: usize) -> Self;
+    fn init(x_chunks: usize, y_chunks: usize, i: R::CellState) -> Self;
     fn width(&self) -> usize;
     fn height(&self) -> usize;
 
@@ -412,6 +421,9 @@ where
 {
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
         Self { grid: Grid::new(x_chunks, y_chunks) }
+    }
+    fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
+        Self { grid: Grid::init(x_chunks, y_chunks, i) }
     }
 
     fn width(&self) -> usize {
@@ -654,6 +666,9 @@ where
 {
     fn new(x_chunks: usize, y_chunks: usize) -> Self {
         Self { grid: Grid::new(x_chunks, y_chunks) }
+    }
+    fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
+        Self { grid: Grid::init(x_chunks, y_chunks, i) }
     }
 
     fn width(&self) -> usize {
