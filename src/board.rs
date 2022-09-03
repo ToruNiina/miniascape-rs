@@ -564,12 +564,8 @@ where
                     continue;
                 }
                 let color = rule.color(self.grid.cell_at(i, j))?;
-                let color = egui::Color32::from_rgba_premultiplied(
-                    color.r(),
-                    color.g(),
-                    color.b(),
-                    alpha,
-                );
+                let color =
+                    egui::Color32::from_rgba_premultiplied(color.r(), color.g(), color.b(), alpha);
                 painter.add(epaint::RectShape::filled(
                     egui::Rect {
                         min: egui::Pos2 { x: x0, y: y0 },
@@ -821,17 +817,9 @@ where
                 let x = xofs + (i as f32) * diameter - origin.x + region.min.x;
 
                 let color = rule.color(self.grid.cell_at(i, j))?;
-                let color = egui::Color32::from_rgba_premultiplied(
-                    color.r(),
-                    color.g(),
-                    color.b(),
-                    alpha,
-                );
-                painter.add(epaint::CircleShape::filled(
-                    egui::Pos2 { x, y },
-                    r,
-                    color,
-                ));
+                let color =
+                    egui::Color32::from_rgba_premultiplied(color.r(), color.g(), color.b(), alpha);
+                painter.add(epaint::CircleShape::filled(egui::Pos2 { x, y }, r, color));
             }
         }
         Ok(())
