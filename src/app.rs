@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use anyhow::Context as _;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
 /// An application to manage a cell automaton.
 ///
@@ -12,6 +13,7 @@ use serde::{Deserialize, Serialize};
 /// be updated its state and others will be paused.
 ///
 pub struct App<N: Neighbors, R: Rule<N>, B: Board<N, R>> {
+    pub(crate) neighbors: PhantomData<N>,
     pub(crate) rule: R,
     pub(crate) board: B,
     pub(crate) fix_board_size: bool,
@@ -50,6 +52,7 @@ impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
         let mut board = B::new(4, 3);
         board.clear(&rule).expect("default construction must not fail");
         Self {
+            neighbors: PhantomData,
             rule,
             board,
             fix_board_size: false,
