@@ -442,7 +442,7 @@ where
             // ----------------------------------------------------------------
             // draw board to the central panel
 
-            if let Err(e) = self.board.paint(&painter, self.origin, delta, &self.rule, 0.0) {
+            if let Err(e) = self.board.paint(&painter, self.origin, delta, &self.rule, 1.0) {
                 self.err = Some(format!("{:?}", e));
             }
 
