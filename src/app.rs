@@ -49,7 +49,8 @@ pub(crate) enum ClickMode {
 impl<N: Neighbors, R: Rule<N>, B: Board<N, R>> Default for App<N, R, B> {
     fn default() -> Self {
         let rule = R::default();
-        let mut board = B::new(4, 3);
+        let init = rule.default_state().unwrap_or(R::CellState::default());
+        let mut board = B::init(4, 3, init);
         board.clear(&rule).expect("default construction must not fail");
         Self {
             neighbors: PhantomData,
@@ -92,7 +93,8 @@ where
     for<'de> B: Board<N, R> + Deserialize<'de>,
 {
     pub fn new(rule: R) -> Self {
-        let mut board = B::new(4, 3);
+        let init = rule.default_state().unwrap_or(R::CellState::default());
+        let mut board = B::init(4, 3, init);
         board.clear(&rule).expect("default construction must not fail");
         Self {
             rule,
