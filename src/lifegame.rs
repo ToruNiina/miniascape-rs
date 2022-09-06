@@ -28,7 +28,9 @@ impl State for LifeGameState {
 
 // ---------------------------------------------------------------------------
 
-pub struct LifeGameRule {
+pub struct LifeGameRule<N> {
+    neighbors: std::marker::PhantomData<N>,
+
     background: egui::Color32,
     alive_color: egui::Color32,
     dead_color: egui::Color32,
@@ -36,7 +38,7 @@ pub struct LifeGameRule {
     library: Vec<(String, ClipBoard<LifeGameState>)>,
 }
 
-impl Default for LifeGameRule {
+impl<N> Default for LifeGameRule<N> {
     #[rustfmt::skip]
     fn default() -> Self {
         let alive = Some(LifeGameState::Alive);
@@ -46,6 +48,7 @@ impl Default for LifeGameRule {
             alive, alive, alive,
         ]).expect("3x3=9");
         Self {
+            neighbors: std::marker::PhantomData,
             background: egui::Color32::from_rgb(24, 128, 24),
             alive_color: egui::Color32::from_rgb(24, 255, 24),
             dead_color: egui::Color32::from_rgb(24, 24, 24),
@@ -54,8 +57,9 @@ impl Default for LifeGameRule {
     }
 }
 
-impl<N: Neighbors> Rule<N> for LifeGameRule {
+impl<N: Neighbors> Rule for LifeGameRule<N> {
     type CellState = LifeGameState;
+    type Neighborhood = N;
 
     fn background(&self) -> egui::Color32 {
         self.background
@@ -141,15 +145,18 @@ impl<N: Neighbors> Rule<N> for LifeGameRule {
 
 // ---------------------------------------------------------------------------
 
-pub struct HighLifeRule {
+pub struct HighLifeRule<N> {
+    neighbors: std::marker::PhantomData<N>,
+
     background: egui::Color32,
     alive_color: egui::Color32,
     dead_color: egui::Color32,
 }
 
-impl Default for HighLifeRule {
+impl<N> Default for HighLifeRule<N> {
     fn default() -> Self {
         Self {
+            neighbors: std::marker::PhantomData,
             background: egui::Color32::from_rgb(24, 128, 24),
             alive_color: egui::Color32::from_rgb(24, 255, 24),
             dead_color: egui::Color32::from_rgb(24, 24, 24),
@@ -157,8 +164,9 @@ impl Default for HighLifeRule {
     }
 }
 
-impl<N: Neighbors> Rule<N> for HighLifeRule {
+impl<N: Neighbors> Rule for HighLifeRule<N> {
     type CellState = LifeGameState;
+    type Neighborhood = N;
 
     fn background(&self) -> egui::Color32 {
         self.background
@@ -246,7 +254,9 @@ impl<N: Neighbors> Rule<N> for HighLifeRule {
 
 // ----------------------------------------------------------------------------
 
-pub struct LifeLikeGameRule {
+pub struct LifeLikeGameRule<N> {
+    neighbors: std::marker::PhantomData<N>,
+
     survive: ArrayVec<u32, 9>, // number of neighboring cells is in [0, 8]
     birth: ArrayVec<u32, 9>,
 
@@ -258,7 +268,7 @@ pub struct LifeLikeGameRule {
     dead_color: egui::Color32,
 }
 
-impl Default for LifeLikeGameRule {
+impl<N> Default for LifeLikeGameRule<N> {
     fn default() -> Self {
         let mut survive = ArrayVec::new();
         survive.push(2_u32);
@@ -268,6 +278,7 @@ impl Default for LifeLikeGameRule {
         birth.push(3_u32);
 
         Self {
+            neighbors: std::marker::PhantomData,
             survive,
             birth,
             rule: "23/3".to_string(),
@@ -279,7 +290,7 @@ impl Default for LifeLikeGameRule {
     }
 }
 
-impl LifeLikeGameRule {
+impl<N> LifeLikeGameRule<N> {
     pub fn new(survive: Vec<u32>, birth: Vec<u32>) -> Self {
         let rule = format!(
             "{}/{}",
@@ -287,6 +298,7 @@ impl LifeLikeGameRule {
             birth.iter().fold("".to_string(), |acc, x| acc + x.to_string().as_str())
         );
         Self {
+            neighbors: std::marker::PhantomData,
             survive: ArrayVec::from_iter(survive.into_iter()),
             birth: ArrayVec::from_iter(birth.into_iter()),
             rule,
@@ -326,8 +338,9 @@ impl LifeLikeGameRule {
     }
 }
 
-impl<N: Neighbors> Rule<N> for LifeLikeGameRule {
+impl<N: Neighbors> Rule for LifeLikeGameRule<N> {
     type CellState = LifeGameState;
+    type Neighborhood = N;
 
     fn background(&self) -> egui::Color32 {
         self.background

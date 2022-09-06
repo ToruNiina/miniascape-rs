@@ -23,14 +23,11 @@ pub trait State: Clone + Default + std::fmt::Debug {
 /// most of the functions *can fail*. For example, it fails if the rhai script contains
 /// a syntax error.
 ///
-/// Rule function itself does not use Neighbors, but it is kept for checking if the rule
-/// can be applied to a neighborhood, like:
-///  - wireworld should use moore neighborhood
-///  - gray-scott should use von neumann neighborhood
-///
-pub trait Rule<N: Neighbors>: Default {
+pub trait Rule: Default {
     /// Corresponding cell state.
     type CellState: State;
+
+    type Neighborhood: Neighbors;
 
     /// Background color.
     fn background(&self) -> egui::Color32;

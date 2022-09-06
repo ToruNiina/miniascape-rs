@@ -23,7 +23,8 @@ impl State for RockPaperScissorsState {
     }
 }
 
-pub struct RockPaperScissorsRule {
+pub struct RockPaperScissorsRule<N> {
+    neighbors: std::marker::PhantomData<N>,
     background: egui::Color32,
     rock_color: egui::Color32,
     paper_color: egui::Color32,
@@ -31,9 +32,10 @@ pub struct RockPaperScissorsRule {
     threshold: u32,
 }
 
-impl Default for RockPaperScissorsRule {
+impl<N> Default for RockPaperScissorsRule<N> {
     fn default() -> Self {
         Self {
+            neighbors: std::marker::PhantomData,
             background: egui::Color32::from_rgb(0, 0, 0),
             rock_color: egui::Color32::from_rgb(0, 0, 255),
             paper_color: egui::Color32::from_rgb(0, 255, 0),
@@ -43,8 +45,9 @@ impl Default for RockPaperScissorsRule {
     }
 }
 
-impl<N: Neighbors> Rule<N> for RockPaperScissorsRule {
+impl<N: Neighbors> Rule for RockPaperScissorsRule<N> {
     type CellState = RockPaperScissorsState;
+    type Neighborhood = N;
 
     fn background(&self) -> egui::Color32 {
         self.background

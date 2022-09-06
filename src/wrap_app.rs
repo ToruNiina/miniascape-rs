@@ -127,7 +127,7 @@ impl WrapApp {
                             "LifeGame".to_string(),
                             Box::new(App::<
                                 MooreNeighborhood,
-                                LifeGameRule,
+                                LifeGameRule<MooreNeighborhood>,
                                 SquareGrid<LifeGameState>,
                             >::default()),
                         ),
@@ -155,7 +155,7 @@ impl WrapApp {
                             "HighLife".to_string(),
                             Box::new(App::<
                                 MooreNeighborhood,
-                                HighLifeRule,
+                                HighLifeRule<MooreNeighborhood>,
                                 SquareGrid<LifeGameState>,
                             >::default()),
                         ),
@@ -176,14 +176,14 @@ impl WrapApp {
                         self.thumbnail_lifelike.size_vec2(),
                     ))
                     .clicked()
-                    && LifeLikeGameRule::is_valid_rule(&self.life_game_rule)
+                    && LifeLikeGameRule::<MooreNeighborhood>::is_valid_rule(&self.life_game_rule)
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         self.life_game_rule.clone(),
                         Box::new(App::<
                             MooreNeighborhood,
-                            LifeLikeGameRule,
+                            LifeLikeGameRule<MooreNeighborhood>,
                             SquareGrid<LifeGameState>,
                         >::new(LifeLikeGameRule::from_rule(
                             &self.life_game_rule,
@@ -209,14 +209,14 @@ impl WrapApp {
                         self.thumbnail_hexlife.size_vec2(),
                     ))
                     .clicked()
-                    && LifeLikeGameRule::is_valid_rule(&self.life_game_rule)
+                    && LifeLikeGameRule::<HexGridNeighborhood>::is_valid_rule(&self.life_game_rule)
                 {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         self.life_game_rule.clone(),
                         Box::new(App::<
                             HexGridNeighborhood,
-                            LifeLikeGameRule,
+                            LifeLikeGameRule<HexGridNeighborhood>,
                             HexGrid<LifeGameState>,
                         >::new(LifeLikeGameRule::from_rule(
                             &self.life_game_rule,
@@ -306,7 +306,7 @@ impl WrapApp {
                                 "Rock Paper Scissors".to_string(),
                                 Box::new(App::<
                                     MooreNeighborhood,
-                                    RockPaperScissorsRule,
+                                    RockPaperScissorsRule<MooreNeighborhood>,
                                     SquareGrid<RockPaperScissorsState>,
                                 >::default()),
                             ));
@@ -315,7 +315,7 @@ impl WrapApp {
                                 "Rock Paper Scissors".to_string(),
                                 Box::new(App::<
                                     VonNeumannNeighborhood,
-                                    RockPaperScissorsRule,
+                                    RockPaperScissorsRule<VonNeumannNeighborhood>,
                                     SquareGrid<RockPaperScissorsState>,
                                 >::default()),
                             ));
@@ -325,7 +325,7 @@ impl WrapApp {
                             "Rock Paper Scissors".to_string(),
                             Box::new(App::<
                                 HexGridNeighborhood,
-                                RockPaperScissorsRule,
+                                RockPaperScissorsRule<HexGridNeighborhood>,
                                 HexGrid<RockPaperScissorsState>,
                             >::default()),
                         ));
@@ -391,7 +391,7 @@ impl WrapApp {
                     if self.dynamic_grid_kind == GridKind::Square {
                         if self.dynamic_square_neighbor_kind == SquareNeighborKind::Moore {
                             let app =
-                                App::<MooreNeighborhood, DynamicRule, SquareGrid<DynamicState>> {
+                                App::<MooreNeighborhood, DynamicRule<MooreNeighborhood>, SquareGrid<DynamicState>> {
                                     fix_board_size: true,
                                     ..Default::default()
                                 };
@@ -399,7 +399,7 @@ impl WrapApp {
                         } else {
                             let app = App::<
                                 VonNeumannNeighborhood,
-                                DynamicRule,
+                                DynamicRule<VonNeumannNeighborhood>,
                                 SquareGrid<DynamicState>,
                             > {
                                 fix_board_size: true,
@@ -408,7 +408,7 @@ impl WrapApp {
                             self.apps.push(("User Defined".to_string(), Box::new(app)));
                         }
                     } else {
-                        let app = App::<HexGridNeighborhood, DynamicRule, HexGrid<DynamicState>> {
+                        let app = App::<HexGridNeighborhood, DynamicRule<HexGridNeighborhood>, HexGrid<DynamicState>> {
                             fix_board_size: true,
                             ..Default::default()
                         };

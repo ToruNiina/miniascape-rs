@@ -42,7 +42,9 @@ impl State for DynamicState {
     }
 }
 
-pub struct DynamicRule {
+pub struct DynamicRule<N> {
+    neighbors: std::marker::PhantomData<N>,
+
     engine: Engine,
 
     update_fn_str: String,
@@ -73,7 +75,7 @@ pub struct DynamicRule {
     background: egui::Color32,
 }
 
-impl Default for DynamicRule {
+impl<N: Neighbors> Default for DynamicRule<N> {
     fn default() -> Self {
         let mut engine = Engine::new();
 
@@ -153,6 +155,7 @@ fn color(self) {
             .expect("default color script should compile successfully");
 
         Self {
+            neighbors: std::marker::PhantomData,
             engine,
 
             update_fn_str,
@@ -207,8 +210,9 @@ fn cast_error(item: &str, typename: String, code: String) -> DynamicRuleError {
     DynamicRuleError::CastFail(item.to_string(), typename, code)
 }
 
-impl<N: Neighbors> Rule<N> for DynamicRule {
+impl<N: Neighbors> Rule for DynamicRule<N> {
     type CellState = DynamicState;
+    type Neighborhood = N;
 
     fn background(&self) -> egui::Color32 {
         self.background
@@ -496,7 +500,7 @@ impl<N: Neighbors> Rule<N> for DynamicRule {
     }
 }
 
-impl DynamicRule {
+impl<N> DynamicRule<N> {
     #[allow(clippy::too_many_arguments)]
     fn ui_code_editor(
         button_name: &str,

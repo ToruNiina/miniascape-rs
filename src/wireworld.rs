@@ -45,8 +45,9 @@ impl Default for WireWorldRule {
     }
 }
 
-impl Rule<MooreNeighborhood> for WireWorldRule {
+impl Rule for WireWorldRule {
     type CellState = WireWorldState;
+    type Neighborhood = MooreNeighborhood;
 
     fn background(&self) -> egui::Color32 {
         self.grid_color

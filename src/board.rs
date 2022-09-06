@@ -80,10 +80,9 @@ impl<T: State> Chunk<T> {
         &mut self.cells[y * CHUNK_LEN + x]
     }
     /// set the state of all the cells in this chunk as default.
-    fn clear<N, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    fn clear<R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
-        R: Rule<N, CellState = T>,
-        N: Neighbors,
+        R: Rule<CellState = T>,
     {
         for c in self.cells.iter_mut() {
             *c = rule.default_state()?;
@@ -91,10 +90,9 @@ impl<T: State> Chunk<T> {
         Ok(())
     }
     /// randomize the state of all the cells in this chunk.
-    fn randomize<N, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    fn randomize<R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
-        R: Rule<N, CellState = T>,
-        N: Neighbors,
+        R: Rule<CellState = T>,
         Rn: Rng,
     {
         for c in self.cells.iter_mut() {
@@ -257,20 +255,18 @@ impl<T: State> Grid<T> {
         self.num_chunks_y += na;
     }
 
-    pub fn clear<N, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    pub fn clear<R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
-        R: Rule<N, CellState = T>,
-        N: Neighbors,
+        R: Rule<CellState = T>,
     {
         for ch in self.chunks.iter_mut() {
             ch.clear(rule)?;
         }
         Ok(())
     }
-    pub fn randomize<N, R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    pub fn randomize<R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
     where
-        R: Rule<N, CellState = T>,
-        N: Neighbors,
+        R: Rule<CellState = T>,
         Rn: Rng,
     {
         for ch in self.chunks.iter_mut() {
@@ -279,10 +275,9 @@ impl<T: State> Grid<T> {
         Ok(())
     }
 
-    pub fn update<N, R>(&mut self, rule: &R) -> anyhow::Result<()>
+    pub fn update<R>(&mut self, rule: &R) -> anyhow::Result<()>
     where
-        N: Neighbors,
-        R: Rule<N, CellState = T>,
+        R: Rule<CellState = T>,
     {
         for _ in 0..rule.iteration_per_step() {
             for cj in 0..self.n_chunks_y() {
@@ -293,7 +288,7 @@ impl<T: State> Grid<T> {
                         for i in 0..CHUNK_LEN {
                             let x = x0 + i;
                             let y = y0 + j;
-                            let idxs = N::neighbors(
+                            let idxs = R::Neighborhood::neighbors(
                                 x as isize,
                                 y as isize,
                                 self.width() as isize,
@@ -322,7 +317,7 @@ impl<T: State> Grid<T> {
 /// Most of the functions are actually implemented in `Grid`.
 /// Visualization and UI functions are the only difference.
 ///
-pub trait Board<N: Neighbors, R: Rule<N>> {
+pub trait Board<N: Neighbors, R: Rule> {
     fn init(x_chunks: usize, y_chunks: usize, i: R::CellState) -> Self;
     fn width(&self) -> usize;
     fn height(&self) -> usize;
@@ -408,7 +403,7 @@ impl<T, N, R> Board<N, R> for SquareGrid<T>
 where
     T: State,
     N: Neighbors,
-    R: Rule<N, CellState = T>,
+    R: Rule<CellState = T>,
 {
     fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
         Self { grid: Grid::init(x_chunks, y_chunks, i) }
@@ -646,7 +641,7 @@ impl<T, N, R> Board<N, R> for HexGrid<T>
 where
     T: State,
     N: Neighbors,
-    R: Rule<N, CellState = T>,
+    R: Rule<CellState = T>,
 {
     fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
         Self { grid: Grid::init(x_chunks, y_chunks, i) }
