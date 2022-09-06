@@ -317,8 +317,8 @@ impl<T: State> Grid<T> {
 /// Most of the functions are actually implemented in `Grid`.
 /// Visualization and UI functions are the only difference.
 ///
-pub trait Board<R: Rule> {
-    fn init(x_chunks: usize, y_chunks: usize, i: R::CellState) -> Self;
+pub trait Board<T: State> {
+    fn init(x_chunks: usize, y_chunks: usize, default_state: T) -> Self;
     fn width(&self) -> usize;
     fn height(&self) -> usize;
 
@@ -331,19 +331,22 @@ pub trait Board<R: Rule> {
     fn width_px(&self, cell_width: f32) -> f32;
     fn height_px(&self, cell_height: f32) -> f32;
 
-    fn chunk_at(&self, x: usize, y: usize) -> &Chunk<R::CellState>;
+    fn chunk_at(&self, x: usize, y: usize) -> &Chunk<T>;
 
     fn has_cell(&self, x: usize, y: usize) -> bool;
-    fn cell_at(&self, x: usize, y: usize) -> &R::CellState;
-    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut R::CellState;
+    fn cell_at(&self, x: usize, y: usize) -> &T;
+    fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut T;
 
-    fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut R::CellState;
+    fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut T;
 
-    fn expand_x(&mut self, n: isize, init: R::CellState);
-    fn expand_y(&mut self, n: isize, init: R::CellState);
+    fn expand_x(&mut self, n: isize, init: T);
+    fn expand_y(&mut self, n: isize, init: T);
 
-    fn clear(&mut self, rule: &R) -> anyhow::Result<()>;
-    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>;
+    fn clear<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()>;
+    fn randomize<R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    where
+        R: Rule<CellState = T>,
+        Rn: Rng;
 
     /// it takes a cell coordinate `(x, y)` and returns the center position of
     /// the corresponding cell.
@@ -359,10 +362,10 @@ pub trait Board<R: Rule> {
     /// takes a clicked position, returns the corresponding cell coordinate.
     fn clicked(&self, x: f32, y: f32, cell_width: f32) -> Option<(usize, usize)>;
 
-    fn update(&mut self, rule: &R) -> anyhow::Result<()>;
+    fn update<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()>;
 
     /// visualize the board.
-    fn paint(
+    fn paint<R: Rule<CellState = T>>(
         &self,
         painter: &egui::Painter,
         origin: egui::Pos2,
@@ -372,7 +375,7 @@ pub trait Board<R: Rule> {
     ) -> anyhow::Result<()>;
 
     #[allow(clippy::too_many_arguments)]
-    fn paint_clipboard(
+    fn paint_clipboard<R: Rule<CellState = T>>(
         &mut self,
         painter: &egui::Painter,
         origin: egui::Pos2,
@@ -381,7 +384,7 @@ pub trait Board<R: Rule> {
 
         xofs: usize,
         yofs: usize,
-        cb: &ClipBoard<R::CellState>,
+        cb: &ClipBoard<T>,
         alpha: f32,
     ) -> anyhow::Result<()>;
 
@@ -389,7 +392,7 @@ pub trait Board<R: Rule> {
         &mut self,
         xofs: usize,
         yofs: usize,
-        cb: &ClipBoard<R::CellState>,
+        cb: &ClipBoard<T>,
     ) -> anyhow::Result<()>;
 }
 
@@ -399,13 +402,9 @@ pub struct SquareGrid<T: State> {
     #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     grid: Grid<T>,
 }
-impl<T, R> Board<R> for SquareGrid<T>
-where
-    T: State,
-    R: Rule<CellState = T>,
-{
-    fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
-        Self { grid: Grid::init(x_chunks, y_chunks, i) }
+impl<T: State> Board<T> for SquareGrid<T> {
+    fn init(x_chunks: usize, y_chunks: usize, ini: T) -> Self {
+        Self { grid: Grid::init(x_chunks, y_chunks, ini) }
     }
 
     fn width(&self) -> usize {
@@ -467,10 +466,14 @@ where
         self.grid.expand_y(n, init)
     }
 
-    fn clear(&mut self, rule: &R) -> anyhow::Result<()> {
+    fn clear<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.clear(rule)
     }
-    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()> {
+    fn randomize<R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    where
+        R: Rule<CellState = T>,
+        Rn: Rng,
+    {
         self.grid.randomize(rule, rng)
     }
 
@@ -503,11 +506,11 @@ where
         }
     }
 
-    fn update(&mut self, rule: &R) -> anyhow::Result<()> {
+    fn update<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.update(rule)
     }
 
-    fn paint(
+    fn paint<R: Rule<CellState = T>>(
         &self,
         painter: &egui::Painter,
         origin: egui::Pos2,
@@ -562,7 +565,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn paint_clipboard(
+    fn paint_clipboard<R: Rule<CellState = T>>(
         &mut self,
         painter: &egui::Painter,
         origin: egui::Pos2,
@@ -624,7 +627,7 @@ where
         &mut self,
         xofs: usize,
         yofs: usize,
-        cb: &ClipBoard<R::CellState>,
+        cb: &ClipBoard<T>,
     ) -> anyhow::Result<()> {
         self.grid.paste_clipboard(xofs, yofs, cb)
     }
@@ -636,13 +639,9 @@ pub struct HexGrid<T: State> {
     #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     grid: Grid<T>,
 }
-impl<T, R> Board<R> for HexGrid<T>
-where
-    T: State,
-    R: Rule<CellState = T>,
-{
-    fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
-        Self { grid: Grid::init(x_chunks, y_chunks, i) }
+impl<T: State> Board<T> for HexGrid<T> {
+    fn init(x_chunks: usize, y_chunks: usize, ini: T) -> Self {
+        Self { grid: Grid::init(x_chunks, y_chunks, ini) }
     }
 
     fn width(&self) -> usize {
@@ -704,14 +703,18 @@ where
         self.grid.expand_y(n, init)
     }
 
-    fn clear(&mut self, rule: &R) -> anyhow::Result<()> {
+    fn clear<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.clear(rule)
     }
-    fn randomize<Rn: Rng>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()> {
+    fn randomize<R, Rn>(&mut self, rule: &R, rng: &mut Rn) -> anyhow::Result<()>
+    where
+        R: Rule<CellState = T>,
+        Rn: Rng,
+    {
         self.grid.randomize(rule, rng)
     }
 
-    fn update(&mut self, rule: &R) -> anyhow::Result<()> {
+    fn update<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()> {
         self.grid.update(rule)
     }
 
@@ -753,7 +756,7 @@ where
         }
     }
 
-    fn paint(
+    fn paint<R: Rule<CellState = T>>(
         &self,
         painter: &egui::Painter,
         origin: egui::Pos2,
@@ -804,7 +807,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn paint_clipboard(
+    fn paint_clipboard<R: Rule<CellState = T>>(
         &mut self,
         painter: &egui::Painter,
         origin: egui::Pos2,
@@ -862,7 +865,7 @@ where
         &mut self,
         xofs: usize,
         yofs: usize,
-        cb: &ClipBoard<R::CellState>,
+        cb: &ClipBoard<T>,
     ) -> anyhow::Result<()> {
         self.grid.paste_clipboard(xofs, yofs, cb)
     }

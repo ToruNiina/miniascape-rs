@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// Several application can run at the same time but only the focused app will
 /// be updated its state and others will be paused.
 ///
-pub struct App<R: Rule, B: Board<R>> {
+pub struct App<R: Rule, B: Board<R::CellState>> {
     pub(crate) rule: R,
     pub(crate) board: B,
     pub(crate) fix_board_size: bool,
@@ -44,7 +44,7 @@ pub(crate) enum ClickMode {
     Inspect,
 }
 
-impl<R: Rule, B: Board<R>> Default for App<R, B> {
+impl<R: Rule, B: Board<R::CellState>> Default for App<R, B> {
     fn default() -> Self {
         let rule = R::default();
         let init = rule.default_state().unwrap_or(R::CellState::default());
@@ -87,7 +87,7 @@ impl Clicked {
 
 impl<R: Rule, B> App<R, B>
 where
-    for<'de> B: Board<R> + Deserialize<'de>,
+    for<'de> B: Board<R::CellState> + Deserialize<'de>,
 {
     pub fn new(rule: R) -> Self {
         let init = rule.default_state().unwrap_or(R::CellState::default());
@@ -167,7 +167,7 @@ where
 
 impl<R: Rule, B> eframe::App for App<R, B>
 where
-    for<'de> B: Board<R> + Serialize + Deserialize<'de>,
+    for<'de> B: Board<R::CellState> + Serialize + Deserialize<'de>,
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
