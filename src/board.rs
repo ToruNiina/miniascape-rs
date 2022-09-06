@@ -317,7 +317,7 @@ impl<T: State> Grid<T> {
 /// Most of the functions are actually implemented in `Grid`.
 /// Visualization and UI functions are the only difference.
 ///
-pub trait Board<N: Neighbors, R: Rule> {
+pub trait Board<R: Rule> {
     fn init(x_chunks: usize, y_chunks: usize, i: R::CellState) -> Self;
     fn width(&self) -> usize;
     fn height(&self) -> usize;
@@ -399,10 +399,9 @@ pub struct SquareGrid<T: State> {
     #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     grid: Grid<T>,
 }
-impl<T, N, R> Board<N, R> for SquareGrid<T>
+impl<T, R> Board<R> for SquareGrid<T>
 where
     T: State,
-    N: Neighbors,
     R: Rule<CellState = T>,
 {
     fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
@@ -637,10 +636,9 @@ pub struct HexGrid<T: State> {
     #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
     grid: Grid<T>,
 }
-impl<T, N, R> Board<N, R> for HexGrid<T>
+impl<T, R> Board<R> for HexGrid<T>
 where
     T: State,
-    N: Neighbors,
     R: Rule<CellState = T>,
 {
     fn init(x_chunks: usize, y_chunks: usize, i: T) -> Self {
