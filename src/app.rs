@@ -1,19 +1,17 @@
 use crate::board::{Board, ClipBoard, CHUNK_LEN};
-use crate::rule::{Neighbors, Rule, State};
+use crate::rule::{Rule, State};
 
 use anyhow::anyhow;
 use anyhow::Context as _;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 
 /// An application to manage a cell automaton.
 ///
 /// Several application can run at the same time but only the focused app will
 /// be updated its state and others will be paused.
 ///
-pub struct App<N: Neighbors, R: Rule, B: Board<R>> {
-    pub(crate) neighbors: PhantomData<N>,
+pub struct App<R: Rule, B: Board<R>> {
     pub(crate) rule: R,
     pub(crate) board: B,
     pub(crate) fix_board_size: bool,
@@ -46,14 +44,13 @@ pub(crate) enum ClickMode {
     Inspect,
 }
 
-impl<N: Neighbors, R: Rule, B: Board<R>> Default for App<N, R, B> {
+impl<R: Rule, B: Board<R>> Default for App<R, B> {
     fn default() -> Self {
         let rule = R::default();
         let init = rule.default_state().unwrap_or(R::CellState::default());
         let mut board = B::init(4, 3, init);
         board.clear(&rule).expect("default construction must not fail");
         Self {
-            neighbors: PhantomData,
             rule,
             board,
             fix_board_size: false,
@@ -88,7 +85,7 @@ impl Clicked {
     }
 }
 
-impl<N: Neighbors, R: Rule, B> App<N, R, B>
+impl<R: Rule, B> App<R, B>
 where
     for<'de> B: Board<R> + Deserialize<'de>,
 {
@@ -168,7 +165,7 @@ where
     }
 }
 
-impl<N: Neighbors, R: Rule, B> eframe::App for App<N, R, B>
+impl<R: Rule, B> eframe::App for App<R, B>
 where
     for<'de> B: Board<R> + Serialize + Deserialize<'de>,
 {
