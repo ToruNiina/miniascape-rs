@@ -240,15 +240,10 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push(
-                        (
-                            "WireWorld".to_string(),
-                            Box::new(App::<
-                                WireWorldRule,
-                                SquareGrid<WireWorldState>,
-                            >::default()),
-                        ),
-                    );
+                    self.apps.push((
+                        "WireWorld".to_string(),
+                        Box::new(App::<WireWorldRule, SquareGrid<WireWorldState>>::default()),
+                    ));
                 }
                 ui.label(egui::RichText::new("WireWorld").size(20.0));
             });
@@ -269,10 +264,7 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "Gray-Scott".to_string(),
-                        Box::new(App::<
-                            GrayScottRule,
-                            SquareGrid<GrayScottState>,
-                        >::default()),
+                        Box::new(App::<GrayScottRule, SquareGrid<GrayScottState>>::default()),
                     ));
                 }
                 ui.label(egui::RichText::new("Gray-Scott").size(20.0));

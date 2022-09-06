@@ -47,7 +47,7 @@ pub(crate) enum ClickMode {
 impl<R: Rule, B: Board<R::CellState>> Default for App<R, B> {
     fn default() -> Self {
         let rule = R::default();
-        let init = rule.default_state().unwrap_or(R::CellState::default());
+        let init = rule.default_state().unwrap_or_default();
         let mut board = B::init(4, 3, init);
         board.clear(&rule).expect("default construction must not fail");
         Self {
@@ -90,7 +90,7 @@ where
     for<'de> B: Board<R::CellState> + Deserialize<'de>,
 {
     pub fn new(rule: R) -> Self {
-        let init = rule.default_state().unwrap_or(R::CellState::default());
+        let init = rule.default_state().unwrap_or_default();
         let mut board = B::init(4, 3, init);
         board.clear(&rule).expect("default construction must not fail");
         Self {
