@@ -82,8 +82,7 @@ impl Clicked {
 
 impl<W> App<W>
 where
-    W: World,
-    for<'de> W::Board: Deserialize<'de>,
+    for<'de> W: World + Deserialize<'de>,
 {
     pub fn new(rule: <W as World>::Rule) -> Self {
         Self {
@@ -142,7 +141,7 @@ where
                 let content = std::str::from_utf8(bytes)
                     .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
                     .to_owned();
-                *self.world.board_mut() = serde_json::from_str(&content)
+                self.world = serde_json::from_str(&content)
                     .context(format!("Couldn't load file content as board -> {}", file.name))?;
                 Ok(())
             } else {
@@ -159,8 +158,7 @@ where
 
 impl<W> eframe::App for App<W>
 where
-    W: World,
-    for<'de> W::Board: Serialize + Deserialize<'de>,
+    for<'de> W: World + Serialize + Deserialize<'de>,
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
@@ -243,7 +241,7 @@ where
 
                 if ui.button("serialize").clicked() {
                     self.serdes_buffer =
-                        Some(serde_json::to_string(&self.world.board()).expect("TODO: serde"));
+                        Some(serde_json::to_string(&self.world).expect("TODO: serde"));
                 }
                 if let Some(sb) = self.serdes_buffer.as_mut() {
                     let mut open = true;

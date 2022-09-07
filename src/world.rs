@@ -1,6 +1,8 @@
 use crate::rule::{Neighbors, Rule};
 use crate::board::{Board, CHUNK_LEN};
+
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 pub trait World {
 
@@ -40,7 +42,9 @@ pub trait World {
     fn update(&mut self) -> anyhow::Result<()>;
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct World2D<R: Rule, B: Board<R::CellState>> {
+    #[serde(skip)]
     rule: R,
     board: B,
 }
