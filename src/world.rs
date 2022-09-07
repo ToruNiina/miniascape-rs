@@ -58,6 +58,7 @@ impl<R: Rule, B: Board<R::CellState>> std::default::Default for World2D<R, B> {
 impl<R, B> World for World2D<R, B>
 where
     R: Rule,
+    <R as Rule>::Neighborhood: Neighbors,
     B: Board<R::CellState>,
 {
     type Rule = R;

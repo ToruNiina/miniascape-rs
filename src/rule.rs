@@ -27,7 +27,7 @@ pub trait Rule: Default {
     /// Corresponding cell state.
     type CellState: State;
 
-    type Neighborhood: Neighbors;
+    type Neighborhood;
 
     /// Background color.
     fn background(&self) -> egui::Color32;
@@ -72,9 +72,7 @@ pub trait Rule: Default {
 /// Index of neighboring cells.
 pub trait Neighbors: Default {
     type Neighborhood: IntoIterator<Item = (usize, usize)>;
-    /// To avoid heap allocation, we use an array and const-generic.
     fn neighbors(x: isize, y: isize, w: isize, h: isize) -> Self::Neighborhood;
-
     fn num_neighbors() -> usize;
 }
 
