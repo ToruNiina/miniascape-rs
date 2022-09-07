@@ -895,6 +895,7 @@ dependencies = [
  "epaint",
  "getrandom",
  "image",
+ "js-sys",
  "rand",
  "rhai",
  "rhai-rand",
@@ -904,6 +905,8 @@ dependencies = [
  "thiserror",
  "tracing-subscriber",
  "tracing-wasm",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

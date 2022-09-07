@@ -7,6 +7,8 @@ use anyhow::Context as _;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
+use wasm_bindgen::JsCast;
+
 /// An application to manage a cell automaton.
 ///
 /// Several application can run at the same time but only the focused app will
@@ -26,7 +28,6 @@ pub struct App<W: World> {
     pub(crate) cell_modifying: Option<<<W as World>::Rule as Rule>::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
-    pub(crate) serdes_buffer: Option<String>,
     pub(crate) cursor_is_on_sidepanel: bool, // at the last frame
 
     pub(crate) clipboard: Option<ClipBoard<<<W as World>::Rule as Rule>::CellState>>,
@@ -60,7 +61,6 @@ impl<W: World> Default for App<W> {
             cell_modifying: None,
             rng: rand::rngs::StdRng::seed_from_u64(123456789),
             err: None,
-            serdes_buffer: None,
             cursor_is_on_sidepanel: false,
             clipboard: None,
             secondary_start: None,
@@ -240,23 +240,38 @@ where
                 ui.separator(); // -------------------------------------------------
 
                 if ui.button("serialize").clicked() {
-                    self.serdes_buffer =
-                        Some(serde_json::to_string(&self.world).expect("TODO: serde"));
-                }
-                if let Some(sb) = self.serdes_buffer.as_mut() {
-                    let mut open = true;
-                    egui::Window::new("Serialize").open(&mut open).show(ctx, |ui| {
-                        egui::ScrollArea::vertical().show(ui, |ui| {
-                            ui.add(
-                                egui::TextEdit::multiline(sb)
-                                    .code_editor()
-                                    .desired_width(f32::INFINITY),
-                            );
-                        });
-                    });
-                    if !open {
-                        self.serdes_buffer = None;
-                    }
+                    let serialized = serde_json::to_string(&self.world)
+                        .expect("TODO: show error message")
+                        .into_bytes();
+
+                    let uint8arr = js_sys::Uint8Array::new_with_length(serialized.len() as u32);
+                    uint8arr.copy_from(&serialized);
+
+                    let array = js_sys::Array::new();
+                    array.push(&uint8arr.buffer());
+
+                    let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
+                        &array,
+                        web_sys::BlobPropertyBag::new().type_("application/json"),
+                    ).expect("TODO: show error message");
+
+                    let url = web_sys::Url::create_object_url_with_blob(&blob)
+                        .expect("TODO: show error message");
+
+                    let document = web_sys::window()
+                        .expect("TODO: show error message")
+                        .document()
+                        .expect("TODO: show error message");
+                    let downloadable = document.create_element("a").ok()
+                        .expect("TODO: show error message");
+
+                    downloadable.set_attribute("href", &url).ok()
+                        .expect("TODO: show error message");
+                    downloadable.set_attribute("download", "world.json").ok()
+                        .expect("TODO: show error message");
+                    downloadable.dyn_into::<web_sys::HtmlElement>()
+                        .expect("TODO: show error message")
+                        .click();
                 }
 
                 ui.separator(); // -------------------------------------------------
