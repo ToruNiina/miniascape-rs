@@ -1,6 +1,6 @@
 use crate::board::{Board, ClipBoard, CHUNK_LEN};
 use crate::rule::{Rule, State};
-use crate::world::{World};
+use crate::world::World;
 
 use anyhow::anyhow;
 use anyhow::Context as _;
@@ -253,7 +253,8 @@ where
                     let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
                         &array,
                         web_sys::BlobPropertyBag::new().type_("application/json"),
-                    ).expect("TODO: show error message");
+                    )
+                    .expect("TODO: show error message");
 
                     let url = web_sys::Url::create_object_url_with_blob(&blob)
                         .expect("TODO: show error message");
@@ -262,14 +263,17 @@ where
                         .expect("TODO: show error message")
                         .document()
                         .expect("TODO: show error message");
-                    let downloadable = document.create_element("a").ok()
-                        .expect("TODO: show error message");
+                    let downloadable =
+                        document.create_element("a").expect("TODO: show error message");
 
-                    downloadable.set_attribute("href", &url).ok()
+                    downloadable
+                        .set_attribute("href", &url)
                         .expect("TODO: show error message");
-                    downloadable.set_attribute("download", "world.json").ok()
+                    downloadable
+                        .set_attribute("download", "world.json")
                         .expect("TODO: show error message");
-                    downloadable.dyn_into::<web_sys::HtmlElement>()
+                    downloadable
+                        .dyn_into::<web_sys::HtmlElement>()
                         .expect("TODO: show error message")
                         .click();
                 }
@@ -294,7 +298,11 @@ where
 
                 ui.separator();
                 ui.label("status:");
-                ui.label(format!("current cells: {}x{}", self.world.board().width(), self.world.board().height()));
+                ui.label(format!(
+                    "current cells: {}x{}",
+                    self.world.board().width(),
+                    self.world.board().height()
+                ));
                 ui.label(format!(
                     "current chunks: {}x{}",
                     self.world.board().n_chunks_x(),
@@ -517,8 +525,10 @@ where
                     } else {
                         // show the corresponding region
 
-                        let min = self.world.board().location(sx, sy, self.origin, region.min, delta);
-                        let max = self.world.board().location(ex, ey, self.origin, region.min, delta);
+                        let min =
+                            self.world.board().location(sx, sy, self.origin, region.min, delta);
+                        let max =
+                            self.world.board().location(ex, ey, self.origin, region.min, delta);
                         let r = delta * 0.5_f32.sqrt();
 
                         let min = egui::Pos2::new(min.x - r, min.y - r);
@@ -542,7 +552,10 @@ where
                 if let Some((ix, iy)) = self.inspector {
                     let mut open = true;
                     egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
-                        self.world.board_mut().cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
+                        self.world
+                            .board_mut()
+                            .cell_at_mut(ix, iy)
+                            .inspect(ui, &mut self.inspector_code_buf);
                     });
                     if !open {
                         self.inspector = None;
@@ -565,7 +578,10 @@ where
 
                     // copy region to clipboard
                     if copy || cut {
-                        let mut cb = ClipBoard::<<<W as World>::Rule as Rule>::CellState>::new(ex - sx + 1, ey - sy + 1);
+                        let mut cb = ClipBoard::<<<W as World>::Rule as Rule>::CellState>::new(
+                            ex - sx + 1,
+                            ey - sy + 1,
+                        );
                         for j in 0..cb.height() {
                             for i in 0..cb.width() {
                                 if self.world.board().has_cell(sx + i, sy + j) {
@@ -599,7 +615,8 @@ where
                     if let Some(next) = &self.cell_modifying {
                         *self.world.board_mut().cell_at_mut(ix, iy) = next.clone();
                     } else {
-                        let next = self.world.rule().next(self.world.board().cell_at(ix, iy).clone());
+                        let next =
+                            self.world.rule().next(self.world.board().cell_at(ix, iy).clone());
                         match next {
                             Ok(val) => {
                                 *self.world.board_mut().cell_at_mut(ix, iy) = val.clone();
@@ -675,9 +692,11 @@ where
                                 ofs_x += n * CHUNK_LEN as isize;
                             }
                             if self.world.board().width() as isize <= ofs_x + cb.width() as isize {
-                                let d = (ofs_x + cb.width() as isize - self.world.board().width() as isize)
+                                let d = (ofs_x + cb.width() as isize
+                                    - self.world.board().width() as isize)
                                     / CHUNK_LEN as isize;
-                                let m = (ofs_x + cb.width() as isize - self.world.board().width() as isize)
+                                let m = (ofs_x + cb.width() as isize
+                                    - self.world.board().width() as isize)
                                     % CHUNK_LEN as isize;
                                 let n = if m == 0 { d } else { d + 1 };
                                 self.world.expand_x(n, st.clone());
@@ -690,7 +709,8 @@ where
                                 self.world.expand_y(-n, st.clone());
                                 ofs_y += n * CHUNK_LEN as isize;
                             }
-                            if self.world.board().height() as isize <= ofs_y + cb.height() as isize {
+                            if self.world.board().height() as isize <= ofs_y + cb.height() as isize
+                            {
                                 let d = (ofs_y + cb.height() as isize
                                     - self.world.board().height() as isize)
                                     / CHUNK_LEN as isize;
@@ -702,9 +722,11 @@ where
                             }
 
                             // see the current position
-                            if let Err(e) =
-                                self.world.board_mut().paste_clipboard(ofs_x as usize, ofs_y as usize, cb)
-                            {
+                            if let Err(e) = self.world.board_mut().paste_clipboard(
+                                ofs_x as usize,
+                                ofs_y as usize,
+                                cb,
+                            ) {
                                 self.err = Some(format!("{:?}", e));
                             }
                         }

@@ -1,11 +1,10 @@
-use crate::rule::{Neighbors, Rule};
 use crate::board::{Board, CHUNK_LEN};
+use crate::rule::{Neighbors, Rule};
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 pub trait World {
-
     type Rule: Rule;
     type Board: Board<<<Self as World>::Rule as Rule>::CellState>;
 
@@ -55,7 +54,7 @@ impl<R: Rule, B: Board<R::CellState>> std::default::Default for World2D<R, B> {
         let init = rule.default_state().unwrap_or_default();
         let mut board = B::init(4, 3, init);
         board.clear(&rule).expect("default construction must not fail");
-        Self{rule, board}
+        Self { rule, board }
     }
 }
 
@@ -73,7 +72,7 @@ where
         let init = rule.default_state().unwrap_or_default();
         let mut board = B::init(x_chunks, y_chunks, init);
         board.clear(&rule).expect("default construction must not fail");
-        Self{rule, board}
+        Self { rule, board }
     }
 
     fn rule(&self) -> &R {

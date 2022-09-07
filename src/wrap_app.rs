@@ -1,7 +1,7 @@
 use crate::app::App;
 use crate::board::{HexGrid, SquareGrid};
 use crate::rule::{HexGridNeighborhood, MooreNeighborhood, VonNeumannNeighborhood};
-use crate::world::{World2D};
+use crate::world::World2D;
 
 use crate::dynamic_rule::{DynamicRule, DynamicState};
 use crate::gray_scott::{GrayScottRule, GrayScottState};
@@ -123,14 +123,12 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push(
-                        (
-                            "LifeGame".to_string(),
-                            Box::new(App::<World2D<
-                                LifeGameRule<MooreNeighborhood>, SquareGrid<LifeGameState>
-                            >>::default()),
-                        ),
-                    );
+                    self.apps.push((
+                        "LifeGame".to_string(),
+                        Box::new(App::<
+                            World2D<LifeGameRule<MooreNeighborhood>, SquareGrid<LifeGameState>>,
+                        >::default()),
+                    ));
                 }
                 ui.label(egui::RichText::new("Conway's Game of Life.").size(20.0));
             });
@@ -149,15 +147,12 @@ impl WrapApp {
                     .clicked()
                 {
                     self.focus = Some(self.apps.len());
-                    self.apps.push(
-                        (
-                            "HighLife".to_string(),
-                            Box::new(App::<World2D<
-                                HighLifeRule<MooreNeighborhood>,
-                                SquareGrid<LifeGameState>,
-                            >>::default()),
-                        ),
-                    );
+                    self.apps.push((
+                        "HighLife".to_string(),
+                        Box::new(App::<
+                            World2D<HighLifeRule<MooreNeighborhood>, SquareGrid<LifeGameState>>,
+                        >::default()),
+                    ));
                 }
                 ui.label(egui::RichText::new("HighLife(23/36)").size(20.0));
             });
@@ -179,10 +174,9 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         self.life_game_rule.clone(),
-                        Box::new(App::<World2D<
-                            LifeLikeGameRule<MooreNeighborhood>,
-                            SquareGrid<LifeGameState>,
-                        >>::new(LifeLikeGameRule::from_rule(
+                        Box::new(App::<
+                            World2D<LifeLikeGameRule<MooreNeighborhood>, SquareGrid<LifeGameState>>,
+                        >::new(LifeLikeGameRule::from_rule(
                             &self.life_game_rule,
                         ))),
                     ));
@@ -211,10 +205,9 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         self.life_game_rule.clone(),
-                        Box::new(App::<World2D<
-                            LifeLikeGameRule<HexGridNeighborhood>,
-                            HexGrid<LifeGameState>,
-                        >>::new(LifeLikeGameRule::from_rule(
+                        Box::new(App::<
+                            World2D<LifeLikeGameRule<HexGridNeighborhood>, HexGrid<LifeGameState>>,
+                        >::new(LifeLikeGameRule::from_rule(
                             &self.life_game_rule,
                         ))),
                     ));
@@ -242,7 +235,9 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "WireWorld".to_string(),
-                        Box::new(App::<World2D<WireWorldRule, SquareGrid<WireWorldState>>>::default()),
+                        Box::new(
+                            App::<World2D<WireWorldRule, SquareGrid<WireWorldState>>>::default(),
+                        ),
                     ));
                 }
                 ui.label(egui::RichText::new("WireWorld").size(20.0));
@@ -264,7 +259,9 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     self.apps.push((
                         "Gray-Scott".to_string(),
-                        Box::new(App::<World2D<GrayScottRule, SquareGrid<GrayScottState>>>::default()),
+                        Box::new(
+                            App::<World2D<GrayScottRule, SquareGrid<GrayScottState>>>::default(),
+                        ),
                     ));
                 }
                 ui.label(egui::RichText::new("Gray-Scott").size(20.0));
@@ -290,27 +287,33 @@ impl WrapApp {
                         {
                             self.apps.push((
                                 "Rock Paper Scissors".to_string(),
-                                Box::new(App::<World2D<
-                                    RockPaperScissorsRule<MooreNeighborhood>,
-                                    SquareGrid<RockPaperScissorsState>,
-                                >>::default()),
+                                Box::new(App::<
+                                    World2D<
+                                        RockPaperScissorsRule<MooreNeighborhood>,
+                                        SquareGrid<RockPaperScissorsState>,
+                                    >,
+                                >::default()),
                             ));
                         } else {
                             self.apps.push((
                                 "Rock Paper Scissors".to_string(),
-                                Box::new(App::<World2D<
-                                    RockPaperScissorsRule<VonNeumannNeighborhood>,
-                                    SquareGrid<RockPaperScissorsState>,
-                                >>::default()),
+                                Box::new(App::<
+                                    World2D<
+                                        RockPaperScissorsRule<VonNeumannNeighborhood>,
+                                        SquareGrid<RockPaperScissorsState>,
+                                    >,
+                                >::default()),
                             ));
                         }
                     } else {
                         self.apps.push((
                             "Rock Paper Scissors".to_string(),
-                            Box::new(App::<World2D<
-                                RockPaperScissorsRule<HexGridNeighborhood>,
-                                HexGrid<RockPaperScissorsState>,
-                            >>::default()),
+                            Box::new(App::<
+                                World2D<
+                                    RockPaperScissorsRule<HexGridNeighborhood>,
+                                    HexGrid<RockPaperScissorsState>,
+                                >,
+                            >::default()),
                         ));
                     }
                 }
@@ -373,24 +376,29 @@ impl WrapApp {
                     self.focus = Some(self.apps.len());
                     if self.dynamic_grid_kind == GridKind::Square {
                         if self.dynamic_square_neighbor_kind == SquareNeighborKind::Moore {
-                            let app =
-                                App::<World2D<DynamicRule<MooreNeighborhood>, SquareGrid<DynamicState>>> {
-                                    fix_board_size: true,
-                                    ..Default::default()
-                                };
+                            let app = App::<
+                                World2D<DynamicRule<MooreNeighborhood>, SquareGrid<DynamicState>>,
+                            > {
+                                fix_board_size: true,
+                                ..Default::default()
+                            };
                             self.apps.push(("User Defined".to_string(), Box::new(app)));
                         } else {
-                            let app = App::<World2D<
-                                DynamicRule<VonNeumannNeighborhood>,
-                                SquareGrid<DynamicState>,
-                            >> {
+                            let app = App::<
+                                World2D<
+                                    DynamicRule<VonNeumannNeighborhood>,
+                                    SquareGrid<DynamicState>,
+                                >,
+                            > {
                                 fix_board_size: true,
                                 ..Default::default()
                             };
                             self.apps.push(("User Defined".to_string(), Box::new(app)));
                         }
                     } else {
-                        let app = App::<World2D<DynamicRule<HexGridNeighborhood>, HexGrid<DynamicState>>> {
+                        let app = App::<
+                            World2D<DynamicRule<HexGridNeighborhood>, HexGrid<DynamicState>>,
+                        > {
                             fix_board_size: true,
                             ..Default::default()
                         };
