@@ -41,7 +41,7 @@
 /// //          `.'   `.'   `.'   `.'   `.'   `.'   `.'
 /// //
 /// ```
-use crate::rule::{Neighbors, Rule, State};
+use crate::rule::{Rule, State};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
