@@ -211,6 +211,9 @@ impl<T: State> Grid<T> {
         let cly = y % CHUNK_LEN;
         self.buffer[chy * self.num_chunks_x + chx].cell_at_mut(clx, cly)
     }
+    pub fn swap_buffer(&mut self) {
+        std::mem::swap(&mut self.chunks, &mut self.buffer);
+    }
 
     pub fn expand_x(&mut self, n: isize, init: T) {
         if n == 0 {
@@ -274,41 +277,6 @@ impl<T: State> Grid<T> {
         }
         Ok(())
     }
-
-    pub fn update<R>(&mut self, rule: &R) -> anyhow::Result<()>
-    where
-        R: Rule<CellState = T>,
-    {
-        for _ in 0..rule.iteration_per_step() {
-            for cj in 0..self.n_chunks_y() {
-                let y0 = cj * CHUNK_LEN;
-                for ci in 0..self.n_chunks_x() {
-                    let x0 = ci * CHUNK_LEN;
-                    for j in 0..CHUNK_LEN {
-                        for i in 0..CHUNK_LEN {
-                            let x = x0 + i;
-                            let y = y0 + j;
-                            let idxs = R::Neighborhood::neighbors(
-                                x as isize,
-                                y as isize,
-                                self.width() as isize,
-                                self.height() as isize,
-                            );
-
-                            *self.bufcell_at_mut(x, y) = rule.update(
-                                self.cell_at(x, y).clone(),
-                                idxs.into_iter()
-                                    .map(|(x, y)| self.cell_at(x, y).clone())
-                                    .into_iter(),
-                            )?;
-                        }
-                    }
-                }
-            }
-            std::mem::swap(&mut self.chunks, &mut self.buffer);
-        }
-        Ok(())
-    }
 }
 
 /// We have (currently) two different boards, `SquareGrid` and `HexGrid`.
@@ -338,6 +306,7 @@ pub trait Board<T: State> {
     fn cell_at_mut(&mut self, x: usize, y: usize) -> &mut T;
 
     fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut T;
+    fn swap_buffer(&mut self);
 
     fn expand_x(&mut self, n: isize, init: T);
     fn expand_y(&mut self, n: isize, init: T);
@@ -362,8 +331,6 @@ pub trait Board<T: State> {
     /// takes a clicked position, returns the corresponding cell coordinate.
     fn clicked(&self, x: f32, y: f32, cell_width: f32) -> Option<(usize, usize)>;
 
-    fn update<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()>;
-
     /// visualize the board.
     fn paint<R: Rule<CellState = T>>(
         &self,
@@ -376,7 +343,7 @@ pub trait Board<T: State> {
 
     #[allow(clippy::too_many_arguments)]
     fn paint_clipboard<R: Rule<CellState = T>>(
-        &mut self,
+        &self,
         painter: &egui::Painter,
         origin: egui::Pos2,
         cell_width: f32,
@@ -458,6 +425,9 @@ impl<T: State> Board<T> for SquareGrid<T> {
     fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut T {
         self.grid.bufcell_at_mut(x, y)
     }
+    fn swap_buffer(&mut self) {
+        self.grid.swap_buffer();
+    }
 
     fn expand_x(&mut self, n: isize, init: T) {
         self.grid.expand_x(n, init)
@@ -504,10 +474,6 @@ impl<T: State> Board<T> for SquareGrid<T> {
         } else {
             Some((x, y))
         }
-    }
-
-    fn update<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()> {
-        self.grid.update(rule)
     }
 
     fn paint<R: Rule<CellState = T>>(
@@ -566,7 +532,7 @@ impl<T: State> Board<T> for SquareGrid<T> {
 
     #[allow(clippy::too_many_arguments)]
     fn paint_clipboard<R: Rule<CellState = T>>(
-        &mut self,
+        &self,
         painter: &egui::Painter,
         origin: egui::Pos2,
         cell_width: f32,
@@ -695,6 +661,9 @@ impl<T: State> Board<T> for HexGrid<T> {
     fn bufcell_at_mut(&mut self, x: usize, y: usize) -> &mut T {
         self.grid.bufcell_at_mut(x, y)
     }
+    fn swap_buffer(&mut self) {
+        self.grid.swap_buffer();
+    }
 
     fn expand_x(&mut self, n: isize, init: T) {
         self.grid.expand_x(n, init)
@@ -712,10 +681,6 @@ impl<T: State> Board<T> for HexGrid<T> {
         Rn: Rng,
     {
         self.grid.randomize(rule, rng)
-    }
-
-    fn update<R: Rule<CellState = T>>(&mut self, rule: &R) -> anyhow::Result<()> {
-        self.grid.update(rule)
     }
 
     fn location(
@@ -808,7 +773,7 @@ impl<T: State> Board<T> for HexGrid<T> {
 
     #[allow(clippy::too_many_arguments)]
     fn paint_clipboard<R: Rule<CellState = T>>(
-        &mut self,
+        &self,
         painter: &egui::Painter,
         origin: egui::Pos2,
         cell_width: f32,

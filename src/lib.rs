@@ -9,6 +9,8 @@ mod rock_paper_scissors;
 mod rule;
 mod wireworld;
 mod wrap_app;
+mod world;
+
 pub use wrap_app::WrapApp as App;
 
 // ----------------------------------------------------------------------------

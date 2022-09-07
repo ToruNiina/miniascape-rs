@@ -1,5 +1,6 @@
 use crate::board::{Board, ClipBoard, CHUNK_LEN};
 use crate::rule::{Rule, State};
+use crate::world::{World};
 
 use anyhow::anyhow;
 use anyhow::Context as _;
@@ -11,9 +12,8 @@ use serde::{Deserialize, Serialize};
 /// Several application can run at the same time but only the focused app will
 /// be updated its state and others will be paused.
 ///
-pub struct App<R: Rule, B: Board<R::CellState>> {
-    pub(crate) rule: R,
-    pub(crate) board: B,
+pub struct App<W: World> {
+    pub(crate) world: W,
     pub(crate) fix_board_size: bool,
     pub(crate) fix_grid_size: bool,
     pub(crate) click_mode: ClickMode,
@@ -23,13 +23,13 @@ pub struct App<R: Rule, B: Board<R::CellState>> {
     pub(crate) grid_width: f32,
     pub(crate) origin: egui::Pos2,
     pub(crate) grabbed: bool,
-    pub(crate) cell_modifying: Option<R::CellState>,
+    pub(crate) cell_modifying: Option<<<W as World>::Rule as Rule>::CellState>,
     pub(crate) rng: rand::rngs::StdRng,
     pub(crate) err: Option<String>,
     pub(crate) serdes_buffer: Option<String>,
     pub(crate) cursor_is_on_sidepanel: bool, // at the last frame
 
-    pub(crate) clipboard: Option<ClipBoard<R::CellState>>,
+    pub(crate) clipboard: Option<ClipBoard<<<W as World>::Rule as Rule>::CellState>>,
     pub(crate) secondary_start: Option<(usize, usize)>,
     pub(crate) secondary_curr: Option<(usize, usize)>,
     pub(crate) selected_region: Option<((usize, usize), (usize, usize))>,
@@ -44,15 +44,10 @@ pub(crate) enum ClickMode {
     Inspect,
 }
 
-impl<R: Rule, B: Board<R::CellState>> Default for App<R, B> {
+impl<W: World> Default for App<W> {
     fn default() -> Self {
-        let rule = R::default();
-        let init = rule.default_state().unwrap_or_default();
-        let mut board = B::init(4, 3, init);
-        board.clear(&rule).expect("default construction must not fail");
         Self {
-            rule,
-            board,
+            world: World::new(<W as World>::Rule::default(), 4, 3, 1),
             fix_board_size: false,
             fix_grid_size: false,
             click_mode: ClickMode::Normal,
@@ -85,17 +80,14 @@ impl Clicked {
     }
 }
 
-impl<R: Rule, B> App<R, B>
+impl<W> App<W>
 where
-    for<'de> B: Board<R::CellState> + Deserialize<'de>,
+    W: World,
+    for<'de> W::Board: Deserialize<'de>,
 {
-    pub fn new(rule: R) -> Self {
-        let init = rule.default_state().unwrap_or_default();
-        let mut board = B::init(4, 3, init);
-        board.clear(&rule).expect("default construction must not fail");
+    pub fn new(rule: <W as World>::Rule) -> Self {
         Self {
-            rule,
-            board,
+            world: W::new(rule, 4, 3, 1),
             click_mode: ClickMode::Normal,
             inspector_code_buf: String::new(),
             grid_width: 32.0,
@@ -131,7 +123,7 @@ where
         let dx = pos.x - region_min.x + self.origin.x;
         let dy = pos.y - region_min.y + self.origin.y;
 
-        if let Some((ix, iy)) = self.board.clicked(dx, dy, self.grid_width) {
+        if let Some((ix, iy)) = self.world.board().clicked(dx, dy, self.grid_width) {
             let p = if pointer.primary_down() { Some((ix, iy)) } else { None };
             let s = if pointer.secondary_down() { Some((ix, iy)) } else { None };
             Clicked::new(p, s)
@@ -150,7 +142,7 @@ where
                 let content = std::str::from_utf8(bytes)
                     .context(format!("Couldn't read file content as utf8 -> {}", file.name))?
                     .to_owned();
-                self.board = serde_json::from_str(&content)
+                *self.world.board_mut() = serde_json::from_str(&content)
                     .context(format!("Couldn't load file content as board -> {}", file.name))?;
                 Ok(())
             } else {
@@ -165,9 +157,10 @@ where
     }
 }
 
-impl<R: Rule, B> eframe::App for App<R, B>
+impl<W> eframe::App for App<W>
 where
-    for<'de> B: Board<R::CellState> + Serialize + Deserialize<'de>,
+    W: World,
+    for<'de> W::Board: Serialize + Deserialize<'de>,
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
@@ -176,7 +169,7 @@ where
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
-            if let Err(e) = self.board.update(&self.rule) {
+            if let Err(e) = self.world.update() {
                 self.err = Some(format!("{:?}", e));
             }
         }
@@ -229,18 +222,18 @@ where
                     ui.toggle_value(&mut self.running, "Run");
 
                     if ui.button("Step").clicked() {
-                        if let Err(e) = self.board.update(&self.rule) {
+                        if let Err(e) = self.world.update() {
                             self.err = Some(format!("{:?}", e));
                         }
                         ui.ctx().request_repaint();
                     }
                     if ui.button("Reset").clicked() {
-                        if let Err(e) = self.board.clear(&self.rule) {
+                        if let Err(e) = self.world.clear() {
                             self.err = Some(format!("{:?}", e));
                         }
                     }
                     if ui.button("Randomize").clicked() {
-                        if let Err(e) = self.board.randomize(&self.rule, &mut self.rng) {
+                        if let Err(e) = self.world.randomize(&mut self.rng) {
                             self.err = Some(format!("{:?}", e));
                         }
                     }
@@ -250,7 +243,7 @@ where
 
                 if ui.button("serialize").clicked() {
                     self.serdes_buffer =
-                        Some(serde_json::to_string(&self.board).expect("TODO: serde"));
+                        Some(serde_json::to_string(&self.world.board()).expect("TODO: serde"));
                 }
                 if let Some(sb) = self.serdes_buffer.as_mut() {
                     let mut open = true;
@@ -288,17 +281,17 @@ where
 
                 ui.separator();
                 ui.label("status:");
-                ui.label(format!("current cells: {}x{}", self.board.width(), self.board.height()));
+                ui.label(format!("current cells: {}x{}", self.world.board().width(), self.world.board().height()));
                 ui.label(format!(
                     "current chunks: {}x{}",
-                    self.board.n_chunks_x(),
-                    self.board.n_chunks_y()
+                    self.world.board().n_chunks_x(),
+                    self.world.board().n_chunks_y()
                 ));
                 ui.label(format!("current origin: ({},{})", self.origin.x, self.origin.y));
 
                 ui.separator(); // -------------------------------------------------
 
-                for (name, clip) in self.rule.library().into_iter() {
+                for (name, clip) in self.world.rule().library().into_iter() {
                     if ui.button(name).clicked() {
                         self.clipboard = Some(clip)
                     }
@@ -306,7 +299,7 @@ where
 
                 // we can only know the cursor hovers on sidepanel after drawing
                 // sidepanel, so we use the status of the last frame
-                if let Err(e) = self.rule.ui(ui, ctx, self.cursor_is_on_sidepanel) {
+                if let Err(e) = self.world.rule_mut().ui(ui, ctx, self.cursor_is_on_sidepanel) {
                     self.err = Some(format!("{:?}", e));
                 }
             })
@@ -402,35 +395,35 @@ where
             // expand board size if needed
 
             if !self.fix_board_size {
-                let chunk_pxls_x = self.board.chunk_width_px(delta);
-                let chunk_pxls_y = self.board.chunk_height_px(delta);
+                let chunk_pxls_x = self.world.board().chunk_width_px(delta);
+                let chunk_pxls_y = self.world.board().chunk_height_px(delta);
 
-                let default_state = self.rule.default_state();
+                let default_state = self.world.rule().default_state();
                 if let Ok(init) = default_state {
                     if self.origin.x < 0.0 {
                         let d = (self.origin.x / chunk_pxls_x).floor();
-                        self.board.expand_x(d as isize, init.clone());
+                        self.world.expand_x(d as isize, init.clone());
                         self.origin.x -= chunk_pxls_x * d;
                         assert!(0.0 <= self.origin.x);
                     }
-                    if self.board.width_px(delta) <= self.origin.x + regsize.x {
-                        let dx = self.origin.x + regsize.x - self.board.width_px(delta);
+                    if self.world.board().width_px(delta) <= self.origin.x + regsize.x {
+                        let dx = self.origin.x + regsize.x - self.world.board().width_px(delta);
                         assert!(0.0 <= dx);
                         let d = (dx / chunk_pxls_x).ceil();
-                        self.board.expand_x(d as isize, init.clone());
+                        self.world.expand_x(d as isize, init.clone());
                     }
 
                     if self.origin.y < 0.0 {
                         let d = (self.origin.y / chunk_pxls_y).floor();
-                        self.board.expand_y(d as isize, init.clone());
+                        self.world.expand_y(d as isize, init.clone());
                         self.origin.y -= chunk_pxls_y * d;
                         assert!(0.0 <= self.origin.y);
                     }
-                    if self.board.height_px(delta) <= self.origin.y + regsize.y {
-                        let dy = self.origin.y + regsize.y - self.board.height_px(delta);
+                    if self.world.board().height_px(delta) <= self.origin.y + regsize.y {
+                        let dy = self.origin.y + regsize.y - self.world.board().height_px(delta);
                         assert!(0.0 <= dy);
                         let d = (dy / chunk_pxls_y).ceil();
-                        self.board.expand_y(d as isize, init);
+                        self.world.expand_y(d as isize, init);
                     }
                 } else {
                     let e = default_state.expect_err("already checked");
@@ -441,7 +434,7 @@ where
             // ----------------------------------------------------------------
             // draw board to the central panel
 
-            if let Err(e) = self.board.paint(&painter, self.origin, delta, &self.rule, 1.0) {
+            if let Err(e) = self.world.paint(&painter, self.origin, delta) {
                 self.err = Some(format!("{:?}", e));
             }
 
@@ -496,7 +489,7 @@ where
                 if let Some(((sx, sy), (ex, ey))) = self.selected_region {
                     if sx == ex && sy == ey {
                         // show the corresponding cell
-                        let c = self.board.location(sx, sy, self.origin, region.min, delta);
+                        let c = self.world.board().location(sx, sy, self.origin, region.min, delta);
                         let r = delta * 0.5_f32.sqrt();
                         painter.add(epaint::CircleShape::stroke(
                             c,
@@ -511,8 +504,8 @@ where
                     } else {
                         // show the corresponding region
 
-                        let min = self.board.location(sx, sy, self.origin, region.min, delta);
-                        let max = self.board.location(ex, ey, self.origin, region.min, delta);
+                        let min = self.world.board().location(sx, sy, self.origin, region.min, delta);
+                        let max = self.world.board().location(ex, ey, self.origin, region.min, delta);
                         let r = delta * 0.5_f32.sqrt();
 
                         let min = egui::Pos2::new(min.x - r, min.y - r);
@@ -536,7 +529,7 @@ where
                 if let Some((ix, iy)) = self.inspector {
                     let mut open = true;
                     egui::Window::new("Cell Inspector").open(&mut open).show(ctx, |ui| {
-                        self.board.cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
+                        self.world.board_mut().cell_at_mut(ix, iy).inspect(ui, &mut self.inspector_code_buf);
                     });
                     if !open {
                         self.inspector = None;
@@ -559,12 +552,12 @@ where
 
                     // copy region to clipboard
                     if copy || cut {
-                        let mut cb = ClipBoard::<R::CellState>::new(ex - sx + 1, ey - sy + 1);
+                        let mut cb = ClipBoard::<<<W as World>::Rule as Rule>::CellState>::new(ex - sx + 1, ey - sy + 1);
                         for j in 0..cb.height() {
                             for i in 0..cb.width() {
-                                if self.board.has_cell(sx + i, sy + j) {
+                                if self.world.board().has_cell(sx + i, sy + j) {
                                     *cb.cell_at_mut(i, j) =
-                                        Some(self.board.cell_at(sx + i, sy + j).clone());
+                                        Some(self.world.board().cell_at(sx + i, sy + j).clone());
                                 }
                             }
                         }
@@ -574,11 +567,11 @@ where
 
                     // clear selected region
                     if cut || del {
-                        match self.rule.default_state() {
+                        match self.world.rule().default_state() {
                             Ok(st) => {
                                 for j in sy..=ey {
                                     for i in sx..=ex {
-                                        *self.board.cell_at_mut(i, j) = st.clone();
+                                        *self.world.board_mut().cell_at_mut(i, j) = st.clone();
                                     }
                                 }
                             }
@@ -591,12 +584,12 @@ where
                     // draw cell using `cell_modifying`
 
                     if let Some(next) = &self.cell_modifying {
-                        *self.board.cell_at_mut(ix, iy) = next.clone();
+                        *self.world.board_mut().cell_at_mut(ix, iy) = next.clone();
                     } else {
-                        let next = self.rule.next(self.board.cell_at(ix, iy).clone());
+                        let next = self.world.rule().next(self.world.board().cell_at(ix, iy).clone());
                         match next {
                             Ok(val) => {
-                                *self.board.cell_at_mut(ix, iy) = val.clone();
+                                *self.world.board_mut().cell_at_mut(ix, iy) = val.clone();
                                 self.cell_modifying = Some(val);
                             }
                             Err(e) => {
@@ -628,7 +621,7 @@ where
                     let dx = pos.x - region.min.x + self.origin.x;
                     let dy = pos.y - region.min.y + self.origin.y;
 
-                    self.board.clicked(dx, dy, self.grid_width)
+                    self.world.board().clicked(dx, dy, self.grid_width)
                 };
 
                 if let Some((cursor_x, cursor_y)) = cursor_pos {
@@ -636,11 +629,11 @@ where
                         let ofs_x = cursor_x - cb.width() / 2;
                         let ofs_y = cursor_y - cb.height() / 2;
 
-                        if let Err(e) = self.board.paint_clipboard(
+                        if let Err(e) = self.world.board().paint_clipboard(
                             &painter,
                             self.origin,
                             delta,
-                            &self.rule,
+                            self.world.rule(),
                             ofs_x,
                             ofs_y,
                             cb,
@@ -659,45 +652,45 @@ where
                         let mut ofs_x = (cursor_x as isize) - (cb.width() as isize) / 2;
                         let mut ofs_y = (cursor_y as isize) - (cb.height() as isize) / 2;
 
-                        if let Ok(st) = self.rule.default_state() {
+                        if let Ok(st) = self.world.rule().default_state() {
                             // check if clipboard sticks out of the board
                             if ofs_x < 0 {
                                 let d = ofs_x.abs() / CHUNK_LEN as isize;
                                 let m = ofs_x.abs() % CHUNK_LEN as isize;
                                 let n = if m == 0 { d } else { d + 1 };
-                                self.board.expand_x(-n, st.clone());
+                                self.world.expand_x(-n, st.clone());
                                 ofs_x += n * CHUNK_LEN as isize;
                             }
-                            if self.board.width() as isize <= ofs_x + cb.width() as isize {
-                                let d = (ofs_x + cb.width() as isize - self.board.width() as isize)
+                            if self.world.board().width() as isize <= ofs_x + cb.width() as isize {
+                                let d = (ofs_x + cb.width() as isize - self.world.board().width() as isize)
                                     / CHUNK_LEN as isize;
-                                let m = (ofs_x + cb.width() as isize - self.board.width() as isize)
+                                let m = (ofs_x + cb.width() as isize - self.world.board().width() as isize)
                                     % CHUNK_LEN as isize;
                                 let n = if m == 0 { d } else { d + 1 };
-                                self.board.expand_x(n, st.clone());
+                                self.world.expand_x(n, st.clone());
                             }
 
                             if ofs_y < 0 {
                                 let d = ofs_y.abs() / CHUNK_LEN as isize;
                                 let m = ofs_y.abs() % CHUNK_LEN as isize;
                                 let n = if m == 0 { d } else { d + 1 };
-                                self.board.expand_y(-n, st.clone());
+                                self.world.expand_y(-n, st.clone());
                                 ofs_y += n * CHUNK_LEN as isize;
                             }
-                            if self.board.height() as isize <= ofs_y + cb.height() as isize {
+                            if self.world.board().height() as isize <= ofs_y + cb.height() as isize {
                                 let d = (ofs_y + cb.height() as isize
-                                    - self.board.height() as isize)
+                                    - self.world.board().height() as isize)
                                     / CHUNK_LEN as isize;
                                 let m = (ofs_y + cb.height() as isize
-                                    - self.board.height() as isize)
+                                    - self.world.board().height() as isize)
                                     % CHUNK_LEN as isize;
                                 let n = if m == 0 { d } else { d + 1 };
-                                self.board.expand_y(n, st);
+                                self.world.expand_y(n, st);
                             }
 
                             // see the current position
                             if let Err(e) =
-                                self.board.paste_clipboard(ofs_x as usize, ofs_y as usize, cb)
+                                self.world.board_mut().paste_clipboard(ofs_x as usize, ofs_y as usize, cb)
                             {
                                 self.err = Some(format!("{:?}", e));
                             }
